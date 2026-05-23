@@ -1,6 +1,6 @@
 {
   "name": "@ethosagent/tools-nse-market-data",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "NSE India market data tools for Ethos AI agents — local SQLite storage, daily sync via Yahoo Finance, watchlist management, screener, and technical indicators.",
   "keywords": [
     "nse",
