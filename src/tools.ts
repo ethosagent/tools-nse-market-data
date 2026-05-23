@@ -108,6 +108,7 @@ const nseMarketCleanTool: Tool = {
   description:
     'Delete all market data from the local SQLite database. Use before a fresh backfill.',
   toolset: 'market',
+  capabilities: {},
   schema: { type: 'object', properties: {} },
   async execute(_args, _ctx): Promise<ToolResult> {
     const result = getStore().clean();
@@ -238,6 +239,7 @@ const nseWatchlistAddTool: Tool<WatchlistAddArgs> = {
   name: 'nse_watchlist_add',
   description: 'Add a stock to your watchlist.',
   toolset: 'market',
+  capabilities: {},
   schema: {
     type: 'object',
     properties: {
@@ -261,6 +263,7 @@ const nseWatchlistRemoveTool: Tool<WatchlistRemoveArgs> = {
   name: 'nse_watchlist_remove',
   description: 'Remove a stock from your watchlist.',
   toolset: 'market',
+  capabilities: {},
   schema: {
     type: 'object',
     properties: {
@@ -280,6 +283,7 @@ const nseWatchlistShowTool: Tool<WatchlistShowArgs> = {
   name: 'nse_watchlist_show',
   description: 'Show your watchlist with last close price and metadata.',
   toolset: 'market',
+  capabilities: {},
   maxResultChars: 5000,
   schema: {
     type: 'object',
@@ -315,6 +319,7 @@ const nseMarketHistoryTool: Tool<HistoryArgs> = {
   description:
     'Get daily OHLCV history for a stock from local database. Used for technical analysis.',
   toolset: 'market',
+  capabilities: {},
   maxResultChars: 30000,
   schema: {
     type: 'object',
@@ -350,6 +355,7 @@ const nseMarketScreenTool: Tool<ScreenArgs> = {
   name: 'nse_market_screen',
   description: 'Scan stocks against technical criteria. Returns matches with key metrics.',
   toolset: 'market',
+  capabilities: {},
   maxResultChars: 10000,
   schema: {
     type: 'object',
