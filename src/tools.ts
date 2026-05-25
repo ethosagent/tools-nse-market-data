@@ -50,6 +50,7 @@ interface Tool<TArgs = Record<string, unknown>> {
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { InstrumentSeedRow } from './schema';
 import { MarketDataStore } from './store';
 
 function getPackageRoot(): string {
@@ -187,9 +188,18 @@ const nseMarketBackfillTool: Tool<BackfillArgs> = {
     } else {
       symbols = store.listInstrumentSymbols();
       if (symbols.length === 0) {
+        // Auto-seed instruments from bundled data/instruments.json
+        const pkgRoot = getPackageRoot();
+        const instruments = JSON.parse(
+          readFileSync(join(pkgRoot, 'data', 'instruments.json'), 'utf-8'),
+        ) as InstrumentSeedRow[];
+        store.upsertInstruments(instruments);
+        symbols = store.listInstrumentSymbols();
+      }
+      if (symbols.length === 0) {
         return {
           ok: false,
-          error: 'No instruments found. Run nse_market_backfill after loading instruments.',
+          error: 'Could not load instruments from data/instruments.json.',
           code: 'no_symbols',
         };
       }
