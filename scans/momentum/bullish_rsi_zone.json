@@ -1,0 +1,8 @@
+{
+  "scan_id": "bullish_rsi_zone",
+  "name": "Bullish RSI Zone",
+  "category": "momentum",
+  "description": "RSI in the bullish zone (55-70) with positive MACD and trend alignment",
+  "sql_template": "rsi_14 BETWEEN 55 AND 70 AND macd_hist > 0 AND ma_stack >= 3",
+  "tags": ["bullish", "momentum", "rsi"]
+}

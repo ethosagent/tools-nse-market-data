@@ -1,0 +1,8 @@
+{
+  "scan_id": "high_quality_setups",
+  "name": "High Quality Setups",
+  "category": "setup",
+  "description": "Setup quality >= 70 in Stage 2 with composite score >= 65",
+  "sql_template": "setup_quality >= 70 AND stage = 2 AND composite_score >= 65",
+  "tags": ["bullish", "setup", "high-quality", "high-conviction"]
+}

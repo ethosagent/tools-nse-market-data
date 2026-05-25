@@ -139,6 +139,7 @@ export async function fetchOhlcv(
   if (!item) return [];
 
   const { timestamp, indicators } = item;
+  if (!timestamp) return [];
   const quote = indicators.quote[0];
   if (!quote) return [];
 

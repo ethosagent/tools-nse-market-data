@@ -1,0 +1,8 @@
+{
+  "scan_id": "ytd_leaders",
+  "name": "YTD Leaders",
+  "category": "top_performers",
+  "description": "Year-to-date outperformers still in Stage 2",
+  "sql_template": "return_ytd > 20 AND stage = 2 AND composite_score >= 65",
+  "tags": ["bullish", "performance", "stage2"]
+}

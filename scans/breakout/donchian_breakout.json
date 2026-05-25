@@ -1,0 +1,8 @@
+{
+  "scan_id": "donchian_breakout",
+  "name": "Donchian 20D Channel Breakout",
+  "category": "breakout",
+  "description": "Price at or above the 20-day Donchian upper band",
+  "sql_template": "close >= donchian_upper_20 AND rvol >= 1.5",
+  "tags": ["bullish", "breakout", "momentum"]
+}

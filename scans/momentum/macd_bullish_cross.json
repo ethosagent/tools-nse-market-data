@@ -1,0 +1,8 @@
+{
+  "scan_id": "macd_bullish_cross",
+  "name": "MACD Bullish Cross",
+  "category": "momentum",
+  "description": "MACD histogram just crossed from negative to positive",
+  "sql_template": "macd_hist > 0 AND macd_hist_prev <= 0 AND macd_hist_prev IS NOT NULL",
+  "tags": ["bullish", "macd", "signal"]
+}

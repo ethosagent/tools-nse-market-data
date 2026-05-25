@@ -1,0 +1,8 @@
+{
+  "scan_id": "momentum_surge",
+  "name": "Momentum Surge",
+  "category": "momentum",
+  "description": "Strong 1-month return with high volume — momentum continuation",
+  "sql_template": "return_1m > 8 AND rvol >= 1.5 AND ma_stack >= 3 AND rsi_14 > 50",
+  "tags": ["bullish", "momentum", "high-conviction"]
+}

@@ -1,0 +1,8 @@
+{
+  "scan_id": "vol_dry_up",
+  "name": "Volume Dry-Up (VDU)",
+  "category": "volume",
+  "description": "Extremely low volume with tight price range — coiling before breakout",
+  "sql_template": "rvol < 0.5 AND bb_width < 0.05 AND stage = 2",
+  "tags": ["setup", "stage2", "coiling", "volume"]
+}

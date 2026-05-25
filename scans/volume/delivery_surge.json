@@ -1,0 +1,8 @@
+{
+  "scan_id": "delivery_surge",
+  "name": "Delivery Surge",
+  "category": "volume",
+  "description": "Institutional delivery significantly above 20-day average — accumulation signal",
+  "sql_template": "delivery_pct > delivery_ma_20 * 1.5 AND delivery_ma_20 IS NOT NULL AND rvol >= 1.2",
+  "tags": ["volume", "delivery", "institutional", "bullish"]
+}

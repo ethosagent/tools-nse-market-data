@@ -1,0 +1,8 @@
+{
+  "scan_id": "smart_money_candidates",
+  "name": "Smart Money Candidates",
+  "category": "volume",
+  "description": "Pre-filter for smart money scan — unusual delivery or volume with sufficient history",
+  "sql_template": "(delivery_pct > delivery_ma_20 * 1.3 OR rvol >= 1.5) AND vol_sma_20 IS NOT NULL",
+  "tags": ["volume", "smart-money", "delivery"]
+}

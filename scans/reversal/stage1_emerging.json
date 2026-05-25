@@ -1,0 +1,8 @@
+{
+  "scan_id": "stage1_emerging",
+  "name": "Stage 1 Emerging",
+  "category": "reversal",
+  "description": "Stage 1 base with early signs of accumulation — watch for Stage 2 transition",
+  "sql_template": "stage = 1 AND ma_stack >= 2 AND rsi_14 > 45 AND price_percentile_52w > 30",
+  "tags": ["watchlist", "stage1", "accumulation"]
+}

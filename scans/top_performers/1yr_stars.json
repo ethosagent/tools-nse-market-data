@@ -1,0 +1,8 @@
+{
+  "scan_id": "1yr_stars",
+  "name": "1-Year Stars",
+  "category": "top_performers",
+  "description": "Long-term outperformers maintaining Stage 2 trend alignment",
+  "sql_template": "return_1y > 30 AND stage = 2 AND ma_stack >= 3",
+  "tags": ["bullish", "long-term", "performance"]
+}

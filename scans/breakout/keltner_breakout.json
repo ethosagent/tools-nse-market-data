@@ -1,0 +1,8 @@
+{
+  "scan_id": "keltner_breakout",
+  "name": "Keltner Channel Breakout",
+  "category": "breakout",
+  "description": "Price breaking out above Keltner upper channel — volatility expansion",
+  "sql_template": "close >= keltner_upper AND rvol >= 1.5 AND macd_hist > 0",
+  "tags": ["bullish", "volatility-expansion", "momentum"]
+}

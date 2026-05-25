@@ -1,0 +1,8 @@
+{
+  "scan_id": "strong_money_inflow",
+  "name": "Strong Money Inflow",
+  "category": "volume",
+  "description": "High volume with price closing in upper part of day's range",
+  "sql_template": "rvol >= 1.5 AND close_position_ratio >= 70 AND closed_above_vwap = 1",
+  "tags": ["volume", "bullish", "inflow"]
+}

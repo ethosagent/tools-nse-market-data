@@ -1,0 +1,8 @@
+{
+  "scan_id": "golden_cross",
+  "name": "Golden Cross",
+  "category": "momentum",
+  "description": "SMA 50 above SMA 200 with price above both — classic bull signal",
+  "sql_template": "sma_50 > sma_200 AND pct_from_ema50 > 0 AND pct_from_ema200 > 0 AND ma_stack >= 3",
+  "tags": ["bullish", "trend", "long-term"]
+}

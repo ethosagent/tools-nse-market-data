@@ -1,0 +1,8 @@
+{
+  "scan_id": "stage2_momentum",
+  "name": "Stage 2 Momentum Leaders",
+  "category": "setup",
+  "description": "Perfect trend alignment in Stage 2 with composite score >= 65",
+  "sql_template": "stage = 2 AND ma_stack = 4 AND rsi_14 > 55 AND composite_score >= 65",
+  "tags": ["bullish", "stage2", "momentum", "trend"]
+}

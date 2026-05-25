@@ -1,0 +1,5366 @@
+[
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "HDFCBANK.NS",
+    "weight": 11.2,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "RELIANCE.NS",
+    "weight": 9.5,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "ICICIBANK.NS",
+    "weight": 7.1,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "INFY.NS",
+    "weight": 5.2,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "TCS.NS",
+    "weight": 4.8,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "BHARTIARTL.NS",
+    "weight": 3.9,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "HINDUNILVR.NS",
+    "weight": 3.4,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "AXISBANK.NS",
+    "weight": 3.2,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "KOTAKBANK.NS",
+    "weight": 3.1,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "ITC.NS",
+    "weight": 2.9,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "SBIN.NS",
+    "weight": 2.8,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "LT.NS",
+    "weight": 2.7,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "BAJFINANCE.NS",
+    "weight": 2.5,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "HCLTECH.NS",
+    "weight": 2.3,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "ADANIENT.NS",
+    "weight": 2.1,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "SUNPHARMA.NS",
+    "weight": 1.9,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "MARUTI.NS",
+    "weight": 1.8,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "TATAMOTORS.NS",
+    "weight": 1.7,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "WIPRO.NS",
+    "weight": 1.6,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "M&M.NS",
+    "weight": 1.5,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "ONGC.NS",
+    "weight": 1.4,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "NTPC.NS",
+    "weight": 1.4,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "ASIANPAINT.NS",
+    "weight": 1.3,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "TECHM.NS",
+    "weight": 1.2,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "BAJAJFINSV.NS",
+    "weight": 1.2,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "TITAN.NS",
+    "weight": 1.1,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "JSWSTEEL.NS",
+    "weight": 1.1,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "POWERGRID.NS",
+    "weight": 1.0,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "TATASTEEL.NS",
+    "weight": 1.0,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "ADANIPORTS.NS",
+    "weight": 0.9,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "ULTRACEMCO.NS",
+    "weight": 0.9,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "NESTLEIND.NS",
+    "weight": 0.9,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "HINDALCO.NS",
+    "weight": 0.8,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "DRREDDY.NS",
+    "weight": 0.8,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "INDUSINDBK.NS",
+    "weight": 0.8,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "BPCL.NS",
+    "weight": 0.7,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "HEROMOTOCO.NS",
+    "weight": 0.7,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "CIPLA.NS",
+    "weight": 0.7,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "APOLLOHOSP.NS",
+    "weight": 0.7,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "BAJAJ-AUTO.NS",
+    "weight": 0.6,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "EICHERMOT.NS",
+    "weight": 0.6,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "COALINDIA.NS",
+    "weight": 0.6,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "BRITANNIA.NS",
+    "weight": 0.5,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "GRASIM.NS",
+    "weight": 0.5,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "DIVISLAB.NS",
+    "weight": 0.5,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "TATACONSUM.NS",
+    "weight": 0.5,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "SBILIFE.NS",
+    "weight": 0.5,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "HDFCLIFE.NS",
+    "weight": 0.4,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "UPL.NS",
+    "weight": 0.4,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEI",
+    "member_symbol": "SHRIRAMFIN.NS",
+    "weight": 0.4,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "HDFCBANK.NS",
+    "weight": 11.2,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "RELIANCE.NS",
+    "weight": 9.5,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "ICICIBANK.NS",
+    "weight": 7.1,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "INFY.NS",
+    "weight": 5.2,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "TCS.NS",
+    "weight": 4.8,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "BHARTIARTL.NS",
+    "weight": 3.9,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "HINDUNILVR.NS",
+    "weight": 3.4,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "AXISBANK.NS",
+    "weight": 3.2,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "KOTAKBANK.NS",
+    "weight": 3.1,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "ITC.NS",
+    "weight": 2.9,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "SBIN.NS",
+    "weight": 2.8,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "LT.NS",
+    "weight": 2.7,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "BAJFINANCE.NS",
+    "weight": 2.5,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "HCLTECH.NS",
+    "weight": 2.3,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "ADANIENT.NS",
+    "weight": 2.1,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "SUNPHARMA.NS",
+    "weight": 1.9,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "MARUTI.NS",
+    "weight": 1.8,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "TATAMOTORS.NS",
+    "weight": 1.7,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "WIPRO.NS",
+    "weight": 1.6,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "M&M.NS",
+    "weight": 1.5,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "ONGC.NS",
+    "weight": 1.4,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "NTPC.NS",
+    "weight": 1.4,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "ASIANPAINT.NS",
+    "weight": 1.3,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "TECHM.NS",
+    "weight": 1.2,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "BAJAJFINSV.NS",
+    "weight": 1.2,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "TITAN.NS",
+    "weight": 1.1,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "JSWSTEEL.NS",
+    "weight": 1.1,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "POWERGRID.NS",
+    "weight": 1.0,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "TATASTEEL.NS",
+    "weight": 1.0,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "ADANIPORTS.NS",
+    "weight": 0.9,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "ULTRACEMCO.NS",
+    "weight": 0.9,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "NESTLEIND.NS",
+    "weight": 0.9,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "HINDALCO.NS",
+    "weight": 0.8,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "DRREDDY.NS",
+    "weight": 0.8,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "INDUSINDBK.NS",
+    "weight": 0.8,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "BPCL.NS",
+    "weight": 0.7,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "HEROMOTOCO.NS",
+    "weight": 0.7,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "CIPLA.NS",
+    "weight": 0.7,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "APOLLOHOSP.NS",
+    "weight": 0.7,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "BAJAJ-AUTO.NS",
+    "weight": 0.6,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "EICHERMOT.NS",
+    "weight": 0.6,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "COALINDIA.NS",
+    "weight": 0.6,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "BRITANNIA.NS",
+    "weight": 0.5,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "GRASIM.NS",
+    "weight": 0.5,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "DIVISLAB.NS",
+    "weight": 0.5,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "TATACONSUM.NS",
+    "weight": 0.5,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "SBILIFE.NS",
+    "weight": 0.5,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "HDFCLIFE.NS",
+    "weight": 0.4,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "UPL.NS",
+    "weight": 0.4,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "SHRIRAMFIN.NS",
+    "weight": 0.4,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "PIDILITIND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "DABUR.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "MCDOWELL-N.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "VEDL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "SIEMENS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "ABB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "HAVELLS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "BERGEPAINT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "GODREJCP.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "TATAPOWER.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "ADANIGREEN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "ADANITRANS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "ZOMATO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "NYKAA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "PAYTM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "DMART.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "ZYDUSLIFE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "TORNTPHARM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "LUPIN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "BIOCON.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "BANKBARODA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "CANBK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "PNB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "FEDERALBNK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "IDFCFIRSTB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "MUTHOOTFIN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNX100",
+    "member_symbol": "CHOLAFIN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "RELIANCE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TCS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "HDFCBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ICICIBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "HINDUNILVR.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "INFY.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ITC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SBIN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BHARTIARTL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "KOTAKBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "LT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "AXISBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ASIANPAINT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "MARUTI.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TITAN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BAJFINANCE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "WIPRO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ULTRACEMCO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ONGC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NTPC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "POWERGRID.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SUNPHARMA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "HCLTECH.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TECHM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NESTLEIND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "DRREDDY.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BAJAJFINSV.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TATAMOTORS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "INDUSINDBK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CIPLA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ADANIENT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ADANIPORTS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "COALINDIA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "EICHERMOT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GRASIM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "JSWSTEEL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TATASTEEL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BPCL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "HINDALCO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BRITANNIA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "DIVISLAB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "APOLLOHOSP.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TATACONSUM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "HEROMOTOCO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SBILIFE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "HDFCLIFE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "M&M.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BAJAJ-AUTO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "UPL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SHRIRAMFIN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PIDILITIND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "DABUR.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "MCDOWELL-N.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "VEDL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SIEMENS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ABB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "HAVELLS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BERGEPAINT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GODREJCP.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TATAPOWER.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ADANIGREEN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ADANITRANS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ZOMATO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NYKAA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PAYTM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "DMART.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ZYDUSLIFE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TORNTPHARM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "LUPIN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BIOCON.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BANKBARODA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CANBK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PNB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "FEDERALBNK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "IDFCFIRSTB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "MUTHOOTFIN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CHOLAFIN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PERSISTENT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "LTIM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "MPHASIS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "COFORGE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "KPITTECH.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "DIXON.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "POLYCAB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "KAJARIACER.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CEATLTD.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BALKRISIND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ESCORT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TVSMOTOR.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ASHOKLEY.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "VOLTAS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BLUESTARCO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "WHIRLPOOL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CROMPTON.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BATAINDIA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "RELAXO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "IDBI.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BANDHANBNK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "RBLBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "YESBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "INDIGO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SPICEJET.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "JUBLFOOD.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "IRCTC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CONCOR.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GMRAIRPORT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "RVNL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "IRFC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "RAILTEL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NAVINFLUOR.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PIIND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ASTRAL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ALKYLAMINE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "AAVAS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CANFINHOME.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "HOMEFIRST.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CREDITACC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SBICARD.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ABCAPITAL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "MFSL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SUPRAJIT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PARAS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NAUKRI.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "INDIAMART.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TRENT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "VAIBHAVGBL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "KPIL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GLAND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "LAURUS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SUVEN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "HDFCBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "ICICIBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "SBIN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "KOTAKBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "AXISBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "INDUSINDBK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "BANKBARODA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "CANBK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "PNB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "FEDERALBNK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "IDFCFIRSTB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "BANDHANBNK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "RBLBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "YESBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "IDBI.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "TCS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "INFY.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "WIPRO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "HCLTECH.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "TECHM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "PERSISTENT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "LTIM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "MPHASIS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "COFORGE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "KPITTECH.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "MARUTI.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "TATAMOTORS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "HEROMOTOCO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "EICHERMOT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "BAJAJ-AUTO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "M&M.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "TVSMOTOR.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "ASHOKLEY.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "BALKRISIND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "CEATLTD.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "ESCORT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "SUNPHARMA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "DRREDDY.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "CIPLA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "DIVISLAB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "APOLLOHOSP.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "TORNTPHARM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "LUPIN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "BIOCON.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "ZYDUSLIFE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "GLAND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "LAURUS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXFMCG",
+    "member_symbol": "HINDUNILVR.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXFMCG",
+    "member_symbol": "ITC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXFMCG",
+    "member_symbol": "NESTLEIND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXFMCG",
+    "member_symbol": "BRITANNIA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXFMCG",
+    "member_symbol": "DABUR.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXFMCG",
+    "member_symbol": "GODREJCP.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXFMCG",
+    "member_symbol": "TATACONSUM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXFMCG",
+    "member_symbol": "MCDOWELL-N.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXFMCG",
+    "member_symbol": "BATAINDIA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXFMCG",
+    "member_symbol": "JUBLFOOD.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "JSWSTEEL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "TATASTEEL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "HINDALCO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "VEDL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "COALINDIA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "RELIANCE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "ONGC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "BPCL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "NTPC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "POWERGRID.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "TATAPOWER.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "ADANIGREEN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "COALINDIA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXREALTY",
+    "member_symbol": "GMRAIRPORT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPSUBANK",
+    "member_symbol": "SBIN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPSUBANK",
+    "member_symbol": "BANKBARODA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPSUBANK",
+    "member_symbol": "CANBK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPSUBANK",
+    "member_symbol": "PNB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPSUBANK",
+    "member_symbol": "IDBI.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXREALTY",
+    "member_symbol": "DLF.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXREALTY",
+    "member_symbol": "GODREJPROP.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXREALTY",
+    "member_symbol": "PRESTIGE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXREALTY",
+    "member_symbol": "OBEROIRLTY.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXREALTY",
+    "member_symbol": "PHOENIXLTD.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "JINDALSTEL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "NMDC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "SAIL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "OFSS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "LTTS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXFMCG",
+    "member_symbol": "MARICO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXFMCG",
+    "member_symbol": "COLPAL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GODREJPROP.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "DLF.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PRESTIGE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "OBEROIRLTY.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PHOENIXLTD.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "HDFCAMC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NIPPONLIFE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ANGELONE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "JINDALSTEL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NMDC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SAIL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "OFSS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "LTTS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CUMMINSIND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BEL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "HAL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "MARICO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "COLPAL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PAGEIND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SUNDARMFIN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "3MINDIA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "AARTIIND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ABBOTINDIA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ABFRL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "AEGISCHEM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "AIAENG.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "AJANTPHARM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "AKZONOBEL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ALKEM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "AMARAJABAT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "APAR.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "APLAPOLLO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "APOLLOTYRE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ASTER.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ATGL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ATUL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "AUBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "AUROPHARMA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "AVALON.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "AVANTIFEED.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BAJAJCON.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BAJAJHLDNG.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BALCHEMLTD.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BANKINDIA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BARBEQUE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BAYER.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BHARATFORG.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BHEL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BIRLACORP.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BIRLASOFT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BLUEDART.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BOSCHLTD.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BRIGADE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BSE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CAMS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CARBORUNIV.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CASTROLIND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CDSL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CENTRALBK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CESC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CHALET.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CHAMBLFERT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CLEAN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "COROMANDEL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CRAFTSMAN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CSBBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CYIENT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "DALMIA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "DCBBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "DEEPAKNTR.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "DELHIVERY.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "DEVYANI.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "DHANBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "DHANUKA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "DRLABEVENT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "EASEMYTRIP.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ECLERX.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "EIH.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ELGIEQUIP.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "EMAMILTD.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "EQUITASBNK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ESAB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ESAFSFB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "EXIDEIND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "FINCABLES.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "FINEORG.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "FINOLEX.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "FIRSTSOURCE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "FLUOROCHEM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "FORTIS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GABRIEL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GAIL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GALAXYSURF.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GESHIP.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GICRE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GILLETTE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GMRINFRA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GNFC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GPPL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GRANULES.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GRINDWELL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GUJGASLTD.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "HCG.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "HEIDELBERG.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "HEXAWARE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "HFCL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "HGINFRA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "HINDPETRO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "HINDUCOPPER.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "HONAUT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "HUDCO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ICICIGI.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ICICIPRULI.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "IDEA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "IGL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "IHCL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "IIFL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "INDIANB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "INFIBEAM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "INOXGREEN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "INTELLECT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "IOB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "IPCALAB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "IRCON.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "IREDA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "JAMNAAUTO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "JBCHEPHARM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "JBM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "JINDALSAW.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "JKCEMENT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "JSWCEMENT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "JYOTHYLAB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "KANSAINER.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "KARURVYSYA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "KAYNES.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "KFINTECH.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "KIMS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "KITEX.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "KNR.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "KSCL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "L&TFH.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "LEMONTREE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "LICHSGFIN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "LICI.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "LODHA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "M&MFIN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "MAHABANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "MAHLOG.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "MANAPPURAM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "MASTEK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "MAXHEALTH.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "MCX.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "METROPOLIS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "MGL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "MINDA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "MINDAIND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "MOIL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "MOTHERSON.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NATCOPHARM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NATIONALUM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NCC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NDTV.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NESCO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NETWORK18.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NEWGEN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NFL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NHPC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NIACL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NIIT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NOCIL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NUCLEUS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NUVOCO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "OLECTRA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PETRONET.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PFC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PFIZER.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PGHH.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PIRAMALENT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PNC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "POLICYBZR.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "POLY.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "POONAWALLA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PRAJ.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PRINCEPIPE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PVRINOX.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "RADICO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "RAINBOW.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "RALLIS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "RAMASTEEL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "RAMCOCEM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "RATEGAIN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "RATNAMANI.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "RAYMOND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "RECLTD.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "RKFORGE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ROUTE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "RPOWER.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SANOFI.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SAPPHIRE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SAREGAMA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SASKEN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SCHAEFFLER.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SCI.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SHALBY.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SHOPERSTOP.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SJVN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SKF.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SOBHA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SOLARINDS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SONATSOFTW.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SOUTHBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SRF.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "STARHEALTH.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "STLTECH.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "STRIDES.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SUDARSCHEM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SUNDRMFAST.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SUNTV.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SURYODAY.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SUVVEN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SUZLON.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SYRMA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TANLA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TATACHEM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TATACOMM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TATAELXSI.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TDPOWERSYS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TEJASNET.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TEXRAIL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "THERMAX.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "THOMASCOOK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "THYROCARE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TIMKEN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TIPS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TITAGARH.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TORNTPOWER.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TRIDENT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TVTODAY.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "UCOBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "UJJIVANSFB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "UNIONBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "VARDHACRLC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "VBL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "VEDANT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "VENKYS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "VINATIORGA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "VOLTAMP.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "WABCO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "WELCORP.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "WESTLIFE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "YATHARTH.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ZEEL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ZENSAR.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ZFSTEERING.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ZYDUSWELL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "AUBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "BANKINDIA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "CENTRALBK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "CSBBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "DCBBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "DHANBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "EQUITASBNK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "ESAFSFB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "INDIANB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "IOB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "KARURVYSYA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "MAHABANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "SOUTHBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "SURYODAY.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "UCOBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "UJJIVANSFB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^NSEBANK",
+    "member_symbol": "UNIONBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPSUBANK",
+    "member_symbol": "BANKINDIA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPSUBANK",
+    "member_symbol": "CENTRALBK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPSUBANK",
+    "member_symbol": "INDIANB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPSUBANK",
+    "member_symbol": "IOB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPSUBANK",
+    "member_symbol": "MAHABANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPSUBANK",
+    "member_symbol": "UCOBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPSUBANK",
+    "member_symbol": "UNIONBANK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "ABBOTINDIA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "AJANTPHARM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "ALKEM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "ASTER.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "AUROPHARMA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "DRLABEVENT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "FORTIS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "GRANULES.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "HCG.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "IPCALAB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "JBCHEPHARM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "KIMS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "MAXHEALTH.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "METROPOLIS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "NATCOPHARM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "PFIZER.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "POLY.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "RAINBOW.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "SANOFI.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "SHALBY.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "STRIDES.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "SUVEN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "SUVVEN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "THYROCARE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "YATHARTH.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXFMCG",
+    "member_symbol": "BAJAJCON.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXFMCG",
+    "member_symbol": "EMAMILTD.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXFMCG",
+    "member_symbol": "GILLETTE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXFMCG",
+    "member_symbol": "JYOTHYLAB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXFMCG",
+    "member_symbol": "PGHH.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXFMCG",
+    "member_symbol": "RADICO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXFMCG",
+    "member_symbol": "VBL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXFMCG",
+    "member_symbol": "ZYDUSWELL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "APLAPOLLO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "HINDUCOPPER.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "JINDALSAW.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "MOIL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "NATIONALUM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "RAMASTEEL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "RATNAMANI.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "WELCORP.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "ADANITRANS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "ATGL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "CASTROLIND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "CESC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "GAIL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "GUJGASLTD.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "HINDPETRO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "IGL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "INOXGREEN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "MGL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "NHPC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "PETRONET.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "RPOWER.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "SJVN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "SUZLON.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "TORNTPOWER.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXREALTY",
+    "member_symbol": "BRIGADE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXREALTY",
+    "member_symbol": "LODHA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXREALTY",
+    "member_symbol": "NESCO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXREALTY",
+    "member_symbol": "SOBHA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "AMARAJABAT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "APOLLOTYRE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "BHARATFORG.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "BOSCHLTD.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "CRAFTSMAN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "EXIDEIND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "GABRIEL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "JAMNAAUTO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "JBM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "MINDA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "MINDAIND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "MOTHERSON.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "OLECTRA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "RKFORGE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "SCHAEFFLER.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "SKF.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "SUNDRMFAST.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "SUPRAJIT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "TIMKEN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "WABCO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "ZFSTEERING.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "BIRLASOFT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "CYIENT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "ECLERX.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "FIRSTSOURCE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "HEXAWARE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "INFIBEAM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "INTELLECT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "KFINTECH.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "MASTEK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "NEWGEN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "NIIT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "NUCLEUS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "RAILTEL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "RATEGAIN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "ROUTE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "SASKEN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "SONATSOFTW.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "STLTECH.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "TANLA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "TATAELXSI.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "ZENSAR.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "IBULHSGFIN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SPANDANA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ARMANFIN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CAPLIPOINT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "CAPLIPOINT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "FUSION.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "APTUS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "FIVESTAR.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PAISALO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PNBHOUSING.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "UGROCAP.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SMCGLOBAL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "MOTILALOFS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ISEC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "360ONE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NUVAMA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "KRSNAA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "KRSNAA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "VIJAYA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "VIJAYA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "MEDANTA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "MEDANTA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GLENMARK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "GLENMARK.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "WOCKPHARMA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "WOCKPHARMA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "JUBLPHARMA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "JUBLPHARMA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SEQUENT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "SEQUENT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SOLARA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "SOLARA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NEULANDLAB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "NEULANDLAB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ERIS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "ERIS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "RPGLIFE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXPHARMA",
+    "member_symbol": "RPGLIFE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PCBL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "FILATEX.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NEOGEN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PAUSHAKLTD.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "EPIGRAL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "IGPL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "JUBLINDUS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ROSSARI.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ANUPAM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "HIKAL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CAMLINFINE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GSFC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "DEEPAKFERT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SUMICHEM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "HSCL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SHARDACROP.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "VSTIND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GODFRYPHLP.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "HONASA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ACRYSIL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PRATAAP.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TASTYBL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BIKAJI.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "DOMS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "THANGAMAYL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "KALYANKJIL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SENCO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PCJEWELLER.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GOLDIAM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BOMDYEING.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GOKALDAS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "WELSPUNIND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CAMPUS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "METRO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "VARROC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "VARROC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "LUMAXTECH.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "LUMAXTECH.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "LUMAXIND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "LUMAXIND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ENDURANCE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "ENDURANCE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SETCO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "SETCO.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SMLISUZU.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "SMLISUZU.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "VSTTILLERS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "VSTTILLERS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ESCORTS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "ESCORTS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "FORCEMOT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "FORCEMOT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SANSERA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "SANSERA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SONACOMS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXAUTO",
+    "member_symbol": "SONACOMS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PATEL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CAPACITE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ASHOKA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "IRB.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "WELENT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "KALPATPOWR.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GRINFRA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "POWERMECH.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "MSTC.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "CENTURYPLY.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GREENLAM.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "AHLUWALIA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PSPPROJECT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GREENPANEL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NAVA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "NAVA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BFUTILITIE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "BFUTILITIE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "WEBSOL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "WEBSOL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BOROSIL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "BOROSIL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "WAAREEENER.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "WAAREEENER.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "PREMIER.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "PREMIER.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "JSWENERGY.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "JSWENERGY.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "NTPCGREEN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXENERGY",
+    "member_symbol": "NTPCGREEN.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GPIL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "GPIL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SHYAMSTEEL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "SHYAMSTEEL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "KALYANI.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "KALYANI.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SUNFLAG.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "SUNFLAG.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "MIDHANI.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "MIDHANI.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "KIOCL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "KIOCL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "IMFA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "IMFA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GALLANTT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "GALLANTT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "JTLIND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "JTLIND.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "GRAVITA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXMETAL",
+    "member_symbol": "GRAVITA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SAKSOFT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "SAKSOFT.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "DATAMATICS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "DATAMATICS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "LATENTVIEW.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "LATENTVIEW.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "EMUDHRA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "EMUDHRA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "SUBEX.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "SUBEX.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TATATECH.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "TATATECH.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "ZAGGLE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "ZAGGLE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "MAPMYINDIA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "MAPMYINDIA.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "DIGISPICE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "DIGISPICE.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "REDINGTON.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CNXIT",
+    "member_symbol": "REDINGTON.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "MHRIL.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "BLS.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^CRSLDX",
+    "member_symbol": "TATAINVEST.NS",
+    "weight": null,
+    "as_of_date": "2026-01-01"
+  }
+]

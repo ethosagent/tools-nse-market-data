@@ -1,0 +1,8 @@
+{
+  "scan_id": "candle_reversal_bull",
+  "name": "Bullish Candle Reversal",
+  "category": "reversal",
+  "description": "Bullish reversal candle pattern with supporting volume",
+  "sql_template": "candle_pattern IN ('hammer', 'bullish_engulf', 'morning_star', 'piercing_line', 'dragonfly_doji', 'inverted_hammer') AND rvol >= 1.0",
+  "tags": ["bullish", "candle-pattern", "reversal"]
+}

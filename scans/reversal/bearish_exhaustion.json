@@ -1,0 +1,8 @@
+{
+  "scan_id": "bearish_exhaustion",
+  "name": "Bearish Exhaustion",
+  "category": "reversal",
+  "description": "Overbought with bearish reversal candle — potential distribution top",
+  "sql_template": "rsi_14 > 70 AND candle_pattern IN ('shooting_star', 'bearish_engulf', 'evening_star', 'gravestone_doji') AND rvol >= 1.2",
+  "tags": ["bearish", "overbought", "candle-pattern"]
+}

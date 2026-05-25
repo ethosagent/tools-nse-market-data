@@ -1,0 +1,8 @@
+{
+  "scan_id": "rsi_oversold_bounce",
+  "name": "RSI Oversold Bounce",
+  "category": "momentum",
+  "description": "RSI recovering from oversold levels with MACD histogram turning positive",
+  "sql_template": "rsi_14 BETWEEN 30 AND 45 AND macd_hist > macd_hist_prev AND macd_hist_prev IS NOT NULL",
+  "tags": ["reversal", "rsi", "bounce"]
+}

@@ -1,0 +1,8 @@
+{
+  "scan_id": "top_3m_performers",
+  "name": "Top 3-Month Performers",
+  "category": "top_performers",
+  "description": "Strong 3-month returns with high RS rank",
+  "sql_template": "return_3m > 15 AND rs_rank_in_segment >= 70 AND composite_score >= 60",
+  "tags": ["bullish", "momentum", "rs"]
+}

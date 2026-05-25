@@ -1,0 +1,8 @@
+{
+  "scan_id": "rs_improving",
+  "name": "RS Improving",
+  "category": "relative_strength",
+  "description": "RS rank improving — catching up to leaders",
+  "sql_template": "rs_rank_in_segment BETWEEN 60 AND 79 AND rs_vs_segment > 0",
+  "tags": ["bullish", "rs", "improving"]
+}

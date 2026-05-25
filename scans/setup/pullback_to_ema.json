@@ -1,0 +1,8 @@
+{
+  "scan_id": "pullback_to_ema",
+  "name": "Pullback to EMA",
+  "category": "setup",
+  "description": "Healthy pullback to EMA 20 or EMA 50 in an uptrend",
+  "sql_template": "setup_type IN ('pullback_to_ema20', 'pullback_to_ema50')",
+  "tags": ["bullish", "pullback", "setup"]
+}

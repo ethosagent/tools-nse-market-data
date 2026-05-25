@@ -1,0 +1,8 @@
+{
+  "scan_id": "base_breakout",
+  "name": "Base Breakout Setup",
+  "category": "setup",
+  "description": "Tight consolidation base near highs — Stage 2 base-and-breakout setup",
+  "sql_template": "setup_type = 'base_breakout'",
+  "tags": ["bullish", "setup", "stage2", "high-conviction"]
+}

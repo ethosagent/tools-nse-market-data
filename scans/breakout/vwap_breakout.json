@@ -1,0 +1,8 @@
+{
+  "scan_id": "vwap_breakout",
+  "name": "VWAP Breakout",
+  "category": "breakout",
+  "description": "Price closed above VWAP with upward EMA alignment and volume",
+  "sql_template": "closed_above_vwap = 1 AND pct_from_ema20 > 0 AND ma_stack >= 2 AND rvol >= 1.3",
+  "tags": ["bullish", "intraday-context", "momentum"]
+}

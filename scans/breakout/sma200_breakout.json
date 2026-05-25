@@ -1,0 +1,8 @@
+{
+  "scan_id": "sma200_breakout",
+  "name": "SMA 200 Breakout",
+  "category": "breakout",
+  "description": "Price crossing above SMA 200 — potential stage transition from 1 to 2",
+  "sql_template": "pct_from_ema200 BETWEEN 0 AND 3 AND ma_stack >= 2 AND rvol >= 1.3",
+  "tags": ["bullish", "stage-change", "trend"]
+}

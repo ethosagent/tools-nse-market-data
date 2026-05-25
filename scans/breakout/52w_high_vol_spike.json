@@ -1,0 +1,8 @@
+{
+  "scan_id": "52w_high_vol_spike",
+  "name": "52W High Volume Spike",
+  "category": "breakout",
+  "description": "Near 52-week high with strong volume surge (2x average)",
+  "sql_template": "dist_52wk_high_pct <= 2 AND rvol >= 2.0",
+  "tags": ["bullish", "volume", "momentum"]
+}

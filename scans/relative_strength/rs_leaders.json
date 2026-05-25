@@ -1,0 +1,8 @@
+{
+  "scan_id": "rs_leaders",
+  "name": "RS Leaders",
+  "category": "relative_strength",
+  "description": "Top relative strength in their cap segment — outperforming peers",
+  "sql_template": "rs_rank_in_segment >= 80 AND rs_vs_broad > 0 AND stage = 2",
+  "tags": ["bullish", "rs", "leader", "high-conviction"]
+}

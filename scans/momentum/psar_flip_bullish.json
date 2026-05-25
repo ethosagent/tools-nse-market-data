@@ -1,0 +1,8 @@
+{
+  "scan_id": "psar_flip_bullish",
+  "name": "PSAR Flip Bullish",
+  "category": "momentum",
+  "description": "Parabolic SAR just flipped bullish with supporting momentum",
+  "sql_template": "psar_signal = 1 AND macd_hist > 0 AND rvol >= 1.0 AND ma_stack >= 2",
+  "tags": ["bullish", "psar", "signal"]
+}

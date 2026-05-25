@@ -1,0 +1,8 @@
+{
+  "scan_id": "stage2_entry",
+  "name": "Stage 2 Entry Setup",
+  "category": "breakout",
+  "description": "Stage 2 stock pulling back near EMA 50 — classic Weinstein entry",
+  "sql_template": "stage = 2 AND pct_from_ema50 BETWEEN -2 AND 3 AND ma_stack >= 3 AND rvol >= 0.8",
+  "tags": ["bullish", "stage2", "pullback"]
+}

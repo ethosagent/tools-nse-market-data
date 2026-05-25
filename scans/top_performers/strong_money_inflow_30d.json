@@ -1,0 +1,8 @@
+{
+  "scan_id": "strong_money_inflow_30d",
+  "name": "Strong Money Inflow (30D)",
+  "category": "top_performers",
+  "description": "Month-long inflow signal — positive return, volume, and OBV trend",
+  "sql_template": "return_1m > 5 AND rvol >= 1.2 AND close_position_ratio >= 60 AND obv_slope_5d > 0",
+  "tags": ["volume", "bullish", "smart-money", "medium-term"]
+}

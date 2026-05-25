@@ -1,0 +1,8 @@
+{
+  "scan_id": "3m_high_breakout",
+  "name": "3-Month High Breakout",
+  "category": "breakout",
+  "description": "Price at 3-month highs (top quartile of 52W range) with volume",
+  "sql_template": "price_percentile_52w >= 75 AND return_3m > 0 AND rvol >= 1.3 AND ma_stack >= 2",
+  "tags": ["bullish", "momentum", "medium-term"]
+}

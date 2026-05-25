@@ -1,0 +1,8 @@
+{
+  "scan_id": "52w_high_breakout",
+  "name": "52W High Breakout",
+  "category": "breakout",
+  "description": "Near new 52-week high with above-average volume and closed above VWAP",
+  "sql_template": "dist_52wk_high_pct <= 1 AND rvol >= 1.5 AND closed_above_vwap = 1",
+  "tags": ["bullish", "momentum", "high-conviction"]
+}

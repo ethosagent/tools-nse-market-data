@@ -1,0 +1,8 @@
+{
+  "scan_id": "ath_breakout",
+  "name": "All-Time High Breakout",
+  "category": "breakout",
+  "description": "Breaking out to all-time high with volume confirmation",
+  "sql_template": "dist_ath_pct <= 0.5 AND rvol >= 1.5 AND closed_above_vwap = 1",
+  "tags": ["bullish", "high-conviction", "momentum"]
+}

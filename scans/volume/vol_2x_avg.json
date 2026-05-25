@@ -1,0 +1,8 @@
+{
+  "scan_id": "vol_2x_avg",
+  "name": "Volume 2x Average",
+  "category": "volume",
+  "description": "Trading at double its 20-day average volume with positive close",
+  "sql_template": "rvol >= 2.0 AND closed_above_vwap = 1",
+  "tags": ["volume", "bullish", "high-activity"]
+}

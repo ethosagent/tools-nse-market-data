@@ -1,0 +1,8 @@
+{
+  "scan_id": "oversold_bounce",
+  "name": "Oversold Bounce Candidate",
+  "category": "reversal",
+  "description": "Deeply oversold with bullish reversal candle pattern",
+  "sql_template": "rsi_14 < 35 AND candle_pattern IN ('hammer', 'bullish_engulf', 'morning_star', 'dragonfly_doji') AND rvol >= 1.2",
+  "tags": ["reversal", "oversold", "candle-pattern"]
+}

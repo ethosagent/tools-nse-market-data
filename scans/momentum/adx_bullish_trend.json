@@ -1,0 +1,8 @@
+{
+  "scan_id": "adx_bullish_trend",
+  "name": "ADX Strong Trend (Bullish)",
+  "category": "momentum",
+  "description": "Strong directional trend with ADX > 25 and bulls in control",
+  "sql_template": "adx >= 25 AND adx_di_plus > adx_di_minus AND ma_stack >= 2",
+  "tags": ["bullish", "trend", "adx"]
+}

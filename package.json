@@ -45,7 +45,7 @@
     "LICENSE"
   ],
   "engines": {
-    "node": ">=24"
+    "node": ">=20"
   },
   "scripts": {
     "build": "tsup",
@@ -56,7 +56,8 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "check": "npm run typecheck && npm run lint && npm run test",
-    "prepublishOnly": "npm run check && npm run build"
+    "prepublishOnly": "npm run check && npm run build",
+    "postinstall": "npm rebuild better-sqlite3"
   },
   "dependencies": {
     "better-sqlite3": "12.10.0",
@@ -69,10 +70,6 @@
     "tsup": "8.5.1",
     "typescript": "6.0.3",
     "vitest": "4.1.7"
-  },
-  "optionalDependencies": {
-    "@emnapi/core": "1.10.0",
-    "@emnapi/runtime": "1.10.0"
   },
   "peerDependencies": {
     "@ethosagent/types": ">=0.4.0"

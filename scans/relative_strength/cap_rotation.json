@@ -1,0 +1,8 @@
+{
+  "scan_id": "cap_rotation",
+  "name": "Cap Rotation Leaders",
+  "category": "relative_strength",
+  "description": "Mid-cap stocks showing RS leadership — cap rotation signal",
+  "sql_template": "rs_rank_in_segment >= 70 AND market_cap_band = 'mid' AND rs_vs_broad > 0",
+  "tags": ["bullish", "midcap", "rotation"]
+}
