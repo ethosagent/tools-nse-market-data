@@ -78,5 +78,8 @@
     "@ethosagent/types": {
       "optional": true
     }
+  },
+  "ethos": {
+    "skills_dir": "skills"
   }
 }

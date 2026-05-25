@@ -75,6 +75,7 @@ function getStore(): MarketDataStore {
 interface BackfillArgs {
   symbols?: string;
   from_date?: string;
+  days?: number;
 }
 
 interface UpdateArgs {
@@ -146,7 +147,7 @@ const nseMarketCleanTool: Tool = {
 const nseMarketBackfillTool: Tool<BackfillArgs> = {
   name: 'nse_market_backfill',
   description:
-    'Download 1 year of daily OHLCV history for NSE stocks and store locally. One-time operation. Shows progress.',
+    'Download daily OHLCV history for NSE stocks and store locally. Defaults to all ~510 instruments and 365 days. Pass days: 1825 for 5 years. One-time operation. Shows progress.',
   toolset: 'market',
   maxResultChars: 5000,
   capabilities: {
@@ -158,18 +159,24 @@ const nseMarketBackfillTool: Tool<BackfillArgs> = {
       symbols: {
         type: 'string',
         description:
-          'Comma-separated NSE symbols (e.g. RELIANCE.NS,TCS.NS). Defaults to watchlist.',
+          'Comma-separated NSE symbols (e.g. RELIANCE.NS,TCS.NS). Omit to backfill all instruments.',
+      },
+      days: {
+        type: 'number',
+        description: 'Number of calendar days to backfill (e.g. 365, 1825). Defaults to 365.',
       },
       from_date: {
         type: 'string',
-        description: 'Start date YYYY-MM-DD. Defaults to 1 year ago.',
+        description: 'Start date YYYY-MM-DD. Overrides days if both provided.',
       },
     },
   },
   async execute(args, ctx): Promise<ToolResult> {
     const store = getStore();
+    const daysBack = args.days ?? 365;
     const fromDate =
-      args.from_date ?? new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      args.from_date ??
+      new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
     let symbols: string[];
     if (args.symbols) {
@@ -178,13 +185,11 @@ const nseMarketBackfillTool: Tool<BackfillArgs> = {
         .map((s) => s.trim())
         .filter(Boolean);
     } else {
-      const watchlist = store.watchlistList();
-      symbols = watchlist.map((e) => e.symbol);
+      symbols = store.listInstrumentSymbols();
       if (symbols.length === 0) {
         return {
           ok: false,
-          error:
-            'No symbols provided and watchlist is empty. Add symbols with nse_watchlist_add first.',
+          error: 'No instruments found. Run nse_market_backfill after loading instruments.',
           code: 'no_symbols',
         };
       }
