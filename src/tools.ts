@@ -817,6 +817,80 @@ interface BacktestArgs {
   benchmark?: string;
 }
 
+interface ComputeIndicatorsArgs {
+  symbol?: string;
+  from?: string;
+  to?: string;
+}
+
+const nseComputeIndicatorsTool: Tool<ComputeIndicatorsArgs> = {
+  name: 'nse_compute_indicators',
+  description:
+    'Compute technical indicators from OHLCV data and store in indicators_daily. Run after nse_market_backfill or nse_market_update. With no arguments, processes all symbols for all available dates. Also recomputes market breadth and sector state.',
+  toolset: 'market',
+  maxResultChars: 2000,
+  capabilities: {},
+  schema: {
+    type: 'object',
+    properties: {
+      symbol: {
+        type: 'string',
+        description: 'Single symbol to compute (e.g. RELIANCE.NS). Omit to process all.',
+      },
+      from: {
+        type: 'string',
+        description: 'Start date YYYY-MM-DD. Omit to process all available dates.',
+      },
+      to: {
+        type: 'string',
+        description: 'End date YYYY-MM-DD. Defaults to today.',
+      },
+    },
+  },
+  async execute(args, ctx): Promise<ToolResult> {
+    const store = getStore();
+
+    ctx.emit?.({
+      type: 'progress',
+      toolName: 'nse_compute_indicators',
+      message: 'Computing technical indicators…',
+      audience: 'user',
+      percent: 0,
+    });
+
+    const result = await store.computeIndicators({
+      symbol: args.symbol,
+      from: args.from,
+      to: args.to,
+    });
+
+    ctx.emit?.({
+      type: 'progress',
+      toolName: 'nse_compute_indicators',
+      message: 'Computing market breadth…',
+      audience: 'user',
+      percent: 80,
+    });
+
+    const marketResult = store.computeMarketState({ from: args.from, to: args.to });
+
+    ctx.emit?.({
+      type: 'progress',
+      toolName: 'nse_compute_indicators',
+      message: 'Computing sector state…',
+      audience: 'user',
+      percent: 90,
+    });
+
+    const sectorResult = store.computeSectorState({ from: args.from, to: args.to });
+
+    return {
+      ok: true,
+      value: `Indicators: ${result.processed} symbols, ${result.dateCount} dates computed.\nMarket state: ${marketResult.processed} dates.\nSector state: ${sectorResult.processed} dates.\n\nData is ready for scans, screening, and analysis.`,
+    };
+  },
+};
+
 const nseBacktestTool: Tool<BacktestArgs> = {
   name: 'nse_backtest',
   description:
@@ -1163,6 +1237,7 @@ export function createNseMarketDataTools(): Tool[] {
     nseInvokeSkillTool as unknown as Tool,
     nseMarketBriefTool as unknown as Tool,
     nseMarketIndicatorsTool as unknown as Tool,
+    nseComputeIndicatorsTool as unknown as Tool,
     nseWatchdogTool as unknown as Tool,
     nseBacktestTool as unknown as Tool,
     nseGetQuoteTool as unknown as Tool,

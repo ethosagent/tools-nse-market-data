@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { createNseMarketDataTools } from '../tools';
 
 describe('createNseMarketDataTools()', () => {
-  it('returns 19 tools', () => {
+  it('returns 20 tools', () => {
     const tools = createNseMarketDataTools();
-    expect(tools).toHaveLength(19);
+    expect(tools).toHaveLength(20);
   });
 
   it('all tools have required fields', () => {
@@ -33,6 +33,7 @@ describe('createNseMarketDataTools()', () => {
     expect(names).toContain('nse_invoke_skill');
     expect(names).toContain('nse_market_brief');
     expect(names).toContain('nse_market_indicators');
+    expect(names).toContain('nse_compute_indicators');
     expect(names).toContain('nse_watchdog');
     expect(names).toContain('nse_backtest');
     expect(names).toContain('nse_get_quote');
