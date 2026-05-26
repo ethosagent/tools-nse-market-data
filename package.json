@@ -83,6 +83,7 @@
     }
   },
   "ethos": {
+    "type": "plugin",
     "skills_dir": "skills"
   }
 }
