@@ -1223,6 +1223,12 @@ const nseGetBulkBlockTool: Tool<{ date?: string; symbol?: string }> = {
   },
 };
 
+export function activate(api: { registerTool(tool: unknown): void }): void {
+  for (const tool of createNseMarketDataTools()) {
+    api.registerTool(tool);
+  }
+}
+
 export function createNseMarketDataTools(): Tool[] {
   return [
     nseMarketCleanTool,
