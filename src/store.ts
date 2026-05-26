@@ -1,5 +1,6 @@
-import { mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { mkdirSync, readdirSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import Database from 'better-sqlite3';
 import { fetchOhlcv } from './fetcher';
 import {
@@ -278,6 +279,10 @@ export interface SectorStateRow {
   breadth_pct: number | null;
 }
 
+function getPackageRoot(): string {
+  return join(dirname(fileURLToPath(import.meta.url)), '..');
+}
+
 function addOneDayToDate(date: string): string {
   const d = new Date(date);
   d.setUTCDate(d.getUTCDate() + 1);
@@ -293,10 +298,45 @@ export class MarketDataStore {
     }
     this.db = new Database(dbPath);
     migrate(this.db);
+    this.seedBuiltinScans();
   }
 
   close(): void {
     this.db.close();
+  }
+
+  private seedBuiltinScans(): void {
+    const scansDir = join(getPackageRoot(), 'scans');
+    try {
+      const rows: SavedScanRow[] = [];
+      for (const entry of readdirSync(scansDir, { withFileTypes: true })) {
+        if (!entry.isDirectory()) continue;
+        for (const file of readdirSync(join(scansDir, entry.name))) {
+          if (!file.endsWith('.json')) continue;
+          const raw = readFileSync(join(scansDir, entry.name, file), 'utf-8');
+          const parsed = JSON.parse(raw) as {
+            scan_id: string;
+            name: string;
+            category?: string;
+            description?: string;
+            sql_template: string;
+            tags?: string[];
+          };
+          rows.push({
+            scan_id: parsed.scan_id,
+            name: parsed.name,
+            category: parsed.category ?? entry.name,
+            description: parsed.description ?? null,
+            sql_template: parsed.sql_template,
+            tags: parsed.tags ?? null,
+            is_builtin: 1,
+          });
+        }
+      }
+      if (rows.length > 0) this.upsertScans(rows);
+    } catch {
+      // scans/ directory absent — tolerate gracefully
+    }
   }
 
   clean(): { rowsDeleted: { ohlcv: number; watchlist: number; syncMeta: number } } {
