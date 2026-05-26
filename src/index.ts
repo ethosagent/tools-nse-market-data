@@ -8,8 +8,7 @@ export { createNseMarketDataTools, createNseMarketDataTools as createTools } fro
 
 // Ethos plugin entry point — registers all NSE tools with the agent framework.
 export async function activate(api: { registerTool(tool: unknown): void }): Promise<void> {
-  const { createNseMarketDataTools: create } = await import('./tools');
-  for (const tool of create()) {
+  for (const tool of createNseMarketDataTools()) {
     api.registerTool(tool);
   }
 }
