@@ -2,7 +2,7 @@
 // Implemented per Section 14 of tools-nse-market-data.md
 // @ethosagent/types is an optional peer dep — types re-declared locally to avoid hard import
 
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 
 // ---------------------------------------------------------------------------
 // Local type re-declarations (mirrors @ethosagent/types Tool interface)
@@ -50,7 +50,7 @@ interface Tool<TArgs = Record<string, unknown>> {
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { InstrumentSeedRow } from './schema';
+import type { InstrumentSeedRow, SavedScanRow } from './schema';
 import { MarketDataStore } from './store';
 
 function getPackageRoot(): string {
@@ -466,7 +466,7 @@ const nseRunScanTool: Tool<RunScanArgs> = {
     if (!scanRow) {
       return {
         ok: false,
-        error: `Scan '${args.scan_id}' not found. Use refresh-scans to load scan definitions.`,
+        error: `Scan '${args.scan_id}' not found. Run nse_refresh_scans to load built-in scan definitions.`,
         code: 'scan_not_found',
       };
     }
@@ -1223,6 +1223,45 @@ const nseGetBulkBlockTool: Tool<{ date?: string; symbol?: string }> = {
   },
 };
 
+const nseRefreshScansTool: Tool = {
+  name: 'nse_refresh_scans',
+  description:
+    'Reload all built-in scan definitions from the bundled scans/ directory into the local database. Run this if nse_run_scan reports a scan not found.',
+  toolset: 'market',
+  capabilities: {},
+  schema: { type: 'object', properties: {} },
+  async execute(_args, _ctx): Promise<ToolResult> {
+    const store = getStore();
+    const scansDir = join(getPackageRoot(), 'scans');
+    const rows: SavedScanRow[] = [];
+
+    try {
+      for (const entry of readdirSync(scansDir, { withFileTypes: true })) {
+        if (!entry.isDirectory()) continue;
+        for (const file of readdirSync(join(scansDir, entry.name))) {
+          if (!file.endsWith('.json')) continue;
+          const raw = readFileSync(join(scansDir, entry.name, file), 'utf-8');
+          const parsed = JSON.parse(raw) as SavedScanRow;
+          rows.push({ ...parsed, category: parsed.category ?? entry.name, is_builtin: 1 });
+        }
+      }
+    } catch (err) {
+      return {
+        ok: false,
+        error: `Could not read scans directory at ${scansDir}: ${(err as Error).message}`,
+        code: 'scan_dir_error',
+      };
+    }
+
+    if (rows.length === 0) {
+      return { ok: false, error: `No scan files found at ${scansDir}`, code: 'no_scans' };
+    }
+
+    const result = store.upsertScans(rows);
+    return { ok: true, value: `Loaded ${result.upserted} scan definitions.` };
+  },
+};
+
 export function activate(api: { registerTool(tool: unknown): void }): void {
   for (const tool of createNseMarketDataTools()) {
     api.registerTool(tool);
@@ -1251,5 +1290,6 @@ export function createNseMarketDataTools(): Tool[] {
     nseGetFiiDiiTool as unknown as Tool,
     nseGetCorporateActionsTool as unknown as Tool,
     nseGetBulkBlockTool as unknown as Tool,
+    nseRefreshScansTool,
   ];
 }
