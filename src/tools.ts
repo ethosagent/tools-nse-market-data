@@ -503,6 +503,7 @@ const nseRunScanTool: Tool<RunScanArgs> = {
              id.rs_rank_in_segment, id.return_1m, id.tf_alignment_score
       FROM indicators_daily id
       JOIN instruments i ON id.symbol = i.symbol
+      LEFT JOIN ohlcv_daily o ON id.symbol = o.symbol AND id.date = o.date
       WHERE id.date = ? AND i.instrument_type = 'equity' AND i.is_active = 1
       AND (${scanRow.sql_template})
       ${universeClause}
