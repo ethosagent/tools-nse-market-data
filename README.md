@@ -167,6 +167,18 @@ for (const tool of createNseMarketDataTools()) tools.register(tool);
 - nse_market_screen
 ```
 
+**Step 4 — First-time data setup**
+
+After the plugin is installed, tell your agent:
+
+> Initialize my NSE market data for the last 5 years and fill all indicators for this data
+
+The agent will backfill OHLCV history for all Nifty 50 symbols and compute RSI, EMA, SMA, and MACD indicators. This takes a few minutes on first run.
+
+Then set up a daily sync so data stays current — tell your agent:
+
+> Set up a daily cron at 6:30 pm IST to update my NSE market data
+
 ---
 
 ## Tool reference
