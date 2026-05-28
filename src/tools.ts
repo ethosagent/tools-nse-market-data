@@ -1,47 +1,10 @@
 // Ethos Tool wrappers around MarketDataStore
 // Implemented per Section 14 of tools-nse-market-data.md
-// @ethosagent/types is an optional peer dep — types re-declared locally to avoid hard import
 
 import { readdirSync, readFileSync } from 'node:fs';
 
-// ---------------------------------------------------------------------------
-// Local type re-declarations (mirrors @ethosagent/types Tool interface)
-// ---------------------------------------------------------------------------
-
-type ToolResult = { ok: true; value: string } | { ok: false; error: string; code: string };
-
-interface ToolContext {
-  abortSignal?: AbortSignal;
-  secretsResolver?: { get(ref: string): Promise<string | null> };
-  scopedFetch?: { fetch(url: string, init?: RequestInit): Promise<Response> };
-  emit?: (event: {
-    type: 'progress';
-    toolName: string;
-    message: string;
-    audience?: 'user' | 'internal';
-    percent?: number;
-  }) => void;
-}
-
-interface Tool<TArgs = Record<string, unknown>> {
-  name: string;
-  description: string;
-  toolset: string;
-  maxResultChars?: number;
-  outputIsUntrusted?: boolean;
-  capabilities?: {
-    network?: { allowedHosts: string[] };
-    secrets?: string[];
-    fs?: { read?: string[]; write?: string[] };
-  };
-  isAvailable?(): boolean;
-  schema: {
-    type: 'object';
-    properties: Record<string, unknown>;
-    required?: string[];
-  };
-  execute(args: TArgs, ctx: ToolContext): Promise<ToolResult>;
-}
+import type { EthosPlugin, EthosPluginApi } from '@ethosagent/plugin-sdk';
+import type { Tool, ToolResult } from '@ethosagent/types';
 
 // ---------------------------------------------------------------------------
 // Singleton store
@@ -135,6 +98,7 @@ const nseMarketCleanTool: Tool = {
     'Delete all market data from the local SQLite database. Use before a fresh backfill.',
   toolset: 'market',
   capabilities: {},
+  requiresApproval: true,
   schema: { type: 'object', properties: {} },
   async execute(_args, _ctx): Promise<ToolResult> {
     const result = getStore().clean();
@@ -151,6 +115,7 @@ const nseMarketBackfillTool: Tool<BackfillArgs> = {
     'Download daily OHLCV history for NSE stocks and store locally. Defaults to all ~510 instruments and 365 days. Pass days: 1825 for 5 years. One-time operation. Shows progress.',
   toolset: 'market',
   maxResultChars: 5000,
+  requiresApproval: true,
   capabilities: {
     network: { allowedHosts: ['query1.finance.yahoo.com'] },
   },
@@ -200,7 +165,7 @@ const nseMarketBackfillTool: Tool<BackfillArgs> = {
         return {
           ok: false,
           error: 'Could not load instruments from data/instruments.json.',
-          code: 'no_symbols',
+          code: 'not_available',
         };
       }
     }
@@ -360,6 +325,7 @@ const nseMarketHistoryTool: Tool<HistoryArgs> = {
   toolset: 'market',
   capabilities: {},
   maxResultChars: 30000,
+  cache: { ttlMs: 300_000 },
   schema: {
     type: 'object',
     properties: {
@@ -378,7 +344,7 @@ const nseMarketHistoryTool: Tool<HistoryArgs> = {
       return {
         ok: false,
         error: `No data for ${args.symbol}. Run nse_market_backfill first.`,
-        code: 'no_data',
+        code: 'not_available',
       };
     }
     const header = 'Date        Open      High      Low       Close     Volume';
@@ -396,6 +362,7 @@ const nseMarketScreenTool: Tool<ScreenArgs> = {
   toolset: 'market',
   capabilities: {},
   maxResultChars: 10000,
+  cache: { ttlMs: 120_000 },
   schema: {
     type: 'object',
     properties: {
@@ -467,7 +434,7 @@ const nseRunScanTool: Tool<RunScanArgs> = {
       return {
         ok: false,
         error: `Scan '${args.scan_id}' not found. Run nse_refresh_scans to load built-in scan definitions.`,
-        code: 'scan_not_found',
+        code: 'not_available',
       };
     }
 
@@ -535,7 +502,7 @@ const nseRunScanTool: Tool<RunScanArgs> = {
       return {
         ok: false,
         error: `Scan query failed: ${(err as Error).message}`,
-        code: 'query_error',
+        code: 'execution_failed',
       };
     }
 
@@ -608,7 +575,7 @@ const nseInvokeSkillTool: Tool<InvokeSkillArgs> = {
       return {
         ok: false,
         error: `Skill '${skillId}' not found. Available skills: stock_deep_analysis, trade_setup, stock_scoring, stage_analysis, market_regime, breadth_narrative, sector_rotation, morning_brief, scan_explain.`,
-        code: 'skill_not_found',
+        code: 'not_available',
       };
     }
 
@@ -634,7 +601,7 @@ const nseInvokeSkillTool: Tool<InvokeSkillArgs> = {
         return {
           ok: false,
           error: `Skill '${skillId}' requires a 'symbol' parameter.`,
-          code: 'missing_param',
+          code: 'input_invalid',
         };
       }
       // Query last 90 days of indicators
@@ -700,6 +667,7 @@ const nseMarketBriefTool: Tool<MarketBriefArgs> = {
   toolset: 'market',
   capabilities: {},
   maxResultChars: 15000,
+  cache: { ttlMs: 300_000 },
   schema: {
     type: 'object',
     properties: {
@@ -737,14 +705,14 @@ const nseMarketIndicatorsTool: Tool<IndicatorsArgs> = {
   },
   async execute(args, _ctx): Promise<ToolResult> {
     if (!args.symbol) {
-      return { ok: false, error: 'symbol is required', code: 'missing_args' };
+      return { ok: false, error: 'symbol is required', code: 'input_invalid' };
     }
     const rows = getStore().getIndicators(args.symbol, args.days ?? 63);
     if (rows.length === 0) {
       return {
         ok: false,
         error: `No indicator data for ${args.symbol}. Run compute-indicators first.`,
-        code: 'no_data',
+        code: 'not_available',
       };
     }
     return { ok: true, value: JSON.stringify(rows, null, 2) };
@@ -787,7 +755,7 @@ const nseWatchdogTool: Tool<WatchdogArgs> = {
   },
   async execute(args, ctx): Promise<ToolResult> {
     if (!args.symbol || !args.condition) {
-      return { ok: false, error: 'symbol and condition are required', code: 'missing_args' };
+      return { ok: false, error: 'symbol and condition are required', code: 'input_invalid' };
     }
 
     ctx.emit?.({
@@ -927,13 +895,13 @@ const nseBacktestTool: Tool<BacktestArgs> = {
   },
   async execute(args, ctx): Promise<ToolResult> {
     if (!args.from || !args.to) {
-      return { ok: false, error: 'from and to dates are required', code: 'missing_args' };
+      return { ok: false, error: 'from and to dates are required', code: 'input_invalid' };
     }
     if (!args.scan_id && !args.screen) {
       return {
         ok: false,
         error: 'Provide either scan_id or screen condition',
-        code: 'missing_args',
+        code: 'input_invalid',
       };
     }
 
@@ -976,6 +944,7 @@ const nseGetQuoteTool: Tool<{ symbol: string; exchange?: string }> = {
     'Get EOD quote snapshot for a symbol: latest close, change %, OHLCV, 52w range, RSI, stage, sniper score, composite score. Source: indicators_daily + ohlcv_daily.',
   toolset: 'market',
   capabilities: {},
+  cache: { ttlMs: 60_000 },
   schema: {
     type: 'object',
     properties: {
@@ -990,16 +959,16 @@ const nseGetQuoteTool: Tool<{ symbol: string; exchange?: string }> = {
   },
   async execute(args): Promise<ToolResult> {
     if (!args.symbol) {
-      return { ok: false, error: 'symbol is required', code: 'missing_args' };
+      return { ok: false, error: 'symbol is required', code: 'input_invalid' };
     }
     const store = getStore();
     const ohlcv = store.getHistory(args.symbol, 2);
     if (ohlcv.length === 0) {
-      return { ok: false, error: `No data for ${args.symbol}`, code: 'no_data' };
+      return { ok: false, error: `No data for ${args.symbol}`, code: 'not_available' };
     }
     const latest = ohlcv.at(-1);
     if (!latest) {
-      return { ok: false, error: `No data for ${args.symbol}`, code: 'no_data' };
+      return { ok: false, error: `No data for ${args.symbol}`, code: 'not_available' };
     }
     const prev = ohlcv.length > 1 ? ohlcv.at(-2) : null;
     const change_pct =
@@ -1064,6 +1033,7 @@ const nseGetIndexTool: Tool<{ index: string }> = {
     'Get latest snapshot for a major NSE/BSE index (NIFTY50, BANKNIFTY, SENSEX, etc). Returns level, change%, 52w range, stage, sniper_score, RSI. Source: ohlcv_daily + indicators_daily.',
   toolset: 'market',
   capabilities: {},
+  cache: { ttlMs: 60_000 },
   schema: {
     type: 'object',
     properties: {
@@ -1077,11 +1047,11 @@ const nseGetIndexTool: Tool<{ index: string }> = {
   },
   async execute(args): Promise<ToolResult> {
     if (!args.index) {
-      return { ok: false, error: 'index is required', code: 'missing_args' };
+      return { ok: false, error: 'index is required', code: 'input_invalid' };
     }
     const symbol = INDEX_MAP[args.index];
     if (!symbol) {
-      return { ok: false, error: `Unknown index: ${args.index}`, code: 'unknown_index' };
+      return { ok: false, error: `Unknown index: ${args.index}`, code: 'input_invalid' };
     }
     const store = getStore();
     const ohlcv = store.getHistory(symbol, 2);
@@ -1090,7 +1060,7 @@ const nseGetIndexTool: Tool<{ index: string }> = {
       return {
         ok: false,
         error: `No data for index ${args.index} (${symbol})`,
-        code: 'no_data',
+        code: 'not_available',
       };
     }
     const prev = ohlcv.length > 1 ? ohlcv.at(-2) : null;
@@ -1131,6 +1101,7 @@ const nseGetFiiDiiTool: Tool<{ date?: string; days?: number }> = {
     'Get FII/DII institutional net flows by date. Returns pre-fetched data from fii_dii_daily table. Use fetch-fii-dii CLI command to populate.',
   toolset: 'market',
   capabilities: { network: { allowedHosts: ['www.nseindia.com'] } },
+  cache: { ttlMs: 3_600_000 },
   schema: {
     type: 'object',
     properties: {
@@ -1148,7 +1119,7 @@ const nseGetFiiDiiTool: Tool<{ date?: string; days?: number }> = {
       return {
         ok: false,
         error: 'No FII/DII data. Run: nse-market-data fetch-fii-dii',
-        code: 'no_data',
+        code: 'not_available',
       };
     }
     return { ok: true, value: JSON.stringify(rows, null, 2) };
@@ -1183,14 +1154,14 @@ const nseGetCorporateActionsTool: Tool<{
   },
   async execute(args): Promise<ToolResult> {
     if (!args.symbol) {
-      return { ok: false, error: 'symbol is required', code: 'missing_args' };
+      return { ok: false, error: 'symbol is required', code: 'input_invalid' };
     }
     const rows = getStore().getCorporateActions(args.symbol, args.from_date, args.to_date);
     if (rows.length === 0) {
       return {
         ok: false,
         error: `No corporate actions for ${args.symbol}`,
-        code: 'no_data',
+        code: 'not_available',
       };
     }
     return { ok: true, value: JSON.stringify(rows, null, 2) };
@@ -1218,7 +1189,7 @@ const nseGetBulkBlockTool: Tool<{ date?: string; symbol?: string }> = {
   async execute(args): Promise<ToolResult> {
     const rows = getStore().getBulkBlockDeals({ date: args.date, symbol: args.symbol });
     if (rows.length === 0) {
-      return { ok: false, error: 'No bulk/block deal data found', code: 'no_data' };
+      return { ok: false, error: 'No bulk/block deal data found', code: 'not_available' };
     }
     return { ok: true, value: JSON.stringify(rows, null, 2) };
   },
@@ -1250,12 +1221,12 @@ const nseRefreshScansTool: Tool = {
       return {
         ok: false,
         error: `Could not read scans directory at ${scansDir}: ${(err as Error).message}`,
-        code: 'scan_dir_error',
+        code: 'execution_failed',
       };
     }
 
     if (rows.length === 0) {
-      return { ok: false, error: `No scan files found at ${scansDir}`, code: 'no_scans' };
+      return { ok: false, error: `No scan files found at ${scansDir}`, code: 'not_available' };
     }
 
     const result = store.upsertScans(rows);
@@ -1263,34 +1234,46 @@ const nseRefreshScansTool: Tool = {
   },
 };
 
-export function activate(api: { registerTool(tool: unknown): void }): void {
+/** v2 plugin entry point — registers all tools via EthosPluginApi. */
+export const plugin: EthosPlugin = {
+  activate(api: EthosPluginApi) {
+    for (const tool of createNseMarketDataTools()) {
+      api.registerTool(tool);
+    }
+  },
+};
+
+/** Backward-compatible activate function for v1 hosts. */
+export function activate(api: { registerTool(tool: Tool): void }): void {
   for (const tool of createNseMarketDataTools()) {
     api.registerTool(tool);
   }
 }
 
 export function createNseMarketDataTools(): Tool[] {
-  return [
-    nseMarketCleanTool,
-    nseMarketBackfillTool,
-    nseMarketUpdateTool,
-    nseWatchlistAddTool as unknown as Tool,
-    nseWatchlistRemoveTool as unknown as Tool,
-    nseWatchlistShowTool as unknown as Tool,
-    nseMarketHistoryTool as unknown as Tool,
-    nseMarketScreenTool as unknown as Tool,
-    nseRunScanTool as unknown as Tool,
-    nseInvokeSkillTool as unknown as Tool,
-    nseMarketBriefTool as unknown as Tool,
-    nseMarketIndicatorsTool as unknown as Tool,
-    nseComputeIndicatorsTool as unknown as Tool,
-    nseWatchdogTool as unknown as Tool,
-    nseBacktestTool as unknown as Tool,
-    nseGetQuoteTool as unknown as Tool,
-    nseGetIndexTool as unknown as Tool,
-    nseGetFiiDiiTool as unknown as Tool,
-    nseGetCorporateActionsTool as unknown as Tool,
-    nseGetBulkBlockTool as unknown as Tool,
+  // Tool<TArgs> is contravariant on TArgs — typed tools must widen to Tool<unknown>.
+  const tools: Tool[] = [
+    nseMarketCleanTool as Tool,
+    nseMarketBackfillTool as Tool,
+    nseMarketUpdateTool as Tool,
+    nseWatchlistAddTool as Tool,
+    nseWatchlistRemoveTool as Tool,
+    nseWatchlistShowTool as Tool,
+    nseMarketHistoryTool as Tool,
+    nseMarketScreenTool as Tool,
+    nseRunScanTool as Tool,
+    nseInvokeSkillTool as Tool,
+    nseMarketBriefTool as Tool,
+    nseMarketIndicatorsTool as Tool,
+    nseComputeIndicatorsTool as Tool,
+    nseWatchdogTool as Tool,
+    nseBacktestTool as Tool,
+    nseGetQuoteTool as Tool,
+    nseGetIndexTool as Tool,
+    nseGetFiiDiiTool as Tool,
+    nseGetCorporateActionsTool as Tool,
+    nseGetBulkBlockTool as Tool,
     nseRefreshScansTool,
   ];
+  return tools;
 }

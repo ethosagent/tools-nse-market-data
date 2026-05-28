@@ -8,4 +8,5 @@ export {
   activate,
   createNseMarketDataTools,
   createNseMarketDataTools as createTools,
+  plugin,
 } from './tools';

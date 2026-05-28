@@ -68,6 +68,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.15",
+    "@ethosagent/plugin-sdk": "file:../ethos/packages/plugin-sdk",
+    "@ethosagent/types": "file:../ethos/packages/types",
     "@types/better-sqlite3": "7.6.13",
     "@types/node": "22.19.19",
     "tsup": "8.5.1",
@@ -75,9 +77,13 @@
     "vitest": "4.1.7"
   },
   "peerDependencies": {
+    "@ethosagent/plugin-sdk": ">=0.4.0",
     "@ethosagent/types": ">=0.4.0"
   },
   "peerDependenciesMeta": {
+    "@ethosagent/plugin-sdk": {
+      "optional": true
+    },
     "@ethosagent/types": {
       "optional": true
     }
@@ -85,6 +91,10 @@
   "ethos": {
     "id": "tools-nse-market-data",
     "type": "plugin",
-    "skills_dir": "skills"
+    "pluginContractMajor": 2,
+    "skills_dir": "skills",
+    "priority": 0,
+    "dependencies": [],
+    "credentials": []
   }
 }
