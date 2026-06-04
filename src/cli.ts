@@ -83,6 +83,8 @@ Commands:
   watchlist show [--list NAME]
   history SYMBOL [--days N]
                             Show OHLCV history from local DB
+  scan <scan_id>            Run a saved scan by ID and print results
+  scan --list               List all saved scans with ID, category, and description
   screen [--list NAME] [--volume-surge N] [--near-high N]
                             Scan watchlist against technical criteria
   quote SYMBOL              Live price from Yahoo Finance
@@ -280,6 +282,71 @@ Options:
             );
           }
         }
+        break;
+      }
+
+      // -----------------------------------------------------------------------
+      case 'scan': {
+        // scan --list
+        if (hasFlag(args, '--list') || args[1] === '--list') {
+          const scans = store.listScans();
+          if (scans.length === 0) {
+            console.log('No scans loaded. Run: nse-market-data refresh-scans');
+          } else {
+            console.log(`${'ID'.padEnd(35)} ${'Category'.padEnd(20)} Name`);
+            console.log('-'.repeat(90));
+            for (const s of scans) {
+              console.log(`${s.scan_id.padEnd(35)} ${s.category.padEnd(20)} ${s.name}`);
+            }
+          }
+          break;
+        }
+
+        // scan <id>
+        const scanId = args[1];
+        if (!scanId) {
+          console.error('Usage: nse-market-data scan <scan_id>  |  nse-market-data scan --list');
+          process.exit(1);
+        }
+
+        const scanRow = store.getScan(scanId);
+
+        if (!scanRow) {
+          console.error(`Unknown scan: '${scanId}'. Run scan --list to see available scans.`);
+          process.exit(1);
+        }
+
+        console.log(`\n${scanRow.name}`);
+        if (scanRow.description) console.log(scanRow.description);
+        console.log('');
+
+        let rows: Record<string, unknown>[];
+        try {
+          rows = store.runScan(scanRow.sql_template);
+        } catch (e) {
+          console.error(`Scan query failed: ${(e as Error).message}`);
+          process.exit(1);
+        }
+
+        if (rows.length === 0) {
+          console.log('No results.');
+          break;
+        }
+
+        // Print table
+        const cols = Object.keys(rows[0] as Record<string, unknown>);
+        const widths = cols.map((c) =>
+          Math.min(20, Math.max(c.length, ...rows.map((r) => String(r[c] ?? '').length))),
+        );
+        const header = cols.map((c, i) => c.padEnd(widths[i] as number)).join('  ');
+        console.log(header);
+        console.log('-'.repeat(header.length));
+        for (const row of rows) {
+          console.log(
+            cols.map((c, i) => String(row[c] ?? '').padEnd(widths[i] as number)).join('  '),
+          );
+        }
+        console.log(`\n${rows.length} result(s)`);
         break;
       }
 
