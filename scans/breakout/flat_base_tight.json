@@ -1,0 +1,8 @@
+{
+  "scan_id": "flat_base_tight",
+  "name": "Tight Flat Bases",
+  "description": "Stocks in tight flat bases (<=15% range, 5+ weeks). Sorted tightest first.",
+  "category": "breakout",
+  "tags": ["pattern", "flat", "tight"],
+  "sql_template": "SELECT symbol, close, pivot_price, buy_range_top, base_length_weeks, base_depth_pct, base_quality_score, sniper_score, stage FROM indicators_daily WHERE date = (SELECT MAX(date) FROM indicators_daily) AND base_pattern = 'flat_base' AND stage IN (1, 2) AND base_quality_score >= 50 ORDER BY base_depth_pct ASC, base_quality_score DESC LIMIT 30"
+}

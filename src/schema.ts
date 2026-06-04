@@ -188,6 +188,16 @@ export const SQL_CREATE_INDICATORS_DAILY = `
     setup_type          TEXT,
     setup_quality       INTEGER,
 
+    -- Chart Patterns
+    base_pattern        TEXT,
+    pivot_price         REAL,
+    buy_range_top       REAL,
+    base_start_date     TEXT,
+    base_length_weeks   INTEGER,
+    base_depth_pct      REAL,
+    base_quality_score  INTEGER,
+    near_pivot          INTEGER,
+
     PRIMARY KEY (symbol, date)
   ) STRICT;
 `;
@@ -383,6 +393,15 @@ export function migrate(db: Database.Database): void {
     // Setup Classification
     ['setup_type', 'TEXT'],
     ['setup_quality', 'INTEGER'],
+    // Chart Patterns
+    ['base_pattern', 'TEXT'],
+    ['pivot_price', 'REAL'],
+    ['buy_range_top', 'REAL'],
+    ['base_start_date', 'TEXT'],
+    ['base_length_weeks', 'INTEGER'],
+    ['base_depth_pct', 'REAL'],
+    ['base_quality_score', 'INTEGER'],
+    ['near_pivot', 'INTEGER'],
   ];
   for (const [col, def] of indicatorsCols) {
     addColumnIfNotExists(db, 'indicators_daily', col, def);
