@@ -164,13 +164,13 @@
   {
     "index_symbol": "^NSEI",
     "member_symbol": "POWERGRID.NS",
-    "weight": 1.0,
+    "weight": 1,
     "as_of_date": "2026-01-01"
   },
   {
     "index_symbol": "^NSEI",
     "member_symbol": "TATASTEEL.NS",
-    "weight": 1.0,
+    "weight": 1,
     "as_of_date": "2026-01-01"
   },
   {
@@ -464,13 +464,13 @@
   {
     "index_symbol": "^CNX100",
     "member_symbol": "POWERGRID.NS",
-    "weight": 1.0,
+    "weight": 1,
     "as_of_date": "2026-01-01"
   },
   {
     "index_symbol": "^CNX100",
     "member_symbol": "TATASTEEL.NS",
-    "weight": 1.0,
+    "weight": 1,
     "as_of_date": "2026-01-01"
   },
   {
@@ -5362,5 +5362,305 @@
     "member_symbol": "TATAINVEST.NS",
     "weight": null,
     "as_of_date": "2026-01-01"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "HDFCBANK.NS",
+    "weight": 11.2,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "RELIANCE.NS",
+    "weight": 9.5,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "ICICIBANK.NS",
+    "weight": 7.1,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "INFY.NS",
+    "weight": 5.2,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "TCS.NS",
+    "weight": 4.8,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "BHARTIARTL.NS",
+    "weight": 3.9,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "HINDUNILVR.NS",
+    "weight": 3.4,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "AXISBANK.NS",
+    "weight": 3.2,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "KOTAKBANK.NS",
+    "weight": 3.1,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "ITC.NS",
+    "weight": 2.9,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "SBIN.NS",
+    "weight": 2.8,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "LT.NS",
+    "weight": 2.7,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "BAJFINANCE.NS",
+    "weight": 2.5,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "HCLTECH.NS",
+    "weight": 2.3,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "ADANIENT.NS",
+    "weight": 2.1,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "SUNPHARMA.NS",
+    "weight": 1.9,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "MARUTI.NS",
+    "weight": 1.8,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "TATAMOTORS.NS",
+    "weight": 1.7,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "WIPRO.NS",
+    "weight": 1.6,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "M&M.NS",
+    "weight": 1.5,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "ONGC.NS",
+    "weight": 1.4,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "NTPC.NS",
+    "weight": 1.4,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "ASIANPAINT.NS",
+    "weight": 1.3,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "TECHM.NS",
+    "weight": 1.2,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "BAJAJFINSV.NS",
+    "weight": 1.2,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "TITAN.NS",
+    "weight": 1.1,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "JSWSTEEL.NS",
+    "weight": 1.1,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "POWERGRID.NS",
+    "weight": 1,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "TATASTEEL.NS",
+    "weight": 1,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "ADANIPORTS.NS",
+    "weight": 0.9,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "ULTRACEMCO.NS",
+    "weight": 0.9,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "NESTLEIND.NS",
+    "weight": 0.9,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "HINDALCO.NS",
+    "weight": 0.8,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "DRREDDY.NS",
+    "weight": 0.8,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "INDUSINDBK.NS",
+    "weight": 0.8,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "BPCL.NS",
+    "weight": 0.7,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "HEROMOTOCO.NS",
+    "weight": 0.7,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "CIPLA.NS",
+    "weight": 0.7,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "APOLLOHOSP.NS",
+    "weight": 0.7,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "BAJAJ-AUTO.NS",
+    "weight": 0.6,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "EICHERMOT.NS",
+    "weight": 0.6,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "COALINDIA.NS",
+    "weight": 0.6,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "BRITANNIA.NS",
+    "weight": 0.5,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "GRASIM.NS",
+    "weight": 0.5,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "DIVISLAB.NS",
+    "weight": 0.5,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "TATACONSUM.NS",
+    "weight": 0.5,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "SBILIFE.NS",
+    "weight": 0.5,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "HDFCLIFE.NS",
+    "weight": 0.4,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "UPL.NS",
+    "weight": 0.4,
+    "as_of_date": "2026-06-04"
+  },
+  {
+    "index_symbol": "^GIFTNIFTY",
+    "member_symbol": "SHRIRAMFIN.NS",
+    "weight": 0.4,
+    "as_of_date": "2026-06-04"
   }
 ]
