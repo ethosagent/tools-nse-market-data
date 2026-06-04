@@ -4,5 +4,5 @@
   "description": "Stocks forming a Double Bottom (W-pattern). Quality >= 50.",
   "category": "breakout",
   "tags": ["pattern", "double_bottom"],
-  "sql_template": "SELECT symbol, close, pivot_price, buy_range_top, base_length_weeks, base_depth_pct, base_quality_score, sniper_score, stage FROM indicators_daily WHERE date = (SELECT MAX(date) FROM indicators_daily) AND base_pattern = 'double_bottom' AND base_quality_score >= 50 ORDER BY base_quality_score DESC LIMIT 30"
+  "sql_template": "SELECT id.symbol, o.close, id.pivot_price, id.buy_range_top, id.base_length_weeks, id.base_depth_pct, id.base_quality_score, id.sniper_score, id.stage FROM indicators_daily id JOIN ohlcv_daily o ON id.symbol = o.symbol AND id.date = o.date WHERE id.date = (SELECT MAX(date) FROM indicators_daily) AND id.base_pattern = 'double_bottom' AND id.base_quality_score >= 50 ORDER BY id.base_quality_score DESC LIMIT 30"
 }

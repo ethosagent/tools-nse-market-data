@@ -688,6 +688,58 @@ export class MarketDataStore {
     return { upserted: scans.length };
   }
 
+  listScans(): Array<{
+    scan_id: string;
+    name: string;
+    category: string;
+    description: string | null;
+  }> {
+    return this.db
+      .prepare(
+        'SELECT scan_id, name, category, description FROM saved_scans ORDER BY category, scan_id',
+      )
+      .all() as Array<{
+      scan_id: string;
+      name: string;
+      category: string;
+      description: string | null;
+    }>;
+  }
+
+  getScan(
+    scanId: string,
+  ):
+    | { scan_id: string; name: string; description: string | null; sql_template: string }
+    | undefined {
+    return this.db
+      .prepare('SELECT scan_id, name, description, sql_template FROM saved_scans WHERE scan_id = ?')
+      .get(scanId) as
+      | { scan_id: string; name: string; description: string | null; sql_template: string }
+      | undefined;
+  }
+
+  runScan(sqlTemplate: string): Record<string, unknown>[] {
+    const trimmed = sqlTemplate.trimStart();
+    if (/^select\s/i.test(trimmed)) {
+      return this.db.prepare(sqlTemplate).all() as Record<string, unknown>[];
+    }
+    // WHERE fragment — wrap in a standard SELECT with latest-date filter
+    const wrapped = `
+    SELECT id.symbol, o.close, id.stage, id.sniper_score, id.composite_score,
+           id.setup_type, id.rvol, id.rsi_14, id.base_pattern, id.base_quality_score
+    FROM indicators_daily id
+    JOIN ohlcv_daily o ON id.symbol = o.symbol AND id.date = o.date
+    JOIN instruments i ON id.symbol = i.symbol
+    WHERE id.date = (SELECT MAX(date) FROM indicators_daily)
+      AND i.instrument_type = 'equity'
+      AND i.is_active = 1
+      AND (${sqlTemplate})
+    ORDER BY id.sniper_score DESC
+    LIMIT 50
+  `;
+    return this.db.prepare(wrapped).all() as Record<string, unknown>[];
+  }
+
   listInstrumentSymbols(): string[] {
     const rows = this.db.prepare('SELECT symbol FROM instruments').all() as Array<{
       symbol: string;
