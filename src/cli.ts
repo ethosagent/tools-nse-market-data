@@ -9,7 +9,6 @@ import { fetchBulkBlockDeals, fetchCorporateActions, fetchFiiDii } from './nse-f
 import type { IndexConstituentSeedRow, InstrumentSeedRow, SavedScanRow } from './schema';
 import type { SyncResult } from './store';
 import { MarketDataStore } from './store';
-import { NSE_NIFTY50 } from './symbols';
 
 function getPackageRoot(): string {
   // dist/cli.js is one level below package root
@@ -132,7 +131,7 @@ Options:
         let symbols: string[];
 
         if (hasFlag(args, '--all')) {
-          symbols = NSE_NIFTY50;
+          symbols = store.getActiveInstrumentsByType('equity').map((i) => i.symbol);
         } else {
           const symbolsFlag = getFlag(args, '--symbols');
           if (symbolsFlag) {
