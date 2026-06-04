@@ -1,0 +1,8 @@
+{
+  "scan_id": "cup_with_handle",
+  "name": "Cup with Handle Setups",
+  "description": "Stage 2 stocks forming a Cup with Handle. Quality >= 55.",
+  "category": "breakout",
+  "tags": ["pattern", "cup", "handle"],
+  "sql_template": "SELECT symbol, close, pivot_price, buy_range_top, base_length_weeks, base_depth_pct, base_quality_score, sniper_score, stage FROM indicators_daily WHERE date = (SELECT MAX(date) FROM indicators_daily) AND base_pattern = 'cup_with_handle' AND stage = 2 AND base_quality_score >= 55 ORDER BY base_quality_score DESC LIMIT 30"
+}

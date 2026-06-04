@@ -917,7 +917,7 @@ export function computeEmaSlope(ema: number[], lookback = 10): number[] {
   return result;
 }
 
-type OhlcvRow = {
+export type OhlcvRow = {
   date: string;
   open: number;
   high: number;

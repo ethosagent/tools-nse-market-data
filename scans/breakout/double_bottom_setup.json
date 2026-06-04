@@ -1,0 +1,8 @@
+{
+  "scan_id": "double_bottom_setup",
+  "name": "Double Bottom Setups",
+  "description": "Stocks forming a Double Bottom (W-pattern). Quality >= 50.",
+  "category": "breakout",
+  "tags": ["pattern", "double_bottom"],
+  "sql_template": "SELECT symbol, close, pivot_price, buy_range_top, base_length_weeks, base_depth_pct, base_quality_score, sniper_score, stage FROM indicators_daily WHERE date = (SELECT MAX(date) FROM indicators_daily) AND base_pattern = 'double_bottom' AND base_quality_score >= 50 ORDER BY base_quality_score DESC LIMIT 30"
+}

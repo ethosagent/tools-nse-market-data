@@ -34,6 +34,7 @@ import {
   computeWilliamsR,
   detectCandlePatterns,
 } from './indicators';
+import { detectChartPattern } from './patterns';
 import type {
   BulkBlockDealDbRow,
   CorporateActionDbRow,
@@ -161,6 +162,14 @@ export interface IndicatorRow {
   composite_grade: string | null;
   setup_type: string | null;
   setup_quality: number | null;
+  base_pattern?: string | null;
+  pivot_price?: number | null;
+  buy_range_top?: number | null;
+  base_start_date?: string | null;
+  base_length_weeks?: number | null;
+  base_depth_pct?: number | null;
+  base_quality_score?: number | null;
+  near_pivot?: number | null;
 }
 
 export interface MarketStateRow {
@@ -1720,8 +1729,9 @@ export class MarketDataStore {
        pct_from_ema20, pct_from_ema50, pct_from_ema200, price_percentile_52w, candle_pattern,
        ema_20_weekly, ema_50_weekly, close_vs_ema20w, close_vs_ema50w, rsi_14_weekly,
        macd_hist_weekly, ema_10_monthly, close_vs_ema10m, tf_alignment_score, stage,
-       sniper_score, sniper_verdict, composite_score, composite_grade, setup_type, setup_quality)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+       sniper_score, sniper_verdict, composite_score, composite_grade, setup_type, setup_quality,
+       base_pattern, pivot_price, buy_range_top, base_start_date, base_length_weeks, base_depth_pct, base_quality_score, near_pivot)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `;
     const upsertStmt = this.db.prepare(upsertSql);
 
@@ -1786,6 +1796,27 @@ export class MarketDataStore {
       );
 
       if (rows.length === 0) continue;
+
+      // Pattern detection — latest row only
+      const latestRow = rows[rows.length - 1];
+      if (latestRow) {
+        const volAvg20 = latestRow.vol_sma_20 ?? 0;
+        const patternResult = detectChartPattern(ohlcvRows, volAvg20);
+        latestRow.base_pattern = patternResult.pattern;
+        latestRow.pivot_price = patternResult.pivot_price ?? null;
+        latestRow.buy_range_top = patternResult.buy_range_top ?? null;
+        latestRow.base_start_date = patternResult.base_start_date ?? null;
+        latestRow.base_length_weeks = patternResult.base_length_weeks || null;
+        latestRow.base_depth_pct = patternResult.depth_pct || null;
+        latestRow.base_quality_score = patternResult.quality_score || null;
+        const latestClose = ohlcvRows[ohlcvRows.length - 1]?.close ?? 0;
+        if (latestRow.pivot_price && latestClose) {
+          const dist = (latestRow.pivot_price - latestClose) / latestRow.pivot_price;
+          latestRow.near_pivot = dist >= 0 && dist <= 0.05 ? 1 : 0;
+        } else {
+          latestRow.near_pivot = 0;
+        }
+      }
 
       // Batch upsert in a transaction
       const insertTx = this.db.transaction((items: IndicatorRow[]) => {
@@ -1872,6 +1903,14 @@ export class MarketDataStore {
             r.composite_grade,
             r.setup_type,
             r.setup_quality,
+            r.base_pattern ?? null,
+            r.pivot_price ?? null,
+            r.buy_range_top ?? null,
+            r.base_start_date ?? null,
+            r.base_length_weeks ?? null,
+            r.base_depth_pct ?? null,
+            r.base_quality_score ?? null,
+            r.near_pivot ?? null,
           );
           datesProcessed.add(r.date);
         }
