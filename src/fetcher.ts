@@ -124,7 +124,10 @@ export async function fetchOhlcv(
   toDate: string,
 ): Promise<OhlcvRow[]> {
   const period1 = Math.floor(new Date(fromDate).getTime() / 1000);
-  const period2 = Math.floor(new Date(toDate).getTime() / 1000);
+  // Use current time as period2 so today's candle is always included regardless of
+  // what time of day the fetch runs. Yahoo timestamps NSE daily candles at ~03:45 UTC
+  // (9:15 AM IST open), so a fixed midnight period2 would exclude today's data.
+  const period2 = Math.floor(Math.min(new Date(toDate).getTime() + 86400_000, Date.now()) / 1000);
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&period1=${period1}&period2=${period2}&includeAdjustedClose=true`;
 
   const data = await fetchChartResponse(symbol, url);
