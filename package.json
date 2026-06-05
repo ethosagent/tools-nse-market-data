@@ -63,7 +63,6 @@
     "postinstall": "npm rebuild better-sqlite3"
   },
   "dependencies": {
-    "@rolldown/binding-darwin-arm64": "^1.1.0",
     "better-sqlite3": "12.10.0",
     "rolldown": "^1.1.0",
     "zod": "4.4.3"
