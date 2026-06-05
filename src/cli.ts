@@ -7,7 +7,6 @@ import { fileURLToPath } from 'node:url';
 import { fetchQuote } from './fetcher';
 import { fetchBulkBlockDeals, fetchCorporateActions, fetchFiiDii } from './nse-fetcher';
 import type { IndexConstituentSeedRow, InstrumentSeedRow, SavedScanRow } from './schema';
-import type { SyncResult } from './store';
 import { MarketDataStore } from './store';
 
 function getPackageRoot(): string {
@@ -74,8 +73,13 @@ async function main(): Promise<void> {
 
 Commands:
   clean                     Delete all local market data
-  backfill [--symbols A,B] [--from YYYY-MM-DD] [--all]
-                            Download 1 year of OHLCV history
+  backfill [--symbols A,B] [--from YYYY-MM-DD] [--all] [--index SYM]
+           [--skip-synced] [--resume] [--concurrency N]
+                            Fetch OHLCV history. --all = all active equity instruments.
+                            --index = backfill that index's members first (tiered).
+                            --skip-synced / --resume = skip already-synced symbols.
+                            --concurrency N = parallel fetches (default 10).
+  backfill-status           Show how many symbols are synced vs pending.
   update [--mode watchlist|all]
                             Fill missing days since last sync
   watchlist add SYMBOL [--list NAME] [--notes TEXT]
@@ -129,6 +133,25 @@ Options:
       }
 
       // -----------------------------------------------------------------------
+      case 'backfill-status': {
+        const status = store.backfillStatus();
+        const pct =
+          status.totalEquity > 0 ? ((status.synced / status.totalEquity) * 100).toFixed(1) : '0.0';
+        console.log(`\nBackfill status`);
+        console.log(`  Total equity symbols : ${status.totalEquity}`);
+        console.log(`  Synced               : ${status.synced} (${pct}%)`);
+        console.log(`  Pending / failed     : ${status.pending}`);
+        console.log(`  Latest date in DB    : ${status.latestDate ?? 'none'}`);
+        console.log('');
+        if (status.pending > 0) {
+          console.log(`Run: nse-market-data backfill --all --skip-synced --concurrency 10`);
+        } else {
+          console.log('All symbols synced.');
+        }
+        break;
+      }
+
+      // -----------------------------------------------------------------------
       case 'backfill': {
         let symbols: string[];
 
@@ -157,23 +180,65 @@ Options:
           getFlag(args, '--from') ??
           new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-        const results: SyncResult[] = [];
-        let idx = 0;
-        for (const sym of symbols) {
-          idx++;
-          process.stdout.write(`Backfilling ${sym} (${idx}/${symbols.length})... `);
-          try {
-            const r = await store.backfillSymbol(sym, fromDate);
-            results.push(r);
-            console.log(`${r.rowsInserted} rows inserted`);
-          } catch (e) {
-            console.log(`ERROR: ${(e as Error).message}`);
-            results.push({ symbol: sym, rowsInserted: 0, fromDate, toDate: '' });
+        const skipSynced = hasFlag(args, '--skip-synced') || hasFlag(args, '--resume');
+        const concurrency = parseInt(getFlag(args, '--concurrency') ?? '10', 10);
+        const indexFlag = getFlag(args, '--index');
+
+        // Tiered: if --index given, backfill index constituents first
+        if (indexFlag) {
+          const members = store.getIndexConstituents(indexFlag);
+          if (members.length === 0) {
+            console.warn(`No constituents found for index ${indexFlag}. Skipping tier.`);
+          } else {
+            console.log(`Tier 1: Backfilling ${members.length} ${indexFlag} constituents first...`);
+            const tier1 = await store.backfillAll(
+              members,
+              fromDate,
+              (done, total, sym, failed) => {
+                process.stdout.write(
+                  `  [${done}/${total}] ${sym}${failed ? ` (${failed} failed)` : ''}\r`,
+                );
+              },
+              { concurrency, skipSynced },
+            );
+            console.log(
+              `\nTier 1 done: ${tier1.results.length} symbols, ${tier1.failed.length} failed.`,
+            );
+            // Remove tier1 symbols from main list
+            const tier1Set = new Set(members);
+            symbols = symbols.filter((s) => !tier1Set.has(s));
           }
         }
 
+        if (skipSynced) {
+          console.log('Skipping already-synced symbols (--skip-synced)...');
+        }
+
+        console.log(
+          `Backfilling ${symbols.length} symbols from ${fromDate} (concurrency=${concurrency})...`,
+        );
+
+        const { results, failed } = await store.backfillAll(
+          symbols,
+          fromDate,
+          (done, total, sym, failedCount) => {
+            process.stdout.write(
+              `  [${done}/${total}] ${sym}${failedCount ? ` | ${failedCount} failed` : ''}\r`,
+            );
+          },
+          { concurrency, skipSynced },
+        );
+
         const totalRows = results.reduce((s, r) => s + r.rowsInserted, 0);
-        console.log(`Done. ${symbols.length} symbols, ${totalRows} total rows inserted.`);
+        console.log(
+          `\nDone. ${results.length} symbols, ${totalRows} rows inserted, ${failed.length} failed.`,
+        );
+        if (failed.length > 0) {
+          console.log(
+            `Failed symbols: ${failed.slice(0, 10).join(', ')}${failed.length > 10 ? `... (+${failed.length - 10} more)` : ''}`,
+          );
+          console.log('Re-run with --skip-synced to retry only failed symbols.');
+        }
         break;
       }
 

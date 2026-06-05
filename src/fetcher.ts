@@ -23,15 +23,13 @@ async function throttledFetch(url: string): Promise<Response> {
   return fetch(url, { headers: HEADERS });
 }
 
-async function fetchWithRetry(url: string): Promise<Response> {
+async function fetchWithRetry(url: string, attempt = 1): Promise<Response> {
   const res = await throttledFetch(url);
-  if (res.status === 429) {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    const retry = await throttledFetch(url);
-    if (retry.status === 429) {
-      throw new Error('Yahoo Finance rate limit exceeded — wait 30s and retry');
-    }
-    return retry;
+  if (res.status === 429 || res.status === 503) {
+    if (attempt >= 4) throw new Error(`Yahoo Finance rate limit after ${attempt} attempts`);
+    const delay = Math.min(2000 * 2 ** (attempt - 1), 16000); // 2s, 4s, 8s, 16s
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    return fetchWithRetry(url, attempt + 1);
   }
   return res;
 }
