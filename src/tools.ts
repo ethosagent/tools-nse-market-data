@@ -40,6 +40,8 @@ interface BackfillArgs {
   symbols?: string;
   from_date?: string;
   days?: number;
+  limit?: number;
+  skip_synced?: boolean;
 }
 
 interface UpdateArgs {
@@ -112,7 +114,7 @@ const nseMarketCleanTool: Tool = {
 const nseMarketBackfillTool: Tool<BackfillArgs> = {
   name: 'nse_market_backfill',
   description:
-    'Download daily OHLCV history for NSE stocks and store locally. Defaults to all ~510 instruments and 365 days. Pass days: 1825 for 5 years. One-time operation. Shows progress.',
+    'Download daily OHLCV history for NSE stocks and store locally. Supports batched execution via limit + skip_synced params — call repeatedly to process all ~2,900 symbols without a single long-running call. Pass days: 1825 for 5 years of history.',
   toolset: 'market',
   maxResultChars: 5000,
   requiresApproval: true,
@@ -134,6 +136,16 @@ const nseMarketBackfillTool: Tool<BackfillArgs> = {
       from_date: {
         type: 'string',
         description: 'Start date YYYY-MM-DD. Overrides days if both provided.',
+      },
+      limit: {
+        type: 'number',
+        description:
+          'Maximum number of symbols to process in this call (default: all). Use to process in batches, e.g. limit: 200. Combine with skip_synced: true to resume where a previous call left off.',
+      },
+      skip_synced: {
+        type: 'boolean',
+        description:
+          'Skip symbols already in sync_meta (already synced). Use with limit to batch-process: call repeatedly until backfill-status shows complete.',
       },
     },
   },
@@ -170,26 +182,53 @@ const nseMarketBackfillTool: Tool<BackfillArgs> = {
       }
     }
 
+    // Apply skip_synced filter before limit
+    if (args.skip_synced) {
+      const db = (store as unknown as { db: import('better-sqlite3').Database }).db;
+      const syncedRows = db.prepare('SELECT symbol FROM sync_meta').all() as Array<{
+        symbol: string;
+      }>;
+      const synced = new Set(syncedRows.map((r) => r.symbol));
+      symbols = symbols.filter((s) => !synced.has(s));
+    }
+
+    // Apply limit
+    if (args.limit && args.limit > 0) {
+      symbols = symbols.slice(0, args.limit);
+    }
+
     const results: string[] = [];
     let totalRows = 0;
+    let errorCount = 0;
     let done = 0;
 
+    ctx.emit?.({
+      type: 'progress',
+      toolName: 'nse_market_backfill',
+      message: `Starting backfill for ${symbols.length} symbols from ${fromDate}...`,
+      audience: 'user',
+      percent: 0,
+    });
+
     for (const symbol of symbols) {
-      ctx.emit?.({
-        type: 'progress',
-        toolName: 'nse_market_backfill',
-        message: `Backfilling ${symbol} (${done + 1}/${symbols.length})...`,
-        audience: 'user',
-        percent: Math.round((done / symbols.length) * 100),
-      });
       try {
         const result = await store.backfillSymbol(symbol, fromDate);
         results.push(`${symbol}: ${result.rowsInserted} rows`);
         totalRows += result.rowsInserted;
       } catch (err) {
         results.push(`${symbol}: ERROR — ${(err as Error).message}`);
+        errorCount++;
       }
       done++;
+      if (done % 10 === 0 || done === symbols.length) {
+        ctx.emit?.({
+          type: 'progress',
+          toolName: 'nse_market_backfill',
+          message: `${done}/${symbols.length} symbols synced — ${totalRows} rows total${errorCount > 0 ? `, ${errorCount} errors` : ''}`,
+          audience: 'user',
+          percent: Math.round((done / symbols.length) * 100),
+        });
+      }
     }
 
     return {

@@ -20,7 +20,7 @@ async function throttledFetch(url: string): Promise<Response> {
     await new Promise((resolve) => setTimeout(resolve, MIN_INTERVAL_MS - elapsed));
   }
   lastCallTime = Date.now();
-  return fetch(url, { headers: HEADERS });
+  return fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(30_000) });
 }
 
 async function fetchWithRetry(url: string, attempt = 1): Promise<Response> {
