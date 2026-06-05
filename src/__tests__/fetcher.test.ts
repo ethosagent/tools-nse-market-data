@@ -97,11 +97,15 @@ describe('fetchOhlcv()', () => {
   });
 
   it('retries on 429 and throws if retry also fails', async () => {
-    vi.useFakeTimers();
+    // Only fake setTimeout — do NOT fake Date, or lastCallTime gets a future
+    // value that inflates throttledFetch's delay in the next test.
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ status: 429, ok: false }));
     const promise = fetchOhlcv('RELIANCE.NS', '2024-05-01', '2024-05-31');
+    // Attach handler before runAllTimersAsync so the rejection is not unhandled.
+    const assertion = expect(promise).rejects.toThrow('rate limit');
     await vi.runAllTimersAsync();
-    await expect(promise).rejects.toThrow('rate limit');
+    await assertion;
     vi.useRealTimers();
   });
 
