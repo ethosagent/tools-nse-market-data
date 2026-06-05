@@ -42,6 +42,7 @@ interface BackfillArgs {
   days?: number;
   limit?: number;
   skip_synced?: boolean;
+  concurrency?: number;
 }
 
 interface UpdateArgs {
@@ -147,6 +148,11 @@ const nseMarketBackfillTool: Tool<BackfillArgs> = {
         description:
           'Skip symbols already in sync_meta (already synced). Use with limit to batch-process: call repeatedly until backfill-status shows complete.',
       },
+      concurrency: {
+        type: 'number',
+        description:
+          'Number of symbols to fetch in parallel (default: 5). Increase for faster backfills on fast connections.',
+      },
     },
   },
   async execute(args, ctx): Promise<ToolResult> {
@@ -182,25 +188,10 @@ const nseMarketBackfillTool: Tool<BackfillArgs> = {
       }
     }
 
-    // Apply skip_synced filter before limit
-    if (args.skip_synced) {
-      const db = (store as unknown as { db: import('better-sqlite3').Database }).db;
-      const syncedRows = db.prepare('SELECT symbol FROM sync_meta').all() as Array<{
-        symbol: string;
-      }>;
-      const synced = new Set(syncedRows.map((r) => r.symbol));
-      symbols = symbols.filter((s) => !synced.has(s));
-    }
-
-    // Apply limit
+    // Apply limit before delegating to backfillAll
     if (args.limit && args.limit > 0) {
       symbols = symbols.slice(0, args.limit);
     }
-
-    const results: string[] = [];
-    let totalRows = 0;
-    let errorCount = 0;
-    let done = 0;
 
     ctx.emit?.({
       type: 'progress',
@@ -210,30 +201,36 @@ const nseMarketBackfillTool: Tool<BackfillArgs> = {
       percent: 0,
     });
 
-    for (const symbol of symbols) {
-      try {
-        const result = await store.backfillSymbol(symbol, fromDate);
-        results.push(`${symbol}: ${result.rowsInserted} rows`);
-        totalRows += result.rowsInserted;
-      } catch (err) {
-        results.push(`${symbol}: ERROR — ${(err as Error).message}`);
-        errorCount++;
-      }
-      done++;
-      if (done % 10 === 0 || done === symbols.length) {
-        ctx.emit?.({
-          type: 'progress',
-          toolName: 'nse_market_backfill',
-          message: `${done}/${symbols.length} symbols synced — ${totalRows} rows total${errorCount > 0 ? `, ${errorCount} errors` : ''}`,
-          audience: 'user',
-          percent: Math.round((done / symbols.length) * 100),
-        });
-      }
-    }
+    const { results, failed } = await store.backfillAll(
+      symbols,
+      fromDate,
+      (done, total, _sym, errorCount) => {
+        if (done % 10 === 0 || done === total) {
+          ctx.emit?.({
+            type: 'progress',
+            toolName: 'nse_market_backfill',
+            message: `${done}/${total} symbols synced${errorCount > 0 ? `, ${errorCount} errors` : ''}`,
+            audience: 'user',
+            percent: Math.round((done / total) * 100),
+          });
+        }
+      },
+      {
+        concurrency: args.concurrency,
+        skipSynced: args.skip_synced,
+      },
+    );
+
+    const totalRows = results.reduce((sum, r) => sum + r.rowsInserted, 0);
 
     return {
       ok: true,
-      value: `${results.join('\n')}\n\nTotal: ${symbols.length} symbols, ${totalRows} rows inserted.`,
+      value: [
+        `Backfill complete: ${results.length} symbols processed, ${totalRows} rows inserted.`,
+        failed.length > 0
+          ? `${failed.length} failed: ${failed.slice(0, 5).join(', ')}${failed.length > 5 ? ` (+${failed.length - 5} more)` : ''}.`
+          : 'No failures.',
+      ].join('\n'),
     };
   },
 };
