@@ -377,27 +377,112 @@ export class MarketDataStore {
   async backfillAll(
     symbols: string[],
     fromDate: string,
-    onProgress?: (done: number, total: number, symbol: string) => void,
-  ): Promise<SyncResult[]> {
+    onProgress?: (done: number, total: number, symbol: string, failed: number) => void,
+    opts?: { concurrency?: number; skipSynced?: boolean; syncedThresholdDays?: number },
+  ): Promise<{ results: SyncResult[]; failed: string[] }> {
+    const concurrency = opts?.concurrency ?? 10;
+    const skipSynced = opts?.skipSynced ?? false;
+    const thresholdDays = opts?.syncedThresholdDays ?? 2;
+    const thresholdDate = new Date(Date.now() - thresholdDays * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+
+    // Filter symbols if skipSynced
+    const pending = skipSynced
+      ? symbols.filter((sym) => {
+          const row = this.db
+            .prepare('SELECT last_date FROM sync_meta WHERE symbol = ?')
+            .get(sym) as { last_date: string } | undefined;
+          return !row || row.last_date < thresholdDate;
+        })
+      : [...symbols];
+
     const results: SyncResult[] = [];
+    const failed: string[] = [];
     let done = 0;
-    for (const symbol of symbols) {
-      try {
-        const result = await this.backfillSymbol(symbol, fromDate);
-        results.push(result);
-      } catch (err) {
-        console.error(`backfillAll: failed for ${symbol}:`, err);
-        results.push({
-          symbol,
-          rowsInserted: 0,
-          fromDate,
-          toDate: new Date().toISOString().slice(0, 10),
-        });
+    const queue = [...pending];
+
+    const worker = async () => {
+      while (queue.length > 0) {
+        const symbol = queue.shift();
+        if (!symbol) break;
+        try {
+          const result = await this.backfillSymbol(symbol, fromDate);
+          results.push(result);
+        } catch {
+          failed.push(symbol);
+          results.push({
+            symbol,
+            rowsInserted: 0,
+            fromDate,
+            toDate: new Date().toISOString().slice(0, 10),
+          });
+        }
+        done++;
+        onProgress?.(done, pending.length, symbol, failed.length);
       }
-      done++;
-      onProgress?.(done, symbols.length, symbol);
-    }
-    return results;
+    };
+
+    await Promise.all(Array.from({ length: concurrency }, () => worker()));
+    return { results, failed };
+  }
+
+  backfillStatus(): {
+    totalEquity: number;
+    synced: number;
+    pending: number;
+    failed: number;
+    latestDate: string | null;
+  } {
+    const totalEquity = (
+      this.db
+        .prepare(
+          "SELECT COUNT(*) as n FROM instruments WHERE instrument_type = 'equity' AND is_active = 1",
+        )
+        .get() as { n: number }
+    ).n;
+
+    const synced = (
+      this.db
+        .prepare(
+          `SELECT COUNT(DISTINCT s.symbol) as n
+           FROM sync_meta s
+           JOIN instruments i ON s.symbol = i.symbol
+           WHERE i.instrument_type = 'equity' AND i.is_active = 1`,
+        )
+        .get() as { n: number }
+    ).n;
+
+    const latestRow = this.db.prepare('SELECT MAX(last_date) as d FROM sync_meta').get() as {
+      d: string | null;
+    };
+
+    // Symbols that errored: in instruments but not in sync_meta
+    const failed = (
+      this.db
+        .prepare(
+          `SELECT COUNT(*) as n FROM instruments i
+           LEFT JOIN sync_meta s ON i.symbol = s.symbol
+           WHERE i.instrument_type = 'equity' AND i.is_active = 1
+             AND s.symbol IS NULL`,
+        )
+        .get() as { n: number }
+    ).n;
+
+    return {
+      totalEquity,
+      synced,
+      pending: totalEquity - synced,
+      failed,
+      latestDate: latestRow?.d ?? null,
+    };
+  }
+
+  getIndexConstituents(indexSymbol: string): string[] {
+    const rows = this.db
+      .prepare('SELECT member_symbol FROM index_constituents WHERE index_symbol = ?')
+      .all(indexSymbol) as Array<{ member_symbol: string }>;
+    return rows.map((r) => r.member_symbol);
   }
 
   async updateSymbol(symbol: string): Promise<SyncResult> {
