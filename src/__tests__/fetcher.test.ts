@@ -97,10 +97,12 @@ describe('fetchOhlcv()', () => {
   });
 
   it('retries on 429 and throws if retry also fails', async () => {
+    vi.useFakeTimers();
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ status: 429, ok: false }));
-    await expect(fetchOhlcv('RELIANCE.NS', '2024-05-01', '2024-05-31')).rejects.toThrow(
-      'rate limit',
-    );
+    const promise = fetchOhlcv('RELIANCE.NS', '2024-05-01', '2024-05-31');
+    await vi.runAllTimersAsync();
+    await expect(promise).rejects.toThrow('rate limit');
+    vi.useRealTimers();
   });
 
   it('throws on symbol not found (Yahoo returns error body)', async () => {
