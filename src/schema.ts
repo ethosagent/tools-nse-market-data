@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3';
+import type { Database } from 'node-sqlite3-wasm';
 
 export const SQL_CREATE_INSTRUMENTS = `
   CREATE TABLE IF NOT EXISTS instruments (
@@ -275,20 +275,22 @@ export const SQL_CREATE_BULK_BLOCK_DEALS_INDEXES = `
 `;
 
 function addColumnIfNotExists(
-  db: Database.Database,
+  db: Database,
   table: string,
   column: string,
   definition: string,
 ): void {
-  const cols = db.prepare(`PRAGMA table_info("${table}")`).all() as Array<{ name: string }>;
+  const stmt = db.prepare(`PRAGMA table_info("${table}")`);
+  const cols = stmt.all() as Array<{ name: string }>;
+  stmt.finalize();
   if (!cols.some((c) => c.name === column)) {
     db.exec(`ALTER TABLE "${table}" ADD COLUMN ${column} ${definition}`);
   }
 }
 
-export function migrate(db: Database.Database): void {
-  db.pragma('journal_mode = WAL');
-  db.pragma('foreign_keys = ON');
+export function migrate(db: Database): void {
+  db.exec('PRAGMA journal_mode = WAL');
+  db.exec('PRAGMA foreign_keys = ON');
   db.exec(SQL_CREATE_INSTRUMENTS);
   db.exec(SQL_CREATE_OHLCV_DAILY);
   db.exec(SQL_CREATE_OHLCV_DATE_INDEX);

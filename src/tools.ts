@@ -461,12 +461,12 @@ const nseRunScanTool: Tool<RunScanArgs> = {
   },
   async execute(args, _ctx): Promise<ToolResult> {
     const store = getStore();
-    const db = (store as unknown as { db: import('better-sqlite3').Database }).db;
+    const db = (store as unknown as { db: import('node-sqlite3-wasm').Database }).db;
 
     // Look up the scan
-    const scanRow = db
-      .prepare('SELECT sql_template, name FROM saved_scans WHERE scan_id = ?')
-      .get(args.scan_id) as { sql_template: string; name: string } | undefined;
+    const s1 = db.prepare('SELECT sql_template, name FROM saved_scans WHERE scan_id = ?');
+    const scanRow = s1.get([args.scan_id]) as { sql_template: string; name: string } | null;
+    s1.finalize();
     if (!scanRow) {
       return {
         ok: false,
@@ -479,9 +479,9 @@ const nseRunScanTool: Tool<RunScanArgs> = {
     const queryDate =
       args.date ??
       (() => {
-        const row = db.prepare('SELECT MAX(date) as d FROM indicators_daily').get() as {
-          d: string | null;
-        };
+        const s2 = db.prepare('SELECT MAX(date) as d FROM indicators_daily');
+        const row = s2.get([]) as { d: string | null } | null;
+        s2.finalize();
         return row?.d ?? new Date().toISOString().slice(0, 10);
       })();
 
@@ -534,7 +534,9 @@ const nseRunScanTool: Tool<RunScanArgs> = {
     }>;
 
     try {
-      rows = db.prepare(sql).all(queryDate, limit) as typeof rows;
+      const s3 = db.prepare(sql);
+      rows = s3.all([queryDate, limit]) as typeof rows;
+      s3.finalize();
     } catch (err) {
       return {
         ok: false,
@@ -617,7 +619,7 @@ const nseInvokeSkillTool: Tool<InvokeSkillArgs> = {
     }
 
     const store = getStore();
-    const db = (store as unknown as { db: import('better-sqlite3').Database }).db;
+    const db = (store as unknown as { db: import('node-sqlite3-wasm').Database }).db;
     const symbol = args.params?.symbol as string | undefined;
 
     let dataContext: unknown = null;
@@ -642,36 +644,40 @@ const nseInvokeSkillTool: Tool<InvokeSkillArgs> = {
         };
       }
       // Query last 90 days of indicators
-      const rows = db
-        .prepare(
-          `SELECT * FROM indicators_daily WHERE symbol = ?
-           ORDER BY date DESC LIMIT 90`,
-        )
-        .all(symbol);
+      const sInd = db.prepare(
+        `SELECT * FROM indicators_daily WHERE symbol = ?
+         ORDER BY date DESC LIMIT 90`,
+      );
+      const rows = sInd.all([symbol]);
+      sInd.finalize();
       const history = store.getHistory(symbol, 90);
       dataContext = { symbol, indicators: rows, ohlcv: history };
     } else if (marketSkills.includes(skillId)) {
-      const rows = db.prepare('SELECT * FROM market_state_daily ORDER BY date DESC LIMIT 20').all();
+      const sMkt = db.prepare('SELECT * FROM market_state_daily ORDER BY date DESC LIMIT 20');
+      const rows = sMkt.all([]);
+      sMkt.finalize();
       dataContext = { market_state: rows };
     } else if (sectorSkills.includes(skillId)) {
-      const rows = db.prepare('SELECT * FROM sector_state_daily ORDER BY date DESC LIMIT 28').all();
+      const sSec = db.prepare('SELECT * FROM sector_state_daily ORDER BY date DESC LIMIT 28');
+      const rows = sSec.all([]);
+      sSec.finalize();
       dataContext = { sector_state: rows };
     } else if (watchlistSkills.includes(skillId)) {
-      const latestDateRow = db.prepare('SELECT MAX(date) as d FROM indicators_daily').get() as {
-        d: string | null;
-      };
+      const sLatest = db.prepare('SELECT MAX(date) as d FROM indicators_daily');
+      const latestDateRow = sLatest.get([]) as { d: string | null } | null;
+      sLatest.finalize();
       const latestDate = latestDateRow?.d ?? new Date().toISOString().slice(0, 10);
-      const rows = db
-        .prepare(
-          `SELECT id.*, i.name, i.sector, i.market_cap_band
-           FROM indicators_daily id
-           JOIN instruments i ON id.symbol = i.symbol
-           JOIN watchlist w ON id.symbol = w.symbol
-           WHERE id.date = ?
-           ORDER BY id.composite_score DESC NULLS LAST
-           LIMIT 10`,
-        )
-        .all(latestDate);
+      const sWl = db.prepare(
+        `SELECT id.*, i.name, i.sector, i.market_cap_band
+         FROM indicators_daily id
+         JOIN instruments i ON id.symbol = i.symbol
+         JOIN watchlist w ON id.symbol = w.symbol
+         WHERE id.date = ?
+         ORDER BY id.composite_score DESC NULLS LAST
+         LIMIT 10`,
+      );
+      const rows = sWl.all([latestDate]);
+      sWl.finalize();
       dataContext = { date: latestDate, watchlist_indicators: rows };
     } else {
       dataContext = { note: 'No specific data context available for this skill.' };

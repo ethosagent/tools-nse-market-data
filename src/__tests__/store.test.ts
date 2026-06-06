@@ -395,12 +395,12 @@ describe('MarketDataStore', () => {
           adjClose: 100,
         },
       ]);
-      const db = (store as unknown as { db: import('better-sqlite3').Database }).db;
-      const row = db
-        .prepare('SELECT adj_factor FROM ohlcv_daily WHERE symbol = ?')
-        .get('TEST.NS') as { adj_factor: number | null };
-      expect(row.adj_factor).not.toBeNull();
-      expect(row.adj_factor).toBeCloseTo(100 / 105, 5);
+      const db = (store as unknown as { db: import('node-sqlite3-wasm').Database }).db;
+      const s = db.prepare('SELECT adj_factor FROM ohlcv_daily WHERE symbol = ?');
+      const row = s.get(['TEST.NS']) as { adj_factor: number | null } | null;
+      s.finalize();
+      expect(row?.adj_factor).not.toBeNull();
+      expect(row?.adj_factor).toBeCloseTo(100 / 105, 5);
       store.close();
     });
 
@@ -418,11 +418,11 @@ describe('MarketDataStore', () => {
           adjClose: null,
         },
       ]);
-      const db = (store as unknown as { db: import('better-sqlite3').Database }).db;
-      const row = db
-        .prepare('SELECT adj_factor FROM ohlcv_daily WHERE symbol = ?')
-        .get('TEST.NS') as { adj_factor: number | null };
-      expect(row.adj_factor).toBeNull();
+      const db = (store as unknown as { db: import('node-sqlite3-wasm').Database }).db;
+      const s = db.prepare('SELECT adj_factor FROM ohlcv_daily WHERE symbol = ?');
+      const row = s.get(['TEST.NS']) as { adj_factor: number | null } | null;
+      s.finalize();
+      expect(row?.adj_factor).toBeNull();
       store.close();
     });
 

@@ -1,4 +1,5 @@
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import type { JSValue } from 'node-sqlite3-wasm';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -98,21 +99,22 @@ export async function downloadSeed(url: string, destPath: string): Promise<void>
  * Closes both DBs and deletes `tempDbPath` when done (success or failure).
  */
 export async function mergeNewSymbols(tempDbPath: string, localDbPath: string): Promise<number> {
-  const Database = (await import('better-sqlite3')).default;
-  const tempDb = new Database(tempDbPath, { readonly: true });
+  const pkg = await import('node-sqlite3-wasm');
+  const { Database } = pkg.default ?? pkg;
+  const tempDb = new Database(tempDbPath, { readOnly: true });
   const localDb = new Database(localDbPath);
 
   try {
     // Get symbols in remote seed that are NOT in local sync_meta
-    const remoteSymbols = (
-      tempDb.prepare('SELECT DISTINCT symbol FROM ohlcv_daily').all() as { symbol: string }[]
-    ).map((r) => r.symbol);
+    const remoteSymbolsStmt = tempDb.prepare('SELECT DISTINCT symbol FROM ohlcv_daily');
+    const remoteSymbols = (remoteSymbolsStmt.all() as { symbol: string }[]).map((r) => r.symbol);
+    remoteSymbolsStmt.finalize();
 
+    const localSyncedStmt = localDb.prepare('SELECT symbol FROM sync_meta');
     const localSynced = new Set(
-      (localDb.prepare('SELECT symbol FROM sync_meta').all() as { symbol: string }[]).map(
-        (r) => r.symbol,
-      ),
+      (localSyncedStmt.all() as { symbol: string }[]).map((r) => r.symbol),
     );
+    localSyncedStmt.finalize();
 
     const newSymbols = remoteSymbols.filter((s) => !localSynced.has(s));
 
@@ -127,13 +129,14 @@ export async function mergeNewSymbols(tempDbPath: string, localDbPath: string): 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
 
-    const copyBatch = localDb.transaction(() => {
+    localDb.exec('BEGIN');
+    try {
       for (const symbol of newSymbols) {
-        const rows = tempDb
-          .prepare('SELECT * FROM ohlcv_daily WHERE symbol = ?')
-          .all(symbol) as Record<string, unknown>[];
+        const rowsStmt = tempDb.prepare('SELECT * FROM ohlcv_daily WHERE symbol = ?');
+        const rows = rowsStmt.all([symbol]) as Record<string, unknown>[];
+        rowsStmt.finalize();
         for (const row of rows) {
-          insertStmt.run(
+          insertStmt.run([
             row.symbol,
             row.date,
             row.open,
@@ -145,47 +148,51 @@ export async function mergeNewSymbols(tempDbPath: string, localDbPath: string): 
             row.adj_factor,
             row.delivery_qty,
             row.delivery_pct,
-          );
+          ] as JSValue[]);
         }
         // Copy sync_meta entry
-        const meta = tempDb.prepare('SELECT * FROM sync_meta WHERE symbol = ?').get(symbol) as
-          | { last_sync: number; last_date: string }
-          | undefined;
+        const metaStmt = tempDb.prepare('SELECT * FROM sync_meta WHERE symbol = ?');
+        const meta = metaStmt.get([symbol]) as { last_sync: number; last_date: string } | null;
+        metaStmt.finalize();
         if (meta) {
-          localDb
-            .prepare(
-              'INSERT OR IGNORE INTO sync_meta (symbol, last_sync, last_date) VALUES (?, ?, ?)',
-            )
-            .run(symbol, meta.last_sync, meta.last_date);
+          const syncMetaStmt = localDb.prepare(
+            'INSERT OR IGNORE INTO sync_meta (symbol, last_sync, last_date) VALUES (?, ?, ?)',
+          );
+          syncMetaStmt.run([symbol, meta.last_sync, meta.last_date]);
+          syncMetaStmt.finalize();
         }
         // Copy instruments row if missing
-        const inst = tempDb.prepare('SELECT * FROM instruments WHERE symbol = ?').get(symbol) as
-          | Record<string, unknown>
-          | undefined;
+        const instStmt = tempDb.prepare('SELECT * FROM instruments WHERE symbol = ?');
+        const inst = instStmt.get([symbol]) as Record<string, unknown> | null;
+        instStmt.finalize();
         if (inst) {
-          localDb
-            .prepare(
-              `INSERT OR IGNORE INTO instruments
+          const instrumentsStmt = localDb.prepare(
+            `INSERT OR IGNORE INTO instruments
                (symbol, name, exchange, sector, industry, isin, market_cap_band, instrument_type, index_category, is_active, as_of_date)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            )
-            .run(
-              inst.symbol,
-              inst.name,
-              inst.exchange,
-              inst.sector,
-              inst.industry,
-              inst.isin,
-              inst.market_cap_band,
-              inst.instrument_type,
-              inst.index_category,
-              inst.is_active,
-              inst.as_of_date,
-            );
+          );
+          instrumentsStmt.run([
+            inst.symbol,
+            inst.name,
+            inst.exchange,
+            inst.sector,
+            inst.industry,
+            inst.isin,
+            inst.market_cap_band,
+            inst.instrument_type,
+            inst.index_category,
+            inst.is_active,
+            inst.as_of_date,
+          ] as JSValue[]);
+          instrumentsStmt.finalize();
         }
       }
-    });
-    copyBatch();
+      localDb.exec('COMMIT');
+    } catch (e) {
+      localDb.exec('ROLLBACK');
+      throw e;
+    }
+    insertStmt.finalize();
 
     return newSymbols.length;
   } finally {
