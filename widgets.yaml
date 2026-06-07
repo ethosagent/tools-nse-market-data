@@ -1,0 +1,513 @@
+version: 1
+
+# ── MARKET OVERVIEW ─────────────────────────────────────────────────────────
+
+widgets:
+  - id: market-health
+    title: "Market Health"
+    description: "Breadth snapshot: mood score, advances/declines, % above MA, stage distribution"
+    query_type: sql
+    data_source: market-db
+    sql: >
+      SELECT date, mood_score, advances, declines, ad_ratio,
+             pct_above_50ma, pct_above_200ma, new_highs, new_lows,
+             stage2_pct, ema_stack_bull_pct, avg_rsi, india_vix
+        FROM market_state_daily
+       ORDER BY date DESC
+       LIMIT 1
+    output_type: table
+    default_cron: "0 16 * * 1-5"
+
+  - id: advance-decline
+    title: "Advance / Decline (7 days)"
+    description: "Daily advances vs declines with A/D ratio trend"
+    query_type: sql
+    data_source: market-db
+    sql: >
+      SELECT date, advances, declines, unchanged_count, ad_ratio
+        FROM market_state_daily
+       WHERE advances IS NOT NULL
+       ORDER BY date DESC
+       LIMIT 7
+    output_type: html
+    render_hint: "Stacked bar chart with advances (green) and declines (red) per date. Overlay A/D ratio as a line on a secondary Y axis."
+    default_cron: "30 16 * * 1-5"
+
+  - id: stage-distribution
+    title: "Stage Distribution"
+    description: "% of NSE equities in each Weinstein stage"
+    query_type: sql
+    data_source: market-db
+    sql: >
+      SELECT id.stage, COUNT(*) AS count
+        FROM indicators_daily id
+        JOIN instruments i ON i.symbol = id.symbol
+       WHERE id.date = (SELECT MAX(date) FROM indicators_daily)
+         AND i.instrument_type = 'equity'
+         AND id.stage IS NOT NULL
+       GROUP BY id.stage
+       ORDER BY id.stage ASC
+    output_type: html
+    render_hint: "Donut chart. Stage 1 amber, Stage 2 green, Stage 3 orange, Stage 4 red. Show counts and percentages in legend."
+    default_cron: "30 16 * * 1-5"
+
+  - id: breadth-trend
+    title: "Breadth Trend (20 days)"
+    description: "Rolling trend of key breadth metrics: % above 50MA, % above 200MA, Stage 2%, mood score"
+    query_type: sql
+    data_source: market-db
+    sql: >
+      SELECT date, pct_above_50ma, pct_above_200ma, stage2_pct,
+             mood_score, pct_oversold, pct_overbought
+        FROM market_state_daily
+       WHERE pct_above_50ma IS NOT NULL
+       ORDER BY date DESC
+       LIMIT 20
+    output_type: html
+    render_hint: "Multi-line chart. % above 50MA in blue, % above 200MA in teal, Stage 2% in green, mood score as dashed line on secondary axis. X axis = dates oldest to newest."
+    default_cron: "0 16 * * 1-5"
+
+  - id: new-highs-lows
+    title: "New Highs vs New Lows (20 days)"
+    description: "Daily 52-week new highs and new lows — trend signal for market breadth"
+    query_type: sql
+    data_source: market-db
+    sql: >
+      SELECT date, new_highs, new_lows,
+             (new_highs - new_lows) AS hl_diff
+        FROM market_state_daily
+       WHERE new_highs IS NOT NULL
+       ORDER BY date DESC
+       LIMIT 20
+    output_type: html
+    render_hint: "Grouped bar chart. New highs green, new lows red. Add a zero-line and show hl_diff as a line on secondary axis. X axis = dates oldest to newest."
+    default_cron: "0 16 * * 1-5"
+
+# ── SECTOR & CAPITAL FLOWS ──────────────────────────────────────────────────
+
+  - id: sector-rotation
+    title: "Sector Rotation"
+    description: "All sectors ranked by RS with 1W/1M/3M returns and breadth"
+    query_type: sql
+    data_source: market-db
+    sql: >
+      SELECT sector, sector_return_1w, sector_return_1m, sector_return_3m,
+             rs_rank, rs_rank_delta_1w, pct_members_stage2, pct_members_uptrend
+        FROM sector_state_daily
+       WHERE date = (SELECT MAX(date) FROM sector_state_daily)
+       ORDER BY rs_rank ASC
+    output_type: html
+    render_hint: "Horizontal bar chart sorted by sector_return_1w descending. Positive bars green shaded, negative red shaded. Show rs_rank as a label on each bar."
+    default_cron: "30 16 * * 1-5"
+
+  - id: fii-dii-flows
+    title: "FII / DII Money Flows (₹ Cr)"
+    description: "Institutional net flows for last 10 trading days"
+    query_type: sql
+    data_source: market-db
+    sql: >
+      SELECT date, fii_net, dii_net, (fii_net + dii_net) AS combined_net
+        FROM fii_dii_daily
+       ORDER BY date DESC
+       LIMIT 10
+    output_type: html
+    render_hint: "Grouped bar chart. FII net in blue, DII net in amber. Zero reference line visible. X axis = dates oldest to newest."
+    default_cron: "0 19 * * 1-5"
+
+  - id: cap-rotation
+    title: "Large / Mid / Small Cap Rotation"
+    description: "Relative strength of large, mid, and small cap vs Nifty 500 over 10 days"
+    query_type: sql
+    data_source: market-db
+    sql: >
+      SELECT id.date,
+             AVG(CASE WHEN i.market_cap_band = 'large' THEN id.rs_vs_broad END) AS large_rs,
+             AVG(CASE WHEN i.market_cap_band = 'mid'   THEN id.rs_vs_broad END) AS mid_rs,
+             AVG(CASE WHEN i.market_cap_band = 'small' THEN id.rs_vs_broad END) AS small_rs
+        FROM indicators_daily id
+        JOIN instruments i ON i.symbol = id.symbol
+       WHERE i.instrument_type = 'equity'
+         AND i.market_cap_band IS NOT NULL
+         AND id.date >= (
+               SELECT date(MAX(date), '-14 days') FROM indicators_daily
+             )
+       GROUP BY id.date
+       ORDER BY id.date ASC
+    output_type: html
+    render_hint: "Line chart. Large cap in blue, mid cap in teal, small cap in purple. Add a zero reference line. Title: Cap Rotation vs Nifty 500"
+    default_cron: "30 16 * * 1-5"
+
+  - id: gift-nifty
+    title: "GIFT Nifty"
+    description: "Live GIFT Nifty futures price, change%, and implied gap vs Nifty 50 spot"
+    query_type: prompt
+    prompt: >
+      Call nse_get_gift_nifty to get the live GIFT Nifty data.
+      Display as a compact card showing: current price (large), change and change%,
+      implied gap vs Nifty spot, open/high/low, expiry date, and timestamp.
+      Use render_html with a dark-themed card layout. Keep it under 20 lines of visible content.
+    output_type: html
+    default_cron: "0 9 * * 1-5"
+
+  - id: sector-detail
+    title: "Sector Deep Dive"
+    description: "Top stocks in a selected sector ranked by composite score"
+    query_type: sql
+    data_source: market-db
+    sql_template: >
+      SELECT id.symbol, i.name, o.close, id.stage, id.composite_score,
+             id.sniper_verdict, id.setup_type, id.rvol, id.return_1m,
+             id.dist_52wk_high_pct
+        FROM indicators_daily id
+        JOIN instruments i ON id.symbol = i.symbol
+        LEFT JOIN ohlcv_daily o ON o.symbol = id.symbol AND o.date = id.date
+       WHERE id.date = (SELECT MAX(date) FROM indicators_daily)
+         AND i.sector = '{{sector}}'
+         AND i.instrument_type = 'equity'
+         AND id.composite_score IS NOT NULL
+       ORDER BY id.composite_score DESC
+       LIMIT {{limit}}
+    params:
+      - key: sector
+        label: "Sector"
+        type: select
+        default: "IT"
+        options:
+          - { value: "IT",          label: "IT / Tech" }
+          - { value: "Banking",     label: "Banking & Finance" }
+          - { value: "Pharma",      label: "Pharma" }
+          - { value: "Auto",        label: "Auto" }
+          - { value: "FMCG",       label: "FMCG" }
+          - { value: "Metals",      label: "Metals & Mining" }
+          - { value: "Energy",      label: "Energy" }
+          - { value: "Industrials", label: "Industrials" }
+          - { value: "Realty",      label: "Realty" }
+          - { value: "Defence",     label: "Defence" }
+      - key: limit
+        label: "Max Stocks"
+        type: number
+        default: 20
+    output_type: table
+    default_cron: "0 17 * * 1-5"
+
+# ── STOCK SCREENS ───────────────────────────────────────────────────────────
+
+  - id: top-momentum
+    title: "Top Momentum Stocks"
+    description: "Top NSE stocks in Stage 2 ranked by composite score"
+    query_type: sql
+    data_source: market-db
+    sql_template: >
+      SELECT id.symbol, i.name, i.sector, o.close, id.stage,
+             id.composite_score, id.sniper_verdict, id.setup_type,
+             id.rvol, id.rsi_14, id.return_1m, id.dist_52wk_high_pct,
+             id.rs_rank_in_segment
+        FROM indicators_daily id
+        JOIN instruments i ON id.symbol = i.symbol
+        LEFT JOIN ohlcv_daily o ON o.symbol = id.symbol AND o.date = id.date
+       WHERE id.date = (SELECT MAX(date) FROM indicators_daily)
+         AND id.stage = 2
+         AND i.instrument_type = 'equity'
+         AND id.composite_score IS NOT NULL
+         AND (i.market_cap_band = '{{cap_band}}' OR '{{cap_band}}' = 'all')
+       ORDER BY id.composite_score DESC
+       LIMIT {{limit}}
+    params:
+      - key: cap_band
+        label: "Cap Band"
+        type: select
+        default: "all"
+        options:
+          - { value: "all",   label: "All" }
+          - { value: "large", label: "Large Cap" }
+          - { value: "mid",   label: "Mid Cap" }
+          - { value: "small", label: "Small Cap" }
+      - key: limit
+        label: "Max Stocks"
+        type: number
+        default: 20
+    output_type: table
+    default_cron: "0 17 * * 1-5"
+
+  - id: scan-results
+    title: "Scan Results"
+    description: "Run any saved scan against a selected universe and show matching stocks"
+    query_type: prompt
+    prompt_template: >
+      Call nse_run_scan with scan_id='{{scan_id}}', universe='{{universe}}', limit={{limit}}.
+      Display the results as a table showing: symbol, sector, composite score, setup type,
+      RVOL, RSI, 1M return%, and distance from 52-week high.
+      Add a one-line summary above the table describing what this scan looks for.
+    params:
+      - key: scan_id
+        label: "Scan"
+        type: select
+        default: "stage2_momentum"
+        options:
+          - { value: "stage2_momentum", label: "Stage 2 Momentum" }
+          - { value: "base_breakout",   label: "Base Breakout" }
+          - { value: "rs_leaders",      label: "RS Leaders" }
+          - { value: "volume_surge",    label: "Volume Surge" }
+          - { value: "near_pivot",      label: "Near Pivot" }
+          - { value: "reversal_setup",  label: "Reversal Setup" }
+      - key: universe
+        label: "Universe"
+        type: select
+        default: "nifty500"
+        options:
+          - { value: "watchlist", label: "My Watchlist" }
+          - { value: "nifty50",   label: "Nifty 50" }
+          - { value: "nifty500",  label: "Nifty 500" }
+          - { value: "all",       label: "All NSE Equities" }
+      - key: limit
+        label: "Max Results"
+        type: number
+        default: 20
+    output_type: table
+    default_cron: "0 17 * * 1-5"
+
+  - id: top-gainers-losers
+    title: "Top Gainers & Losers"
+    description: "Biggest 1-day movers — top 10 gainers and top 10 losers"
+    query_type: sql
+    data_source: market-db
+    sql_template: >
+      SELECT id.symbol, i.name, i.sector, o.close, id.return_1d,
+             id.rvol, id.stage, id.composite_score
+        FROM indicators_daily id
+        JOIN instruments i ON id.symbol = i.symbol
+        LEFT JOIN ohlcv_daily o ON o.symbol = id.symbol AND o.date = id.date
+       WHERE id.date = (SELECT MAX(date) FROM indicators_daily)
+         AND i.instrument_type = 'equity'
+         AND id.return_1d IS NOT NULL
+         AND (i.market_cap_band = '{{cap_band}}' OR '{{cap_band}}' = 'all')
+       ORDER BY id.return_1d {{direction}}
+       LIMIT {{limit}}
+    params:
+      - key: direction
+        label: "Show"
+        type: select
+        default: "DESC"
+        options:
+          - { value: "DESC", label: "Top Gainers" }
+          - { value: "ASC",  label: "Top Losers" }
+      - key: cap_band
+        label: "Cap Band"
+        type: select
+        default: "all"
+        options:
+          - { value: "all",   label: "All" }
+          - { value: "large", label: "Large Cap" }
+          - { value: "mid",   label: "Mid Cap" }
+          - { value: "small", label: "Small Cap" }
+      - key: limit
+        label: "Count"
+        type: number
+        default: 10
+    output_type: table
+    default_cron: "30 16 * * 1-5"
+
+  - id: volume-leaders
+    title: "Volume Leaders (RVOL)"
+    description: "Stocks with the highest relative volume today — institutional activity signal"
+    query_type: sql
+    data_source: market-db
+    sql_template: >
+      SELECT id.symbol, i.name, i.sector, o.close, id.rvol,
+             id.return_1d, id.stage, id.setup_type, id.sniper_verdict
+        FROM indicators_daily id
+        JOIN instruments i ON id.symbol = i.symbol
+        LEFT JOIN ohlcv_daily o ON o.symbol = id.symbol AND o.date = id.date
+       WHERE id.date = (SELECT MAX(date) FROM indicators_daily)
+         AND i.instrument_type = 'equity'
+         AND id.rvol >= {{min_rvol}}
+         AND (i.market_cap_band = '{{cap_band}}' OR '{{cap_band}}' = 'all')
+       ORDER BY id.rvol DESC
+       LIMIT {{limit}}
+    params:
+      - key: min_rvol
+        label: "Min RVOL"
+        type: number
+        default: 2.0
+        description: "Minimum relative volume (e.g. 2.0 = 2× average)"
+      - key: cap_band
+        label: "Cap Band"
+        type: select
+        default: "all"
+        options:
+          - { value: "all",   label: "All" }
+          - { value: "large", label: "Large Cap" }
+          - { value: "mid",   label: "Mid Cap" }
+          - { value: "small", label: "Small Cap" }
+      - key: limit
+        label: "Max Stocks"
+        type: number
+        default: 20
+    output_type: table
+    default_cron: "30 16 * * 1-5"
+
+  - id: near-52w-highs
+    title: "Near 52-Week High"
+    description: "Stocks within N% of their 52-week high — strength signal for swing entries"
+    query_type: sql
+    data_source: market-db
+    sql_template: >
+      SELECT id.symbol, i.name, i.sector, o.close, id.dist_52wk_high_pct,
+             id.stage, id.composite_score, id.rvol, id.setup_type
+        FROM indicators_daily id
+        JOIN instruments i ON id.symbol = i.symbol
+        LEFT JOIN ohlcv_daily o ON o.symbol = id.symbol AND o.date = id.date
+       WHERE id.date = (SELECT MAX(date) FROM indicators_daily)
+         AND i.instrument_type = 'equity'
+         AND id.dist_52wk_high_pct >= -{{pct_threshold}}
+         AND id.dist_52wk_high_pct <= 0
+       ORDER BY id.dist_52wk_high_pct DESC
+       LIMIT {{limit}}
+    params:
+      - key: pct_threshold
+        label: "Within %"
+        type: number
+        default: 5
+        description: "Show stocks within this % below their 52w high (e.g. 5 = within 5%)"
+      - key: cap_band
+        label: "Cap Band"
+        type: select
+        default: "all"
+        options:
+          - { value: "all",   label: "All" }
+          - { value: "large", label: "Large Cap" }
+          - { value: "mid",   label: "Mid Cap" }
+          - { value: "small", label: "Small Cap" }
+      - key: limit
+        label: "Max Stocks"
+        type: number
+        default: 20
+    output_type: table
+    default_cron: "0 17 * * 1-5"
+
+  - id: watchlist-screen
+    title: "Watchlist Screen"
+    description: "Screen your watchlist with volume and price-level filters"
+    query_type: sql
+    data_source: market-db
+    sql_template: >
+      SELECT id.symbol, i.name, i.sector, o.close, id.stage,
+             id.composite_score, id.rvol, id.rsi_14,
+             id.dist_52wk_high_pct, id.setup_type, id.sniper_verdict
+        FROM indicators_daily id
+        JOIN instruments i ON id.symbol = i.symbol
+        JOIN watchlist w ON w.symbol = id.symbol AND w.list_name = '{{list_name}}'
+        LEFT JOIN ohlcv_daily o ON o.symbol = id.symbol AND o.date = id.date
+       WHERE id.date = (SELECT MAX(date) FROM indicators_daily)
+         AND id.rvol >= {{min_rvol}}
+         AND id.dist_52wk_high_pct >= -{{near_high_pct}}
+       ORDER BY id.composite_score DESC NULLS LAST
+    params:
+      - key: list_name
+        label: "Watchlist"
+        type: string
+        default: "default"
+        description: "Watchlist name (from nse_watchlist_add)"
+      - key: min_rvol
+        label: "Min RVOL"
+        type: number
+        default: 1.0
+      - key: near_high_pct
+        label: "Max % from 52w High"
+        type: number
+        default: 15
+    output_type: table
+    default_cron: "0 17 * * 1-5"
+
+# ── INDIVIDUAL INSTRUMENT ───────────────────────────────────────────────────
+
+  - id: index-chart
+    title: "Index Chart"
+    description: "Price history with EMA-50 and EMA-200 for a selected index"
+    query_type: sql
+    data_source: market-db
+    sql_template: >
+      SELECT o.date, o.close, id.ema_50, id.ema_200,
+             id.rsi_14, id.stage, id.macd_hist
+        FROM ohlcv_daily o
+        LEFT JOIN indicators_daily id ON id.symbol = o.symbol AND id.date = o.date
+       WHERE o.symbol = '{{symbol}}'
+       ORDER BY o.date DESC
+       LIMIT {{days}}
+    params:
+      - key: symbol
+        label: "Index"
+        type: select
+        default: "^NSEI"
+        options:
+          - { value: "^NSEI",      label: "Nifty 50" }
+          - { value: "^NSEBANK",   label: "Bank Nifty" }
+          - { value: "^CNXIT",     label: "Nifty IT" }
+          - { value: "^CNXPHARMA", label: "Nifty Pharma" }
+          - { value: "^CNXMETAL",  label: "Nifty Metal" }
+          - { value: "^CNXFMCG",   label: "Nifty FMCG" }
+          - { value: "^CNXENERGY", label: "Nifty Energy" }
+          - { value: "^CNXREALTY", label: "Nifty Realty" }
+      - key: days
+        label: "Days"
+        type: number
+        default: 90
+    output_type: html
+    render_hint: "Line chart with close price in white, EMA-50 in blue, EMA-200 in orange. Show RSI as a separate sub-chart below. Dates oldest to newest."
+    default_cron: "0 16 * * 1-5"
+
+  - id: stock-snapshot
+    title: "Stock Snapshot"
+    description: "Full indicator snapshot for a single stock — stage, score, EMAs, MACD, RSI, setup"
+    query_type: prompt
+    prompt_template: >
+      Call nse_market_indicators for symbol='{{symbol}}', days=5.
+      Also call nse_get_quote for symbol='{{symbol}}'.
+      Display as a compact card: large current price + change%, stage badge,
+      composite score, sniper verdict, setup type, key indicators (RSI, RVOL, MACD hist,
+      distance from EMA-50, distance from 52w high). Use render_html with dark card layout.
+    params:
+      - key: symbol
+        label: "Symbol (e.g. RELIANCE.NS)"
+        type: string
+        default: "RELIANCE.NS"
+    output_type: html
+    default_cron: "0 17 * * 1-5"
+
+# ── INTELLIGENCE ────────────────────────────────────────────────────────────
+
+  - id: morning-brief
+    title: "Morning Brief"
+    description: "AI-generated market summary for today — regime, top setups, sector signals"
+    query_type: prompt
+    prompt: >
+      Call nse_invoke_skill with skill_id='morning_brief'.
+      Use the skill_content as your system prompt and analyze the data_context.
+      Produce a concise morning brief covering: market regime, top 3 sector opportunities,
+      top 5 stock setups to watch, key risk flags. Use render_html with dark card layout.
+      Keep it scannable — bullet points, not paragraphs.
+    output_type: html
+    default_cron: "0 9 * * 1-5"
+
+  - id: market-regime
+    title: "Market Regime"
+    description: "Current market regime analysis — bull/bear/neutral, breadth quality, risk level"
+    query_type: prompt
+    prompt: >
+      Call nse_invoke_skill with skill_id='market_regime'.
+      Analyze the data_context using the skill's framework.
+      Produce a regime card showing: regime label (BULL/NEUTRAL/BEAR), confidence score,
+      supporting evidence (3-5 bullets), recommended posture (aggressive/moderate/defensive/cash).
+      Use render_html with dark card layout and a color-coded regime badge.
+    output_type: html
+    default_cron: "30 16 * * 1-5"
+
+  - id: market-dashboard
+    title: "Full Market Dashboard"
+    description: "Complete single-panel market view — health, sectors, flows, momentum stocks"
+    query_type: prompt
+    prompt: >
+      Call nse_market_dashboard to generate the complete HTML dashboard,
+      then use render_html to display it. Pass the full HTML string as the content.
+    output_type: html
+    default_cron: "0 17 * * 1-5"

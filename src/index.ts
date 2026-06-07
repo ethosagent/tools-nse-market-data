@@ -10,6 +10,18 @@ export {
 } from './patterns';
 export type { OhlcvRow, ScreenerRow, SyncResult } from './store';
 export { MarketDataStore } from './store';
+export { generateDashboardHtml } from './dashboard';
+export type {
+  AdHistoryRow,
+  BreadthSnapshot,
+  CapRotation,
+  DashboardData,
+  FiiDiiRow,
+  IndexSummary,
+  SectorRow,
+  StageDist,
+  TopStockRow,
+} from './dashboard';
 export { NSE_NIFTY50 } from './symbols';
 export {
   activate,

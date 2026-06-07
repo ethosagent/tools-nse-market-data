@@ -39,6 +39,7 @@ import {
   computeWilliamsR,
   detectCandlePatterns,
 } from './indicators';
+import type { AdHistoryRow, BreadthSnapshot, CapRotation, DashboardData, FiiDiiRow, IndexSummary, SectorRow, StageDist, TopStockRow } from './dashboard';
 import { detectChartPattern } from './patterns';
 import type {
   BulkBlockDealDbRow,
@@ -1392,6 +1393,220 @@ export class MarketDataStore {
       top_setups: topSetups,
       watchlist_alerts: watchlistAlerts,
       breadth: breadth as MarketStateRow | null,
+    };
+  }
+
+  getDashboardData(date?: string, topN = 20): DashboardData {
+    // 1. Resolve asOf
+    const s1 = this.db.prepare('SELECT MAX(date) AS d FROM indicators_daily');
+    const latestRow = s1.get() as { d: string | null };
+    s1.finalize();
+    const asOf = date ?? latestRow.d ?? new Date().toISOString().slice(0, 10);
+
+    // 2. Indices — ^NSEI, ^NSEBANK, ^INDIAVIX, ^CNXIT
+    const INDEX_NAME_MAP: Record<string, string> = {
+      '^NSEI': 'Nifty 50',
+      '^NSEBANK': 'Bank Nifty',
+      '^INDIAVIX': 'India VIX',
+      '^CNXIT': 'Nifty IT',
+    };
+    const indexSymbols = ['^NSEI', '^NSEBANK', '^INDIAVIX', '^CNXIT'];
+    const indices: IndexSummary[] = [];
+    for (const sym of indexSymbols) {
+      const si = this.db.prepare(
+        `SELECT o.close,
+                id.stage,
+                o2.close AS prev_close
+         FROM ohlcv_daily o
+         LEFT JOIN indicators_daily id
+                ON id.symbol = o.symbol AND id.date = o.date
+         LEFT JOIN ohlcv_daily o2
+                ON o2.symbol = o.symbol
+               AND o2.date = (
+                     SELECT MAX(date) FROM ohlcv_daily
+                      WHERE symbol = ? AND date < ?
+                   )
+         WHERE o.symbol = ? AND o.date = ?`,
+      );
+      const row = si.get([sym, asOf, sym, asOf]) as {
+        close: number | null;
+        stage: number | null;
+        prev_close: number | null;
+      } | null;
+      si.finalize();
+
+      let changePct: number | null = null;
+      if (row?.close != null && row?.prev_close != null && row.prev_close !== 0) {
+        changePct = Math.round(((row.close - row.prev_close) / row.prev_close) * 10000) / 100;
+      }
+
+      indices.push({
+        symbol: sym,
+        name: INDEX_NAME_MAP[sym] ?? sym,
+        close: row?.close ?? null,
+        change_pct: changePct,
+        stage: row?.stage ?? null,
+      });
+    }
+
+    // 3. Breadth snapshot
+    const s3 = this.db.prepare('SELECT * FROM market_state_daily WHERE date = ?');
+    const breadthRaw = s3.get([asOf]) as Record<string, unknown> | null;
+    s3.finalize();
+    let breadth: BreadthSnapshot | null = null;
+    if (breadthRaw) {
+      breadth = {
+        date: breadthRaw.date as string,
+        advances: breadthRaw.advances as number | null,
+        declines: breadthRaw.declines as number | null,
+        unchanged_count: breadthRaw.unchanged_count as number | null,
+        ad_ratio: breadthRaw.ad_ratio as number | null,
+        pct_above_50ma: breadthRaw.pct_above_50ma as number | null,
+        pct_above_200ma: breadthRaw.pct_above_200ma as number | null,
+        stage2_pct: breadthRaw.stage2_pct as number | null,
+        ema_stack_bull_pct: breadthRaw.ema_stack_bull_pct as number | null,
+        mood_score: breadthRaw.mood_score as number | null,
+        new_highs: breadthRaw.new_highs as number | null,
+        new_lows: breadthRaw.new_lows as number | null,
+      };
+    }
+
+    // 4. A/D history (7 rows, chronological)
+    const s4 = this.db.prepare(
+      `SELECT date, advances, declines, ad_ratio
+         FROM market_state_daily
+        WHERE advances IS NOT NULL
+        ORDER BY date DESC
+        LIMIT 7`,
+    );
+    const adHistoryDesc = s4.all() as unknown as AdHistoryRow[];
+    s4.finalize();
+    const adHistory = adHistoryDesc.reverse();
+
+    // 5. Sectors
+    const s5 = this.db.prepare(
+      `SELECT sector,
+              sector_return_1w  AS return_1w,
+              sector_return_1m  AS return_1m,
+              sector_return_3m  AS return_3m,
+              rs_rank,
+              rs_rank_delta_1w,
+              pct_members_stage2,
+              top_stock_symbol
+         FROM sector_state_daily
+        WHERE date = ?
+        ORDER BY rs_rank ASC`,
+    );
+    const sectors = s5.all([asOf]) as unknown as SectorRow[];
+    s5.finalize();
+
+    // 6. FII/DII flows (10 rows, chronological)
+    const s6 = this.db.prepare(
+      `SELECT date, fii_net, dii_net
+         FROM fii_dii_daily
+        ORDER BY date DESC
+        LIMIT 10`,
+    );
+    const fiiDiiDesc = s6.all() as unknown as FiiDiiRow[];
+    s6.finalize();
+    const fiiDii = fiiDiiDesc.reverse();
+
+    // 7. Top stocks
+    const s7 = this.db.prepare(
+      `SELECT id.symbol,
+              i.name,
+              i.sector,
+              o.close,
+              id.stage,
+              id.composite_score,
+              id.sniper_score,
+              id.sniper_verdict,
+              id.setup_type,
+              id.rvol,
+              id.rsi_14,
+              id.return_1m,
+              id.dist_52wk_high_pct,
+              id.rs_rank_in_segment
+         FROM indicators_daily id
+         JOIN instruments i ON i.symbol = id.symbol
+         LEFT JOIN ohlcv_daily o ON o.symbol = id.symbol AND o.date = id.date
+        WHERE id.date = ?
+          AND id.stage = 2
+          AND i.instrument_type = 'equity'
+          AND id.composite_score IS NOT NULL
+        ORDER BY id.composite_score DESC
+        LIMIT ?`,
+    );
+    const topStocks = s7.all([asOf, topN]) as unknown as TopStockRow[];
+    s7.finalize();
+
+    // 8. Stage distribution
+    const s8 = this.db.prepare(
+      `SELECT id.stage,
+              COUNT(*) AS count
+         FROM indicators_daily id
+         JOIN instruments i ON i.symbol = id.symbol
+        WHERE id.date = ?
+          AND i.instrument_type = 'equity'
+          AND id.stage IS NOT NULL
+        GROUP BY id.stage
+        ORDER BY id.stage ASC`,
+    );
+    const stageDist = s8.all([asOf]) as unknown as StageDist[];
+    s8.finalize();
+
+    // 9. Cap rotation — same logic as getMarketBrief
+    const s9 = this.db.prepare(
+      `SELECT id.symbol, id.rs_vs_broad
+         FROM indicators_daily id
+        WHERE id.symbol IN ('^CNX100', '^NSMIDCP100', '^CNXSC') AND id.date = ?`,
+    );
+    const capIndexRows = s9.all([asOf]) as Array<{ symbol: string; rs_vs_broad: number | null }>;
+    s9.finalize();
+
+    const capMap = new Map<string, number | null>();
+    for (const r of capIndexRows) {
+      capMap.set(r.symbol, r.rs_vs_broad);
+    }
+
+    let largeRs: number | null = capMap.get('^CNX100') ?? null;
+    let midRs: number | null = capMap.get('^NSMIDCP100') ?? null;
+    let smallRs: number | null = capMap.get('^CNXSC') ?? null;
+
+    if (largeRs === null || midRs === null || smallRs === null) {
+      const s10 = this.db.prepare(
+        `SELECT i.market_cap_band, AVG(id.rs_vs_broad) as avg_rs
+           FROM indicators_daily id
+           JOIN instruments i ON id.symbol = i.symbol
+          WHERE id.date = ? AND i.instrument_type = 'equity' AND i.market_cap_band IS NOT NULL
+          GROUP BY i.market_cap_band`,
+      );
+      const bandRows = s10.all([asOf]) as Array<{ market_cap_band: string; avg_rs: number | null }>;
+      s10.finalize();
+      for (const r of bandRows) {
+        const band = r.market_cap_band?.toLowerCase();
+        if (band === 'large' && largeRs === null) largeRs = r.avg_rs;
+        else if (band === 'mid' && midRs === null) midRs = r.avg_rs;
+        else if (band === 'small' && smallRs === null) smallRs = r.avg_rs;
+      }
+    }
+
+    const capRotation: CapRotation = {
+      large_rs_vs_broad: largeRs,
+      mid_rs_vs_broad: midRs,
+      small_rs_vs_broad: smallRs,
+    };
+
+    return {
+      as_of: asOf,
+      indices,
+      breadth,
+      ad_history: adHistory,
+      sectors,
+      fii_dii: fiiDii,
+      top_stocks: topStocks,
+      stage_dist: stageDist,
+      cap_rotation: capRotation,
     };
   }
 

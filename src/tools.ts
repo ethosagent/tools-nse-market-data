@@ -13,6 +13,7 @@ import type { Tool, ToolResult } from '@ethosagent/types';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { generateDashboardHtml } from './dashboard';
 import { fetchGiftNifty } from './nse-fetcher';
 import type { InstrumentSeedRow, SavedScanRow } from './schema';
 import { MarketDataStore } from './store';
@@ -1381,20 +1382,63 @@ const nseRefreshScansTool: Tool = {
   },
 };
 
+interface DashboardArgs {
+  date?: string;
+  top_n?: number;
+}
+
+const nseMarketDashboardTool: Tool<DashboardArgs> = {
+  name: 'nse_market_dashboard',
+  description:
+    'Generate the complete NSE market dashboard as self-contained HTML. ' +
+    'Shows market health, advance-decline trend, sector rotation, FII/DII flows, ' +
+    'stage distribution, and top momentum stocks. Pass the returned HTML to ' +
+    'dashboard_add_panel (block_type: html) or render_html to display.',
+  toolset: 'market',
+  capabilities: {},
+  maxResultChars: 500_000,
+  cache: { ttlMs: 300_000 },
+  schema: {
+    type: 'object',
+    properties: {
+      date: {
+        type: 'string',
+        description: 'YYYY-MM-DD. Defaults to the latest date with indicator data.',
+      },
+      top_n: {
+        type: 'number',
+        description: 'Number of top Stage 2 stocks to include (default 20, max 50).',
+      },
+    },
+  },
+  async execute(args, _ctx): Promise<ToolResult> {
+    const topN =
+      args.top_n == null || args.top_n <= 0 ? 20 : Math.min(args.top_n, 50);
+    return withStore((store) => {
+      const data = store.getDashboardData(args.date, topN);
+      const html = generateDashboardHtml(data);
+      return { ok: true, value: html };
+    });
+  },
+};
+
 /** v2 plugin entry point — registers all tools via EthosPluginApi. */
 export const plugin: EthosPlugin = {
   activate(api: EthosPluginApi) {
     for (const tool of createNseMarketDataTools()) {
       api.registerTool(tool);
     }
+    // registerDataSource is new in plugin-sdk — guard until the type ships.
+    (api as EthosPluginApi & { registerDataSource?(id: string, path: string): void }).registerDataSource?.('market-db', getDbPath());
   },
 };
 
 /** Backward-compatible activate function for v1 hosts. */
-export function activate(api: { registerTool(tool: Tool): void }): void {
+export function activate(api: { registerTool(tool: Tool): void; registerDataSource?(id: string, path: string): void }): void {
   for (const tool of createNseMarketDataTools()) {
     api.registerTool(tool);
   }
+  api.registerDataSource?.('market-db', getDbPath());
 }
 
 export function createNseMarketDataTools(): Tool[] {
@@ -1422,6 +1466,7 @@ export function createNseMarketDataTools(): Tool[] {
     nseGetBulkBlockTool as Tool,
     nseGetGiftNiftyTool as Tool,
     nseRefreshScansTool,
+    nseMarketDashboardTool as Tool,
   ];
   return tools;
 }
