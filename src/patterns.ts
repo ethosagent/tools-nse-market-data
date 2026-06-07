@@ -74,7 +74,7 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-function maxHigh(rows: OhlcvRow[], from: number, to: number): number {
+function _maxHigh(rows: OhlcvRow[], from: number, to: number): number {
   let max = -Infinity;
   for (let i = from; i <= to; i++) {
     const h = rows[i]?.high ?? -Infinity;
@@ -270,7 +270,7 @@ export function detectFlatBase(weekly: OhlcvRow[]): PatternResult {
 // Cup with Handle
 // ---------------------------------------------------------------------------
 
-export function detectCupWithHandle(weekly: OhlcvRow[], volAvg20 = 0): PatternResult {
+export function detectCupWithHandle(weekly: OhlcvRow[], _volAvg20 = 0): PatternResult {
   const n = weekly.length;
   if (n < CUP_MIN_WEEKS) return nullPattern();
 
@@ -451,7 +451,7 @@ export function detectCupWithHandle(weekly: OhlcvRow[], volAvg20 = 0): PatternRe
 // Double Bottom
 // ---------------------------------------------------------------------------
 
-export function detectDoubleBottom(weekly: OhlcvRow[], volAvg20 = 0): PatternResult {
+export function detectDoubleBottom(weekly: OhlcvRow[], _volAvg20 = 0): PatternResult {
   const n = weekly.length;
   if (n < DB_MIN_WEEKS) return nullPattern();
 
