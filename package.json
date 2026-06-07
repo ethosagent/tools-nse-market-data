@@ -1,6 +1,6 @@
 {
   "name": "@ethosagent/tools-nse-market-data",
-  "version": "0.1.20",
+  "version": "0.1.21",
   "description": "NSE India market data tools for Ethos AI agents — local SQLite storage, daily sync via Yahoo Finance, watchlist management, screener, and technical indicators.",
   "keywords": [
     "nse",
@@ -60,7 +60,7 @@
     "lint:fix": "biome check --write .",
     "check": "npm run typecheck && npm run lint && npm run test",
     "prepublishOnly": "npm run check && npm run build",
-    "postinstall": "npm rebuild better-sqlite3 && node dist/postinstall.js"
+    "postinstall": "npm rebuild better-sqlite3 && (test -f dist/postinstall.js && node dist/postinstall.js || true)"
   },
   "dependencies": {
     "better-sqlite3": "12.10.0",

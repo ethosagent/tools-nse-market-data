@@ -165,10 +165,12 @@ release:
 	echo ""; \
 	echo "Tagging and pushing..."; \
 	git tag "v$$VERSION"; \
-	git push && git push --tags; \
+	git push -u origin HEAD && git push --tags; \
 	echo ""; \
 	if [ -f data/seed.db.gz ]; then \
 	  echo "Uploading seed files to GitHub release v$$VERSION..."; \
+	  gh release create "v$$VERSION" data/seed.db.gz data/seed-manifest.json \
+	    --title "v$$VERSION" --generate-notes 2>/dev/null || \
 	  gh release upload "v$$VERSION" data/seed.db.gz data/seed-manifest.json --clobber 2>/dev/null || \
 	    echo "  (seed upload skipped — run manually: gh release upload v$$VERSION data/seed.db.gz data/seed-manifest.json)"; \
 	fi; \
