@@ -117,19 +117,6 @@
     "as_of_date": "2026-06-05"
   },
   {
-    "symbol": "^CNXMIDCAP",
-    "name": "Nifty Midcap 150 (alt)",
-    "exchange": "NSE",
-    "sector": null,
-    "industry": null,
-    "isin": null,
-    "market_cap_band": null,
-    "instrument_type": "index",
-    "index_category": "broad",
-    "is_active": 0,
-    "as_of_date": "2026-06-05"
-  },
-  {
     "symbol": "^CNXPHARMA",
     "name": "NIFTY Pharma",
     "exchange": "NSE",
@@ -204,19 +191,6 @@
     "market_cap_band": null,
     "instrument_type": "index",
     "index_category": "broad",
-    "is_active": 1,
-    "as_of_date": "2026-06-05"
-  },
-  {
-    "symbol": "^GIFTNIFTY",
-    "name": "GIFT Nifty",
-    "exchange": "NSE",
-    "sector": null,
-    "industry": null,
-    "isin": null,
-    "market_cap_band": null,
-    "instrument_type": "index",
-    "index_category": "regime",
     "is_active": 1,
     "as_of_date": "2026-06-05"
   },
@@ -676,19 +650,6 @@
     "as_of_date": "2026-06-05"
   },
   {
-    "symbol": "ADANITRANS.NS",
-    "name": "ADANITRANS",
-    "exchange": "NSE",
-    "sector": null,
-    "industry": null,
-    "isin": null,
-    "market_cap_band": "large_mid",
-    "instrument_type": "equity",
-    "index_category": "nifty500",
-    "is_active": 1,
-    "as_of_date": "2026-06-05"
-  },
-  {
     "symbol": "ADFFOODS.NS",
     "name": "ADF Foods Limited",
     "exchange": "NSE",
@@ -1131,7 +1092,7 @@
     "as_of_date": "2026-06-05"
   },
   {
-    "symbol": "AMARAJABAT.NS",
+    "symbol": "AMARAJAEN.NS",
     "name": "AMARAJABAT",
     "exchange": "NSE",
     "sector": null,
@@ -1205,19 +1166,6 @@
     "market_cap_band": null,
     "instrument_type": "equity",
     "index_category": "nifty500",
-    "is_active": 1,
-    "as_of_date": "2026-06-05"
-  },
-  {
-    "symbol": "ANONDITA.NS",
-    "name": "Anondita Medicare Limited",
-    "exchange": "NSE",
-    "sector": "Producer manufacturing",
-    "industry": "Miscellaneous manufacturing",
-    "isin": null,
-    "market_cap_band": null,
-    "instrument_type": "equity",
-    "index_category": "csv_curated",
     "is_active": 1,
     "as_of_date": "2026-06-05"
   },
@@ -2015,32 +1963,6 @@
     "as_of_date": "2026-06-05"
   },
   {
-    "symbol": "BAGMANE.RR.NS",
-    "name": "Bagmane Prime Office REIT",
-    "exchange": "NSE",
-    "sector": "Finance",
-    "industry": "Real estate investment trusts",
-    "isin": null,
-    "market_cap_band": null,
-    "instrument_type": "equity",
-    "index_category": "csv_curated",
-    "is_active": 1,
-    "as_of_date": "2026-06-05"
-  },
-  {
-    "symbol": "BAJAJ_AUTO.NS",
-    "name": "Bajaj Auto Limited",
-    "exchange": "NSE",
-    "sector": "Consumer durables",
-    "industry": "Motor vehicles",
-    "isin": null,
-    "market_cap_band": null,
-    "instrument_type": "equity",
-    "index_category": null,
-    "is_active": 1,
-    "as_of_date": "2026-06-05"
-  },
-  {
     "symbol": "BAJAJ-AUTO.NS",
     "name": "Bajaj Auto Limited",
     "exchange": "NSE",
@@ -2282,19 +2204,6 @@
     "industry": "Major banks",
     "isin": null,
     "market_cap_band": null,
-    "instrument_type": "equity",
-    "index_category": "nifty500",
-    "is_active": 1,
-    "as_of_date": "2026-06-05"
-  },
-  {
-    "symbol": "BARBEQUE.NS",
-    "name": "BARBEQUE",
-    "exchange": "NSE",
-    "sector": null,
-    "industry": null,
-    "isin": null,
-    "market_cap_band": "large_mid",
     "instrument_type": "equity",
     "index_category": "nifty500",
     "is_active": 1,
@@ -2665,7 +2574,7 @@
     "as_of_date": "2026-06-05"
   },
   {
-    "symbol": "BIRET.RR.NS",
+    "symbol": "BIRET.NS",
     "name": "Brookfield India Real Estate Trust",
     "exchange": "NSE",
     "sector": "Finance",
@@ -2995,19 +2904,6 @@
     "exchange": "NSE",
     "sector": "Distribution services",
     "industry": "Wholesale distributors",
-    "isin": null,
-    "market_cap_band": null,
-    "instrument_type": "equity",
-    "index_category": "csv_curated",
-    "is_active": 1,
-    "as_of_date": "2026-06-05"
-  },
-  {
-    "symbol": "C2C.NS",
-    "name": "C2C Advanced Systems Ltd.",
-    "exchange": "NSE",
-    "sector": "Technology services",
-    "industry": "Packaged software",
     "isin": null,
     "market_cap_band": null,
     "instrument_type": "equity",
@@ -3991,19 +3887,6 @@
     "as_of_date": "2026-06-05"
   },
   {
-    "symbol": "DANISH.NS",
-    "name": "Danish Power Ltd.",
-    "exchange": "NSE",
-    "sector": "Producer manufacturing",
-    "industry": "Electrical products",
-    "isin": null,
-    "market_cap_band": null,
-    "instrument_type": "equity",
-    "index_category": "csv_curated",
-    "is_active": 1,
-    "as_of_date": "2026-06-05"
-  },
-  {
     "symbol": "DATAMATICS.NS",
     "name": "Datamatics Global Services Limited",
     "exchange": "NSE",
@@ -4628,19 +4511,6 @@
     "as_of_date": "2026-06-05"
   },
   {
-    "symbol": "ECOLINE.NS",
-    "name": "Ecoline Exim Limited",
-    "exchange": "NSE",
-    "sector": "Consumer durables",
-    "industry": "Home furnishings",
-    "isin": null,
-    "market_cap_band": null,
-    "instrument_type": "equity",
-    "index_category": "csv_curated",
-    "is_active": 1,
-    "as_of_date": "2026-06-05"
-  },
-  {
     "symbol": "EDELWEISS.NS",
     "name": "Edelweiss Financial Services Limited",
     "exchange": "NSE",
@@ -4836,7 +4706,7 @@
     "as_of_date": "2026-06-05"
   },
   {
-    "symbol": "EMBASSY.RR.NS",
+    "symbol": "EMBASSY.NS",
     "name": "Embassy Office Parks REIT",
     "exchange": "NSE",
     "sector": "Finance",
@@ -6091,19 +5961,6 @@
     "industry": "Real estate development",
     "isin": null,
     "market_cap_band": null,
-    "instrument_type": "equity",
-    "index_category": "nifty500",
-    "is_active": 1,
-    "as_of_date": "2026-06-05"
-  },
-  {
-    "symbol": "GOKALDAS.NS",
-    "name": "GOKALDAS",
-    "exchange": "NSE",
-    "sector": null,
-    "industry": null,
-    "isin": null,
-    "market_cap_band": "large_mid",
     "instrument_type": "equity",
     "index_category": "nifty500",
     "is_active": 1,
@@ -9412,19 +9269,6 @@
     "as_of_date": "2026-06-05"
   },
   {
-    "symbol": "KRT.RR.NS",
-    "name": "Knowledge Realty Trust",
-    "exchange": "NSE",
-    "sector": "Finance",
-    "industry": "Real estate investment trusts",
-    "isin": null,
-    "market_cap_band": null,
-    "instrument_type": "equity",
-    "index_category": "csv_curated",
-    "is_active": 1,
-    "as_of_date": "2026-06-05"
-  },
-  {
     "symbol": "KSB.NS",
     "name": "KSB Ltd.",
     "exchange": "NSE",
@@ -10582,20 +10426,7 @@
     "as_of_date": "2026-06-05"
   },
   {
-    "symbol": "MINDAIND.NS",
-    "name": "MINDAIND",
-    "exchange": "NSE",
-    "sector": null,
-    "industry": null,
-    "isin": null,
-    "market_cap_band": "large_mid",
-    "instrument_type": "equity",
-    "index_category": "nifty500",
-    "is_active": 1,
-    "as_of_date": "2026-06-05"
-  },
-  {
-    "symbol": "MINDSPACE.RR.NS",
+    "symbol": "MINDSPACE.NS",
     "name": "Mindspace Business Parks REIT",
     "exchange": "NSE",
     "sector": "Finance",
@@ -10920,7 +10751,7 @@
     "as_of_date": "2026-06-05"
   },
   {
-    "symbol": "NAM_INDIA.NS",
+    "symbol": "NAM-INDIA.NS",
     "name": "Nippon Life India Asset Management Ltd.",
     "exchange": "NSE",
     "sector": "Finance",
@@ -11323,19 +11154,6 @@
     "as_of_date": "2026-06-05"
   },
   {
-    "symbol": "NIPPONLIFE.NS",
-    "name": "NIPPONLIFE",
-    "exchange": "NSE",
-    "sector": null,
-    "industry": null,
-    "isin": null,
-    "market_cap_band": "large_mid",
-    "instrument_type": "equity",
-    "index_category": "nifty500",
-    "is_active": 1,
-    "as_of_date": "2026-06-05"
-  },
-  {
     "symbol": "NITCO.NS",
     "name": "Nitco Limited",
     "exchange": "NSE",
@@ -11557,7 +11375,7 @@
     "as_of_date": "2026-06-05"
   },
   {
-    "symbol": "NXST.RR.NS",
+    "symbol": "NXST.NS",
     "name": "Nexus Select Trust",
     "exchange": "NSE",
     "sector": "Finance",
@@ -11592,19 +11410,6 @@
     "market_cap_band": null,
     "instrument_type": "equity",
     "index_category": "nifty500",
-    "is_active": 1,
-    "as_of_date": "2026-06-05"
-  },
-  {
-    "symbol": "OBSCP.NS",
-    "name": "OBSC Perfection Ltd.",
-    "exchange": "NSE",
-    "sector": "Producer manufacturing",
-    "industry": "Metal fabrication",
-    "isin": null,
-    "market_cap_band": null,
-    "instrument_type": "equity",
-    "index_category": "csv_curated",
     "is_active": 1,
     "as_of_date": "2026-06-05"
   },
@@ -13780,19 +13585,6 @@
     "as_of_date": "2026-06-05"
   },
   {
-    "symbol": "RTL.NS",
-    "name": "Rama Telecom Limited",
-    "exchange": "NSE",
-    "sector": "Communications",
-    "industry": "Specialty telecommunications",
-    "isin": null,
-    "market_cap_band": null,
-    "instrument_type": "equity",
-    "index_category": "csv_curated",
-    "is_active": 1,
-    "as_of_date": "2026-06-05"
-  },
-  {
     "symbol": "RTNINDIA.NS",
     "name": "RattanIndia Enterprises Limited",
     "exchange": "NSE",
@@ -14344,19 +14136,6 @@
     "exchange": "NSE",
     "sector": "Commercial services",
     "industry": "Miscellaneous commercial services",
-    "isin": null,
-    "market_cap_band": null,
-    "instrument_type": "equity",
-    "index_category": "csv_curated",
-    "is_active": 1,
-    "as_of_date": "2026-06-05"
-  },
-  {
-    "symbol": "SEITINVIT.NS",
-    "name": "Sustainable Energy Infra Trust",
-    "exchange": "NSE",
-    "sector": "Finance",
-    "industry": "Real estate investment trusts",
     "isin": null,
     "market_cap_band": null,
     "instrument_type": "equity",
@@ -16120,19 +15899,6 @@
     "as_of_date": "2026-06-05"
   },
   {
-    "symbol": "TECHERA.NS",
-    "name": "Techera Engineering India Ltd.",
-    "exchange": "NSE",
-    "sector": "Producer manufacturing",
-    "industry": "Metal fabrication",
-    "isin": null,
-    "market_cap_band": null,
-    "instrument_type": "equity",
-    "index_category": "csv_curated",
-    "is_active": 1,
-    "as_of_date": "2026-06-05"
-  },
-  {
     "symbol": "TECHM.NS",
     "name": "Tech Mahindra Limited",
     "exchange": "NSE",
@@ -17238,19 +17004,6 @@
     "as_of_date": "2026-06-05"
   },
   {
-    "symbol": "VIESL.NS",
-    "name": "Vision Infra Equipment Solutions Limited",
-    "exchange": "NSE",
-    "sector": "Finance",
-    "industry": "Finance/Rental/Leasing",
-    "isin": null,
-    "market_cap_band": null,
-    "instrument_type": "equity",
-    "index_category": "csv_curated",
-    "is_active": 1,
-    "as_of_date": "2026-06-05"
-  },
-  {
     "symbol": "VIJAYA.NS",
     "name": "Vijaya Diagnostic Centre Ltd.",
     "exchange": "NSE",
@@ -17572,19 +17325,6 @@
     "market_cap_band": null,
     "instrument_type": "equity",
     "index_category": "csv_curated",
-    "is_active": 1,
-    "as_of_date": "2026-06-05"
-  },
-  {
-    "symbol": "WABCO.NS",
-    "name": "WABCO",
-    "exchange": "NSE",
-    "sector": null,
-    "industry": null,
-    "isin": null,
-    "market_cap_band": "large_mid",
-    "instrument_type": "equity",
-    "index_category": "nifty500",
     "is_active": 1,
     "as_of_date": "2026-06-05"
   },

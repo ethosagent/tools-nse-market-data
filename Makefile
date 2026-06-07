@@ -29,6 +29,7 @@ help:
 	@echo "  release-dry          - Dry run: verify + check + build + npm publish --dry-run"
 	@echo "  release-npm          - Publish to npm directly (no tag, idempotent escape hatch)"
 	@echo "  smoke                - Verify published version matches package.json on npm registry"
+	@echo "  seed-db              - Generate 5-year seed DB → data/seed.db.gz (run before release)"
 	@echo ""
 	@echo "Housekeeping"
 	@echo "  clean                - Remove node_modules and dist/"
@@ -46,6 +47,22 @@ build:
 
 dev:
 	npm run dev
+
+# Generate the 5-year seed database bundled with the npm package.
+# Run this once before `make release` when you want to ship fresh historical data.
+# Requires: built dist/ (run `make build` first), network access to Yahoo Finance.
+# Takes ~2-4 hours for all 1,391 active symbols. Output: data/seed.db.gz
+seed-db: build
+	@echo "Generating 5-year seed DB for all active NSE symbols..."
+	@rm -f ./data/seed.db ./data/seed.db.gz
+	@SEED_START=$$(node -e "const d=new Date();d.setFullYear(d.getFullYear()-5);console.log(d.toISOString().slice(0,10))") && \
+	 NSE_MARKET_DATA_DB=./data/seed.db node dist/cli.js refresh-instruments && \
+	 NSE_MARKET_DATA_DB=./data/seed.db node dist/cli.js backfill --all --from $$SEED_START --concurrency 5 && \
+	 echo "Compressing..." && \
+	 gzip -k -f ./data/seed.db && \
+	 rm -f ./data/seed.db && \
+	 echo "Done: $$(du -h data/seed.db.gz | cut -f1)"
+	@node -e "const fs=require('node:fs');fs.writeFileSync('data/seed-manifest.json',JSON.stringify({generatedAt:new Date().toISOString()},null,2)+'\n');console.log('Wrote data/seed-manifest.json');"
 
 # ---------- quality ----------
 
@@ -150,6 +167,11 @@ release:
 	git tag "v$$VERSION"; \
 	git push && git push --tags; \
 	echo ""; \
+	if [ -f data/seed.db.gz ]; then \
+	  echo "Uploading seed files to GitHub release v$$VERSION..."; \
+	  gh release upload "v$$VERSION" data/seed.db.gz data/seed-manifest.json --clobber 2>/dev/null || \
+	    echo "  (seed upload skipped — run manually: gh release upload v$$VERSION data/seed.db.gz data/seed-manifest.json)"; \
+	fi; \
 	echo "Tagged v$$VERSION and pushed — GitHub Actions will publish to npm"; \
 	echo "Run 'make smoke' in ~3 minutes to verify."
 
@@ -175,6 +197,6 @@ smoke:
 clean:
 	rm -rf node_modules dist
 
-.PHONY: help prepare build dev test typecheck lint format check \
+.PHONY: help prepare build dev seed-db test typecheck lint format check \
         version version-bump-patch version-bump-minor version-bump-major \
         verify release release-dry release-npm smoke clean

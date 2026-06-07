@@ -250,6 +250,103 @@ export async function fetchBulkBlockDeals(date: string): Promise<BulkBlockDealRo
 }
 
 // ---------------------------------------------------------------------------
+// Fetch GIFT Nifty
+// ---------------------------------------------------------------------------
+
+export interface GiftNiftyRow {
+  /** Current price of front-month GIFT Nifty futures */
+  lastPrice: number;
+  prevClose: number;
+  change: number;
+  changePct: number;
+  open: number;
+  high: number;
+  low: number;
+  totalVolume: number;
+  expiryDate: string; // YYYY-MM-DD
+  /** Implied gap % vs Nifty 50 spot close stored in DB (null if no spot data) */
+  impliedGapPct: number | null;
+  niftySpotClose: number | null;
+  timestamp: string; // ISO-8601 fetch time
+}
+
+/**
+ * Fetch live GIFT Nifty futures data from NSE India public API.
+ * Uses the same cookie-based session as other NSE fetchers.
+ * Returns the front-month contract (first in the list by expiry).
+ */
+export async function fetchGiftNifty(niftySpotClose?: number): Promise<GiftNiftyRow | null> {
+  type GiftEntry = {
+    lastPrice?: number | string;
+    prevPrice?: number | string;
+    change?: number | string;
+    pChange?: number | string;
+    openPrice?: number | string;
+    highPrice?: number | string;
+    lowPrice?: number | string;
+    totalTradedVolume?: number | string;
+    expiryDate?: string;
+  };
+
+  type GiftResponse =
+    | {
+        data?: GiftEntry[];
+      }
+    | GiftEntry[];
+
+  let raw: GiftResponse;
+  try {
+    raw = (await nseGet('https://www.nseindia.com/api/giftNiftyData')) as GiftResponse;
+  } catch {
+    return null;
+  }
+
+  const entries: GiftEntry[] = Array.isArray(raw)
+    ? raw
+    : Array.isArray((raw as { data?: GiftEntry[] }).data)
+      ? (raw as { data: GiftEntry[] }).data
+      : [];
+
+  if (entries.length === 0) return null;
+
+  // Pick front-month (first entry — NSE returns them in ascending expiry order)
+  const entry = entries[0] as GiftEntry;
+
+  const lastPrice = parseFloat(String(entry.lastPrice ?? 0)) || 0;
+  const prevClose = parseFloat(String(entry.prevPrice ?? 0)) || 0;
+  const change = parseFloat(String(entry.change ?? 0)) || lastPrice - prevClose;
+  const changePct =
+    parseFloat(String(entry.pChange ?? 0)) || (prevClose > 0 ? (change / prevClose) * 100 : 0);
+  const open = parseFloat(String(entry.openPrice ?? 0)) || 0;
+  const high = parseFloat(String(entry.highPrice ?? 0)) || 0;
+  const low = parseFloat(String(entry.lowPrice ?? 0)) || 0;
+  const totalVolume = parseInt(String(entry.totalTradedVolume ?? 0), 10) || 0;
+  const expiryRaw = entry.expiryDate ?? '';
+  const expiryDate = normalizeDate(expiryRaw) || expiryRaw;
+
+  const spotClose = niftySpotClose ?? null;
+  const impliedGapPct =
+    spotClose && spotClose > 0
+      ? parseFloat((((lastPrice - spotClose) / spotClose) * 100).toFixed(2))
+      : null;
+
+  return {
+    lastPrice,
+    prevClose,
+    change: parseFloat(change.toFixed(2)),
+    changePct: parseFloat(changePct.toFixed(2)),
+    open,
+    high,
+    low,
+    totalVolume,
+    expiryDate,
+    impliedGapPct,
+    niftySpotClose: spotClose,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 

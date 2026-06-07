@@ -12,7 +12,7 @@ const HEADERS = {
 // ---------------------------------------------------------------------------
 
 let lastCallTime = 0;
-const MIN_INTERVAL_MS = 100;
+const MIN_INTERVAL_MS = 400;
 
 async function throttledFetch(url: string): Promise<Response> {
   const elapsed = Date.now() - lastCallTime;
@@ -221,4 +221,18 @@ export async function searchSymbol(
     shortName: q.shortname ?? '',
     exchange: q.exchange ?? '',
   }));
+}
+
+/** Returns true if an error from fetchOhlcv / fetchQuote is a Yahoo Finance rate-limit. */
+export function isYahooRateLimited(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const msg = err.message.toLowerCase();
+  return (
+    msg.includes('rate limit') ||
+    msg.includes('429') ||
+    msg.includes('too many') ||
+    msg.includes('invalid json') ||
+    msg.includes('unexpected token') ||
+    msg.includes('json') // non-JSON body (e.g. "Edge: Too Many Requests" plain text)
+  );
 }
