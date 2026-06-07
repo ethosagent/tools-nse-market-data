@@ -289,6 +289,7 @@ function buildStageDistPanel(data: DashboardData): string {
   return `<div class="panel" style="grid-column:1/7;grid-row:9/13">
     <h2>Stage Distribution</h2>
     <div class="chart-wrap"><canvas id="stageChart"></canvas></div>
+    <div class="stage-legend"></div>
   </div>`;
 }
 
@@ -773,21 +774,13 @@ export function generateDashboardHtml(data: DashboardData): string {
     },
   };
 
-  const stageDistPanel = buildStageDistPanel(safeData);
-  // Inject the legend container into the stage dist panel if it has a canvas
-  const stageDistWithLegend = stageDistPanel.includes('stageChart')
-    ? stageDistPanel.replace(
-        '</div>\n  </div>',
-        '</div>\n    <div class="stage-legend"></div>\n  </div>',
-      )
-    : stageDistPanel;
-
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NSE Market Dashboard — ${esc(safeData.as_of)}</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" crossorigin="anonymous"><\/script>
 <style>${buildCss()}</style>
 </head>
 <body>
@@ -797,10 +790,9 @@ export function generateDashboardHtml(data: DashboardData): string {
   ${buildAdHistoryPanel(safeData)}
   ${buildSectorPanel(safeData)}
   ${buildFiiDiiPanel(safeData)}
-  ${stageDistWithLegend}
+  ${buildStageDistPanel(safeData)}
   ${buildTopStocksPanel(safeData)}
 </div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"><\/script>
 <script>
 var DASHBOARD_DATA = ${JSON.stringify(safeData)};
 window.DASHBOARD_DATA = DASHBOARD_DATA;

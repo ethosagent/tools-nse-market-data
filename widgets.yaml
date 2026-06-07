@@ -359,8 +359,7 @@ widgets:
         LEFT JOIN ohlcv_daily o ON o.symbol = id.symbol AND o.date = id.date
        WHERE id.date = (SELECT MAX(date) FROM indicators_daily)
          AND i.instrument_type = 'equity'
-         AND id.dist_52wk_high_pct >= -{{pct_threshold}}
-         AND id.dist_52wk_high_pct <= 0
+         AND id.dist_52wk_high_pct <= {{pct_threshold}}
        ORDER BY id.dist_52wk_high_pct DESC
        LIMIT {{limit}}
     params:
