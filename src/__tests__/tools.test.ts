@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { createNseMarketDataTools } from '../tools';
 
 describe('createNseMarketDataTools()', () => {
-  it('returns 21 tools', () => {
+  it('returns 22 tools', () => {
     const tools = createNseMarketDataTools();
-    expect(tools).toHaveLength(21);
+    expect(tools).toHaveLength(22);
   });
 
   it('all tools have required fields', () => {
@@ -41,5 +41,6 @@ describe('createNseMarketDataTools()', () => {
     expect(names).toContain('nse_get_fii_dii');
     expect(names).toContain('nse_get_corporate_actions');
     expect(names).toContain('nse_get_bulk_block');
+    expect(names).toContain('nse_get_gift_nifty');
   });
 });

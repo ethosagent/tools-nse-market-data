@@ -7,6 +7,15 @@ import { fileURLToPath } from 'node:url';
 import { fetchQuote } from './fetcher';
 import { fetchBulkBlockDeals, fetchCorporateActions, fetchFiiDii } from './nse-fetcher';
 import type { IndexConstituentSeedRow, InstrumentSeedRow, SavedScanRow } from './schema';
+import {
+  downloadSeed,
+  fetchRemoteManifest,
+  GITHUB_SEED_URL,
+  mergeNewSymbols,
+  readLocalManifest,
+  type SeedManifest,
+  writeLocalManifest,
+} from './seed';
 import { MarketDataStore } from './store';
 
 function getPackageRoot(): string {
@@ -112,6 +121,7 @@ Commands:
                             Fetch corporate actions (dividends, splits, bonus)
   fetch-bulk-block [--date YYYY-MM-DD]
                             Fetch bulk and block deals from NSE
+  seed-update               Import new symbols from GitHub seed (additive — never changes existing data)
 
 Options:
   --db PATH                 Override DB path (default: ~/.ethos/market-data/market.db)
@@ -725,6 +735,57 @@ Options:
         const rows = await fetchBulkBlockDeals(dateFlag);
         const saved = store.upsertBulkBlockDeals(rows);
         console.log(`Saved ${saved} bulk/block deal rows for ${dateFlag}`);
+        break;
+      }
+
+      // -----------------------------------------------------------------------
+      case 'seed-update': {
+        const localManifestPath = join(dirname(dbPath), 'seed-manifest.json');
+
+        console.log('Checking GitHub for a newer seed database...');
+
+        let remoteManifest: SeedManifest;
+        try {
+          remoteManifest = await fetchRemoteManifest();
+        } catch (err) {
+          console.error(
+            `Could not reach GitHub manifest: ${err instanceof Error ? err.message : String(err)}`,
+          );
+          process.exit(1);
+        }
+
+        const localGeneratedAt = readLocalManifest(localManifestPath);
+        if (localGeneratedAt && localGeneratedAt >= remoteManifest.generatedAt) {
+          console.log(
+            `Already up to date (local: ${localGeneratedAt}, remote: ${remoteManifest.generatedAt}).`,
+          );
+          break;
+        }
+
+        console.log(
+          `Remote seed: ${remoteManifest.generatedAt} (${remoteManifest.symbols} symbols, ${remoteManifest.rows.toLocaleString()} rows)`,
+        );
+        console.log('Downloading seed.db.gz from GitHub...');
+
+        const tmpSeedPath = join(dirname(dbPath), 'seed-update.db');
+
+        try {
+          await downloadSeed(GITHUB_SEED_URL, tmpSeedPath);
+        } catch (err) {
+          console.error(`Download failed: ${err instanceof Error ? err.message : String(err)}`);
+          process.exit(1);
+        }
+
+        console.log('Checking for new symbols...');
+        const imported = await mergeNewSymbols(tmpSeedPath, dbPath);
+        if (imported === 0) {
+          console.log('No new symbols found in remote seed.');
+        } else {
+          console.log(`Imported ${imported} new symbol(s).`);
+        }
+
+        writeLocalManifest(localManifestPath, remoteManifest);
+        console.log(`Seed manifest updated to ${remoteManifest.generatedAt}.`);
         break;
       }
 

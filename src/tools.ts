@@ -13,6 +13,7 @@ import type { Tool, ToolResult } from '@ethosagent/types';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { fetchGiftNifty } from './nse-fetcher';
 import type { InstrumentSeedRow, SavedScanRow } from './schema';
 import { MarketDataStore } from './store';
 
@@ -1231,6 +1232,58 @@ const nseGetBulkBlockTool: Tool<{ date?: string; symbol?: string }> = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// nse_get_gift_nifty
+// ---------------------------------------------------------------------------
+
+const nseGetGiftNiftyTool: Tool = {
+  name: 'nse_get_gift_nifty',
+  description:
+    'Get live GIFT Nifty futures price and market direction signal. GIFT Nifty trades 21 hours/day and shows the expected gap-up or gap-down when Indian markets open. Returns current price, change%, implied gap vs Nifty 50 spot, and expiry.',
+  toolset: 'market',
+  capabilities: { network: { allowedHosts: ['www.nseindia.com'] } },
+  schema: { type: 'object', properties: {} },
+  async execute(_args): Promise<ToolResult> {
+    // Get Nifty 50 spot close from DB for implied gap calculation
+    let spotClose: number | undefined;
+    try {
+      const rows = getStore().getHistory('^NSEI', 1);
+      if (rows.length > 0 && rows[0]) {
+        spotClose = rows[0].close;
+      }
+    } catch {
+      // DB may not have Nifty spot — proceed without it
+    }
+
+    const data = await fetchGiftNifty(spotClose);
+    if (!data) {
+      return {
+        ok: false,
+        error:
+          'Could not fetch GIFT Nifty data from NSE. NSE API may require a fresh session — retry in a few seconds.',
+        code: 'execution_failed',
+      };
+    }
+
+    const direction = data.changePct >= 0 ? '▲' : '▼';
+    const gapStr =
+      data.impliedGapPct !== null
+        ? `\nImplied gap vs Nifty spot: ${data.impliedGapPct >= 0 ? '+' : ''}${data.impliedGapPct}%`
+        : '';
+
+    const summary = [
+      `GIFT Nifty  ${direction} ${data.lastPrice.toFixed(2)}`,
+      `Change: ${data.change >= 0 ? '+' : ''}${data.change.toFixed(2)} (${data.changePct >= 0 ? '+' : ''}${data.changePct.toFixed(2)}%)`,
+      `Open: ${data.open.toFixed(2)}  High: ${data.high.toFixed(2)}  Low: ${data.low.toFixed(2)}`,
+      `Prev close: ${data.prevClose.toFixed(2)}  Volume: ${data.totalVolume.toLocaleString()}`,
+      `Expiry: ${data.expiryDate}${gapStr}`,
+      `As of: ${data.timestamp}`,
+    ].join('\n');
+
+    return { ok: true, value: summary };
+  },
+};
+
 const nseRefreshScansTool: Tool = {
   name: 'nse_refresh_scans',
   description:
@@ -1309,6 +1362,7 @@ export function createNseMarketDataTools(): Tool[] {
     nseGetFiiDiiTool as Tool,
     nseGetCorporateActionsTool as Tool,
     nseGetBulkBlockTool as Tool,
+    nseGetGiftNiftyTool as Tool,
     nseRefreshScansTool,
   ];
   return tools;

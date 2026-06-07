@@ -2,6 +2,7 @@ import { mkdirSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Database from 'better-sqlite3';
+import { fetchBhavcopayRange } from './bhavcopy';
 import { fetchOhlcv } from './fetcher';
 import {
   aggregateToMonthly,
@@ -424,6 +425,54 @@ export class MarketDataStore {
     };
 
     await Promise.all(Array.from({ length: concurrency }, () => worker()));
+
+    // Bhavcopy batch fallback — one pass downloads all failed symbols at once
+    if (failed.length > 0) {
+      const failedSet = new Set(failed);
+      process.stdout.write(
+        `\nFalling back to NSE Bhavcopy for ${failed.length} failed symbol(s)...\n`,
+      );
+      try {
+        const toDate = new Date().toISOString().slice(0, 10);
+        const bhavMap = await fetchBhavcopayRange(
+          fromDate,
+          toDate,
+          failedSet,
+          (bhavDone, bhavTotal, date) => {
+            process.stdout.write(`  [bhavcopy ${bhavDone}/${bhavTotal}] ${date}\r`);
+          },
+        );
+        const recovered: string[] = [];
+        for (const symbol of [...failed]) {
+          const bhavRows = bhavMap.get(symbol);
+          if (!bhavRows || bhavRows.length === 0) continue;
+          this.insertOhlcv(bhavRows);
+          const lastDate =
+            bhavRows[bhavRows.length - 1]?.date ?? new Date().toISOString().slice(0, 10);
+          this.db
+            .prepare(
+              'INSERT OR REPLACE INTO sync_meta (symbol, last_sync, last_date) VALUES (?, ?, ?)',
+            )
+            .run(symbol, Date.now(), lastDate);
+          results.push({ symbol, rowsInserted: bhavRows.length, fromDate, toDate: lastDate });
+          recovered.push(symbol);
+        }
+        for (const sym of recovered) {
+          const i = failed.indexOf(sym);
+          if (i !== -1) failed.splice(i, 1);
+        }
+        if (recovered.length > 0) {
+          process.stdout.write(
+            `\nBhavcopy recovered ${recovered.length}/${failedSet.size} symbol(s).\n`,
+          );
+        }
+      } catch (err) {
+        process.stdout.write(
+          `\nBhavcopy fallback error: ${err instanceof Error ? err.message : String(err)}\n`,
+        );
+      }
+    }
+
     return { results, failed };
   }
 
