@@ -29,7 +29,7 @@ help:
 	@echo "  release-dry          - Dry run: verify + check + build + npm publish --dry-run"
 	@echo "  release-npm          - Publish to npm directly (no tag, idempotent escape hatch)"
 	@echo "  smoke                - Verify published version matches package.json on npm registry"
-	@echo "  seed-db              - Generate 5-year seed DB → data/seed.db.gz (run before release)"
+	@echo "  seed-db              - Generate 5-year seed DB with indicators → data/seed.db.gz"
 	@echo ""
 	@echo "Housekeeping"
 	@echo "  clean                - Remove node_modules and dist/"
@@ -50,19 +50,40 @@ dev:
 
 # Generate the 5-year seed database bundled with the npm package.
 # Run this once before `make release` when you want to ship fresh historical data.
-# Requires: built dist/ (run `make build` first), network access to Yahoo Finance.
-# Takes ~2-4 hours for all 1,391 active symbols. Output: data/seed.db.gz
+# Requires: built dist/ (run `make build` first), network access to Yahoo Finance/NSE.
+# Takes ~2-4 hours for all active symbols. Output: data/seed.db.gz
 seed-db: build
 	@echo "Generating 5-year seed DB for all active NSE symbols..."
-	@rm -f ./data/seed.db ./data/seed.db.gz
+	@rm -f ./data/seed.db ./data/seed.db-wal ./data/seed.db-shm ./data/seed.db.gz
 	@SEED_START=$$(node -e "const d=new Date();d.setFullYear(d.getFullYear()-5);console.log(d.toISOString().slice(0,10))") && \
 	 NSE_MARKET_DATA_DB=./data/seed.db node dist/cli.js refresh-instruments && \
-	 NSE_MARKET_DATA_DB=./data/seed.db node dist/cli.js backfill --all --from $$SEED_START --concurrency 5 && \
+	 NSE_MARKET_DATA_DB=./data/seed.db node dist/cli.js refresh-scans && \
+	 NSE_MARKET_DATA_DB=./data/seed.db node dist/cli.js backfill --all --from $$SEED_START --concurrency 5 --mark-failed-inactive && \
+	 echo "Computing indicators..." && \
+	 NSE_MARKET_DATA_DB=./data/seed.db node dist/cli.js compute-indicators && \
+	 echo "Computing market state..." && \
+	 NSE_MARKET_DATA_DB=./data/seed.db node dist/cli.js compute-market-state && \
+	 echo "Computing sector state..." && \
+	 NSE_MARKET_DATA_DB=./data/seed.db node dist/cli.js compute-sector-state && \
 	 echo "Compressing..." && \
 	 gzip -k -f ./data/seed.db && \
 	 echo "Done: $$(du -h data/seed.db.gz | cut -f1)"
-	@node -e "const fs=require('node:fs'),Database=require('./node_modules/better-sqlite3'); const db=new Database('data/seed.db',{readonly:true}); const rows=db.prepare('SELECT COUNT(*) as n FROM ohlcv_daily').get().n; const symbols=db.prepare('SELECT COUNT(*) as n FROM sync_meta').get().n; db.close(); fs.writeFileSync('data/seed-manifest.json',JSON.stringify({generatedAt:new Date().toISOString(),symbols,rows},null,2)+'\n');console.log('Wrote data/seed-manifest.json');"
-	@rm -f ./data/seed.db
+	@node -e "\
+	  const fs = require('node:fs');\
+	  const pkg = require('./node_modules/node-sqlite3-wasm');\
+	  const { Database } = pkg;\
+	  const db = new Database('data/seed.db', { readOnly: true });\
+	  const s1 = db.prepare('SELECT COUNT(*) as n FROM ohlcv_daily');\
+	  const rows = s1.get().n;\
+	  s1.finalize();\
+	  const s2 = db.prepare('SELECT COUNT(*) as n FROM sync_meta');\
+	  const symbols = s2.get().n;\
+	  s2.finalize();\
+	  db.close();\
+	  fs.writeFileSync('data/seed-manifest.json', JSON.stringify({ generatedAt: new Date().toISOString(), symbols, rows }, null, 2) + '\n');\
+	  console.log('Wrote data/seed-manifest.json: ' + symbols + ' symbols, ' + rows + ' rows');\
+	"
+	@rm -f ./data/seed.db ./data/seed.db-wal ./data/seed.db-shm
 
 # ---------- quality ----------
 

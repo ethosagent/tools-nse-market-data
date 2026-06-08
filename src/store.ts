@@ -757,6 +757,17 @@ export class MarketDataStore {
   // Phase 1 seed methods
   // ---------------------------------------------------------------------------
 
+  markInactive(symbols: string[]): number {
+    if (symbols.length === 0) return 0;
+    const placeholders = symbols.map(() => '?').join(', ');
+    const stmt = this.db.prepare(
+      `UPDATE instruments SET is_active = 0 WHERE symbol IN (${placeholders})`,
+    );
+    const result = stmt.run(symbols);
+    stmt.finalize();
+    return result.changes;
+  }
+
   upsertInstruments(rows: InstrumentSeedRow[]): { upserted: number; removed: number } {
     const stmt = this.db.prepare(
       `INSERT OR REPLACE INTO instruments

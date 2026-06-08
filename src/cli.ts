@@ -83,11 +83,12 @@ async function main(): Promise<void> {
 Commands:
   clean                     Delete all local market data
   backfill [--symbols A,B] [--from YYYY-MM-DD] [--all] [--index SYM]
-           [--skip-synced] [--resume] [--concurrency N]
+           [--skip-synced] [--resume] [--concurrency N] [--mark-failed-inactive]
                             Fetch OHLCV history. --all = all active equity instruments.
                             --index = backfill that index's members first (tiered).
                             --skip-synced / --resume = skip already-synced symbols.
                             --concurrency N = parallel fetches (default 10).
+                            --mark-failed-inactive = mark failed symbols as inactive.
   backfill-status           Show how many symbols are synced vs pending.
   update [--mode watchlist|all]
                             Fill missing days since last sync
@@ -121,6 +122,8 @@ Commands:
                             Fetch corporate actions (dividends, splits, bonus)
   fetch-bulk-block [--date YYYY-MM-DD]
                             Fetch bulk and block deals from NSE
+  mark-inactive SYMBOL1,SYMBOL2,...
+                            Mark the given symbols as inactive in the instruments table
   seed-update               Import new symbols from GitHub seed (additive — never changes existing data)
 
 Options:
@@ -250,6 +253,11 @@ Options:
             `Failed symbols: ${failed.slice(0, 10).join(', ')}${failed.length > 10 ? `... (+${failed.length - 10} more)` : ''}`,
           );
           console.log('Re-run with --skip-synced to retry only failed symbols.');
+        }
+        const markInactive = args.includes('--mark-failed-inactive');
+        if (markInactive && failed.length > 0) {
+          const marked = store.markInactive(failed);
+          console.log(`Marked ${marked} symbol(s) as inactive.`);
         }
         break;
       }
@@ -788,6 +796,19 @@ Options:
 
         writeLocalManifest(localManifestPath, remoteManifest);
         console.log(`Seed manifest updated to ${remoteManifest.generatedAt}.`);
+        break;
+      }
+
+      // -----------------------------------------------------------------------
+      case 'mark-inactive': {
+        const symbolsArg = args[1];
+        if (!symbolsArg) {
+          console.log('Usage: nse-market-data mark-inactive SYMBOL1,SYMBOL2,...');
+          break;
+        }
+        const symbols = symbolsArg.split(',').map((s) => s.trim()).filter(Boolean);
+        const marked = store.markInactive(symbols);
+        console.log(`Marked ${marked} symbol(s) as inactive.`);
         break;
       }
 
