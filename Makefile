@@ -29,7 +29,7 @@ help:
 	@echo "  release-dry          - Dry run: verify + check + build + npm publish --dry-run"
 	@echo "  release-npm          - Publish to npm directly (no tag, idempotent escape hatch)"
 	@echo "  smoke                - Verify published version matches package.json on npm registry"
-	@echo "  seed-db              - Generate 5-year seed DB with indicators → data/seed.db.gz"
+	@echo "  seed-db              - Generate 5-year seed DB (OHLCV only) → data/seed.db.gz"
 	@echo ""
 	@echo "Housekeeping"
 	@echo "  clean                - Remove node_modules and dist/"
@@ -48,23 +48,18 @@ build:
 dev:
 	npm run dev
 
-# Generate the 5-year seed database bundled with the npm package.
+# Generate the 5-year seed database bundled with the npm package (OHLCV only, no indicators).
+# Indicators are computed by the user after install via: nse-market-data compute-indicators
 # Run this once before `make release` when you want to ship fresh historical data.
 # Requires: built dist/ (run `make build` first), network access to Yahoo Finance/NSE.
 # Takes ~2-4 hours for all active symbols. Output: data/seed.db.gz
 seed-db: build
-	@echo "Generating 5-year seed DB for all active NSE symbols..."
+	@echo "Generating 5-year seed DB for all active NSE symbols (OHLCV only)..."
 	@rm -f ./data/seed.db ./data/seed.db-wal ./data/seed.db-shm ./data/seed.db.gz
 	@SEED_START=$$(node -e "const d=new Date();d.setFullYear(d.getFullYear()-5);console.log(d.toISOString().slice(0,10))") && \
 	 NSE_MARKET_DATA_DB=./data/seed.db node dist/cli.js refresh-instruments && \
 	 NSE_MARKET_DATA_DB=./data/seed.db node dist/cli.js refresh-scans && \
 	 NSE_MARKET_DATA_DB=./data/seed.db node dist/cli.js backfill --all --from $$SEED_START --concurrency 5 --mark-failed-inactive && \
-	 echo "Computing indicators..." && \
-	 NSE_MARKET_DATA_DB=./data/seed.db node dist/cli.js compute-indicators && \
-	 echo "Computing market state..." && \
-	 NSE_MARKET_DATA_DB=./data/seed.db node dist/cli.js compute-market-state && \
-	 echo "Computing sector state..." && \
-	 NSE_MARKET_DATA_DB=./data/seed.db node dist/cli.js compute-sector-state && \
 	 echo "Compressing..." && \
 	 gzip -k -f ./data/seed.db && \
 	 echo "Done: $$(du -h data/seed.db.gz | cut -f1)"

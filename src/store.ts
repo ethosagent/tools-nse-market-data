@@ -390,7 +390,9 @@ export class MarketDataStore {
     const rows = await fetchOhlcv(symbol, fromDate, toDate);
     this.insertOhlcv(rows);
     const lastDate = rows[rows.length - 1]?.date ?? toDate;
-    const s = this.db.prepare('INSERT OR REPLACE INTO sync_meta (symbol, last_sync, last_date) VALUES (?, ?, ?)');
+    const s = this.db.prepare(
+      'INSERT OR REPLACE INTO sync_meta (symbol, last_sync, last_date) VALUES (?, ?, ?)',
+    );
     s.run([symbol, Date.now(), lastDate]);
     s.finalize();
     return { symbol, rowsInserted: rows.length, fromDate, toDate };
@@ -543,7 +545,9 @@ export class MarketDataStore {
   }
 
   getIndexConstituents(indexSymbol: string): string[] {
-    const s = this.db.prepare('SELECT member_symbol FROM index_constituents WHERE index_symbol = ?');
+    const s = this.db.prepare(
+      'SELECT member_symbol FROM index_constituents WHERE index_symbol = ?',
+    );
     const rows = s.all([indexSymbol]) as Array<{ member_symbol: string }>;
     s.finalize();
     return rows.map((r) => r.member_symbol);
@@ -631,7 +635,11 @@ export class MarketDataStore {
     const s = this.db.prepare(
       'SELECT symbol, notes, added_at FROM watchlist WHERE list_name = ? ORDER BY added_at ASC',
     );
-    const rows = s.all([listName]) as Array<{ symbol: string; notes: string | null; added_at: number }>;
+    const rows = s.all([listName]) as Array<{
+      symbol: string;
+      notes: string | null;
+      added_at: number;
+    }>;
     s.finalize();
     return rows.map((r) => ({ symbol: r.symbol, notes: r.notes, addedAt: r.added_at }));
   }
@@ -801,8 +809,9 @@ export class MarketDataStore {
     let removed = 0;
     if (symbols.length > 0) {
       const placeholders = symbols.map(() => '?').join(', ');
-      const delStmt = this.db
-        .prepare(`DELETE FROM instruments WHERE symbol NOT IN (${placeholders})`);
+      const delStmt = this.db.prepare(
+        `DELETE FROM instruments WHERE symbol NOT IN (${placeholders})`,
+      );
       const result = delStmt.run(symbols);
       removed = result.changes;
       delStmt.finalize();
@@ -872,13 +881,16 @@ export class MarketDataStore {
 
   getScan(
     scanId: string,
-  ):
-    | { scan_id: string; name: string; description: string | null; sql_template: string }
-    | null {
-    const s = this.db.prepare('SELECT scan_id, name, description, sql_template FROM saved_scans WHERE scan_id = ?');
-    const row = s.get([scanId]) as
-      | { scan_id: string; name: string; description: string | null; sql_template: string }
-      | null;
+  ): { scan_id: string; name: string; description: string | null; sql_template: string } | null {
+    const s = this.db.prepare(
+      'SELECT scan_id, name, description, sql_template FROM saved_scans WHERE scan_id = ?',
+    );
+    const row = s.get([scanId]) as {
+      scan_id: string;
+      name: string;
+      description: string | null;
+      sql_template: string;
+    } | null;
     s.finalize();
     return row;
   }
@@ -1003,17 +1015,15 @@ export class MarketDataStore {
        JOIN ohlcv_daily o ON id.symbol = o.symbol AND id.date = o.date
        WHERE id.symbol = '^NSEI' AND id.date = ?`,
     );
-    const niftyRow = s2.get([asOf]) as
-      | {
-          close: number;
-          ema_50: number | null;
-          ema_200: number | null;
-          ema_50_slope: number | null;
-          stage: number | null;
-          sniper_score: number | null;
-          sniper_verdict: string | null;
-        }
-      | null;
+    const niftyRow = s2.get([asOf]) as {
+      close: number;
+      ema_50: number | null;
+      ema_200: number | null;
+      ema_50_slope: number | null;
+      stage: number | null;
+      sniper_score: number | null;
+      sniper_verdict: string | null;
+    } | null;
     s2.finalize();
 
     if (niftyRow) {
@@ -1035,7 +1045,10 @@ export class MarketDataStore {
        FROM indicators_daily id
        WHERE id.symbol IN ('^CNX100', '^NSMIDCP100', '^CNXSC') AND id.date = ?`,
     );
-    const capIndexSymbolRows = s3.all([asOf]) as Array<{ symbol: string; rs_vs_broad: number | null }>;
+    const capIndexSymbolRows = s3.all([asOf]) as Array<{
+      symbol: string;
+      rs_vs_broad: number | null;
+    }>;
     s3.finalize();
 
     const capIndexMap = new Map<string, number | null>();
@@ -1159,9 +1172,10 @@ export class MarketDataStore {
           `SELECT return_1w, return_1m FROM indicators_daily
            WHERE symbol = ? AND date = ?`,
         );
-        const idxIndicators = s8.get([idx.symbol, asOf]) as
-          | { return_1w: number | null; return_1m: number | null }
-          | null;
+        const idxIndicators = s8.get([idx.symbol, asOf]) as {
+          return_1w: number | null;
+          return_1m: number | null;
+        } | null;
         s8.finalize();
 
         // pct_members_uptrend: % of constituent members where close > ema_50
@@ -1173,7 +1187,10 @@ export class MarketDataStore {
            JOIN ohlcv_daily o ON ic.member_symbol = o.symbol AND o.date = ?
            WHERE ic.index_symbol = ?`,
         );
-        const memberRows = s9.get([asOf, asOf, idx.symbol]) as { total: number; uptrend: number } | null;
+        const memberRows = s9.get([asOf, asOf, idx.symbol]) as {
+          total: number;
+          uptrend: number;
+        } | null;
         s9.finalize();
 
         const pctUptrend =
@@ -1205,7 +1222,9 @@ export class MarketDataStore {
       const prevSectorReturns = new Map<string, number | null>();
       if (prevDate) {
         for (const idx of sectorIndexes) {
-          const s10 = this.db.prepare(`SELECT return_1m FROM indicators_daily WHERE symbol = ? AND date = ?`);
+          const s10 = this.db.prepare(
+            `SELECT return_1m FROM indicators_daily WHERE symbol = ? AND date = ?`,
+          );
           const prevRow = s10.get([idx.symbol, prevDate]) as { return_1m: number | null } | null;
           s10.finalize();
           prevSectorReturns.set(idx.symbol, prevRow?.return_1m ?? null);
@@ -1381,7 +1400,9 @@ export class MarketDataStore {
   // ---------------------------------------------------------------------------
 
   private getDeliveryData(symbol: string): Map<string, number | null> {
-    const s = this.db.prepare('SELECT date, delivery_pct FROM ohlcv_daily WHERE symbol = ? ORDER BY date ASC');
+    const s = this.db.prepare(
+      'SELECT date, delivery_pct FROM ohlcv_daily WHERE symbol = ? ORDER BY date ASC',
+    );
     const rows = s.all([symbol]) as Array<{ date: string; delivery_pct: number | null }>;
     s.finalize();
     const map = new Map<string, number | null>();
@@ -2001,8 +2022,13 @@ export class MarketDataStore {
       const deliveryMap = this.getDeliveryData(symbol);
 
       // Load instrument metadata
-      const s5 = this.db.prepare('SELECT market_cap_band, sector FROM instruments WHERE symbol = ?');
-      const instrRow = s5.get([symbol]) as { market_cap_band: string | null; sector: string | null } | null;
+      const s5 = this.db.prepare(
+        'SELECT market_cap_band, sector FROM instruments WHERE symbol = ?',
+      );
+      const instrRow = s5.get([symbol]) as {
+        market_cap_band: string | null;
+        sector: string | null;
+      } | null;
       s5.finalize();
       const instrument = instrRow ?? null;
 
@@ -2218,24 +2244,21 @@ export class MarketDataStore {
 
           // Re-compute sniper score with now-known rs_rank_in_segment
           // We need more context from indicators_daily for this symbol/date
-          const idStmt = this.db
-            .prepare(
-              `SELECT ma_stack, macd_hist, macd_hist_prev, psar_signal, stage,
+          const idStmt = this.db.prepare(
+            `SELECT ma_stack, macd_hist, macd_hist_prev, psar_signal, stage,
                       rvol, closed_above_vwap, tf_alignment_score
                FROM indicators_daily WHERE symbol=? AND date=?`,
-            );
-          const idRow = idStmt.get([r.symbol, date]) as
-            | {
-                ma_stack: number | null;
-                macd_hist: number | null;
-                macd_hist_prev: number | null;
-                psar_signal: number | null;
-                stage: number | null;
-                rvol: number | null;
-                closed_above_vwap: number | null;
-                tf_alignment_score: number | null;
-              }
-            | null;
+          );
+          const idRow = idStmt.get([r.symbol, date]) as {
+            ma_stack: number | null;
+            macd_hist: number | null;
+            macd_hist_prev: number | null;
+            psar_signal: number | null;
+            stage: number | null;
+            rvol: number | null;
+            closed_above_vwap: number | null;
+            tf_alignment_score: number | null;
+          } | null;
           idStmt.finalize();
 
           if (!idRow) continue;
@@ -2254,32 +2277,29 @@ export class MarketDataStore {
           const compositeResult = computeCompositeScore(sniperResult.score);
 
           // Setup type — need additional columns
-          const setupStmt = this.db
-            .prepare(
-              `SELECT dist_52wk_high_pct, tf_alignment_score, rvol, closed_above_vwap,
+          const setupStmt = this.db.prepare(
+            `SELECT dist_52wk_high_pct, tf_alignment_score, rvol, closed_above_vwap,
                       pct_from_ema20, rsi_14, pct_from_ema50, close_vs_ema50w,
                       pct_from_ema200, close_vs_ema20w, ma_stack, return_1m,
                       candle_pattern, stage
                FROM indicators_daily WHERE symbol=? AND date=?`,
-            );
-          const setupRow = setupStmt.get([r.symbol, date]) as
-            | {
-                dist_52wk_high_pct: number | null;
-                tf_alignment_score: number | null;
-                rvol: number | null;
-                closed_above_vwap: number | null;
-                pct_from_ema20: number | null;
-                rsi_14: number | null;
-                pct_from_ema50: number | null;
-                close_vs_ema50w: number | null;
-                pct_from_ema200: number | null;
-                close_vs_ema20w: number | null;
-                ma_stack: number | null;
-                return_1m: number | null;
-                candle_pattern: string | null;
-                stage: number | null;
-              }
-            | null;
+          );
+          const setupRow = setupStmt.get([r.symbol, date]) as {
+            dist_52wk_high_pct: number | null;
+            tf_alignment_score: number | null;
+            rvol: number | null;
+            closed_above_vwap: number | null;
+            pct_from_ema20: number | null;
+            rsi_14: number | null;
+            pct_from_ema50: number | null;
+            close_vs_ema50w: number | null;
+            pct_from_ema200: number | null;
+            close_vs_ema20w: number | null;
+            ma_stack: number | null;
+            return_1m: number | null;
+            candle_pattern: string | null;
+            stage: number | null;
+          } | null;
           setupStmt.finalize();
 
           const setupResult = setupRow
@@ -2326,7 +2346,10 @@ export class MarketDataStore {
       const s7 = this.db.prepare(
         'SELECT MAX(high) as max_high, date FROM ohlcv_daily WHERE symbol = ? AND date <= ?',
       );
-      const highRow = s7.get([symbol, toDate]) as { max_high: number | null; date: string | null } | null;
+      const highRow = s7.get([symbol, toDate]) as {
+        max_high: number | null;
+        date: string | null;
+      } | null;
       s7.finalize();
       if (!highRow?.max_high || !highRow?.date) continue;
 
@@ -2360,7 +2383,9 @@ export class MarketDataStore {
     if (opts.from) conditions.push(`date >= '${opts.from}'`);
     if (opts.to) conditions.push(`date <= '${opts.to}'`);
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const s1 = this.db.prepare(`SELECT DISTINCT date FROM indicators_daily ${whereClause} ORDER BY date ASC`);
+    const s1 = this.db.prepare(
+      `SELECT DISTINCT date FROM indicators_daily ${whereClause} ORDER BY date ASC`,
+    );
     const dates = (s1.all() as Array<{ date: string }>).map((r) => r.date);
     s1.finalize();
 
@@ -2483,16 +2508,14 @@ export class MarketDataStore {
         JOIN ohlcv_daily o ON id.symbol = o.symbol AND o.date = id.date
         WHERE id.symbol = '^NSEI' AND id.date = ?
       `);
-      const niftyRow = s4.get([date]) as
-        | {
-            close: number;
-            ema_50: number | null;
-            ema_200: number | null;
-            ema_50_slope: number | null;
-            stage: number | null;
-            sniper_score: number | null;
-          }
-        | null;
+      const niftyRow = s4.get([date]) as {
+        close: number;
+        ema_50: number | null;
+        ema_200: number | null;
+        ema_50_slope: number | null;
+        stage: number | null;
+        sniper_score: number | null;
+      } | null;
       s4.finalize();
 
       const niftyClose = niftyRow?.close ?? null;
@@ -2605,7 +2628,9 @@ export class MarketDataStore {
     if (opts.from) conditions.push(`date >= '${opts.from}'`);
     if (opts.to) conditions.push(`date <= '${opts.to}'`);
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const s1 = this.db.prepare(`SELECT DISTINCT date FROM indicators_daily ${whereClause} ORDER BY date ASC`);
+    const s1 = this.db.prepare(
+      `SELECT DISTINCT date FROM indicators_daily ${whereClause} ORDER BY date ASC`,
+    );
     const dates = (s1.all() as Array<{ date: string }>).map((r) => r.date);
     s1.finalize();
 
@@ -2668,16 +2693,14 @@ export class MarketDataStore {
           `SELECT return_1d, return_1w, return_1m, return_3m, return_6m, return_ytd
            FROM indicators_daily WHERE symbol = ? AND date = ?`,
         );
-        const idxInd = s3.get([idx.symbol, date]) as
-          | {
-              return_1d: number | null;
-              return_1w: number | null;
-              return_1m: number | null;
-              return_3m: number | null;
-              return_6m: number | null;
-              return_ytd: number | null;
-            }
-          | null;
+        const idxInd = s3.get([idx.symbol, date]) as {
+          return_1d: number | null;
+          return_1w: number | null;
+          return_1m: number | null;
+          return_3m: number | null;
+          return_6m: number | null;
+          return_ytd: number | null;
+        } | null;
         s3.finalize();
 
         const s4 = this.db.prepare(
@@ -2844,19 +2867,17 @@ export class MarketDataStore {
               stage, composite_score, rsi_14
        FROM indicators_daily WHERE symbol = ? AND date = ?`,
     );
-    const currentRow = s2.get([opts.symbol, evalDate]) as
-      | {
-          symbol: string;
-          date: string;
-          rvol: number | null;
-          dist_52wk_high_pct: number | null;
-          setup_type: string | null;
-          sniper_score: number | null;
-          stage: number | null;
-          composite_score: number | null;
-          rsi_14: number | null;
-        }
-      | null;
+    const currentRow = s2.get([opts.symbol, evalDate]) as {
+      symbol: string;
+      date: string;
+      rvol: number | null;
+      dist_52wk_high_pct: number | null;
+      setup_type: string | null;
+      sniper_score: number | null;
+      stage: number | null;
+      composite_score: number | null;
+      rsi_14: number | null;
+    } | null;
     s2.finalize();
 
     if (!currentRow) {
@@ -2882,7 +2903,10 @@ export class MarketDataStore {
     const s4 = this.db.prepare(
       'SELECT last_alerted, alert_count FROM watchlist_alerts WHERE symbol = ? AND condition_hash = ?',
     );
-    const alertRow = s4.get([opts.symbol, conditionHash]) as { last_alerted: string; alert_count: number } | null;
+    const alertRow = s4.get([opts.symbol, conditionHash]) as {
+      last_alerted: string;
+      alert_count: number;
+    } | null;
     s4.finalize();
 
     const lastAlertedDate = alertRow?.last_alerted ?? null;
@@ -2973,7 +2997,9 @@ export class MarketDataStore {
       `SELECT DISTINCT date FROM indicators_daily
        WHERE date >= ? AND date <= ? ORDER BY date ASC`,
     );
-    const signalDates = (s2.all([opts.from, opts.to]) as Array<{ date: string }>).map((r) => r.date);
+    const signalDates = (s2.all([opts.from, opts.to]) as Array<{ date: string }>).map(
+      (r) => r.date,
+    );
     s2.finalize();
 
     const trades: BacktestTrade[] = [];
@@ -3006,7 +3032,9 @@ export class MarketDataStore {
       }
 
       // Get Nifty stage at signal date
-      const s4 = this.db.prepare(`SELECT stage FROM indicators_daily WHERE symbol = '^NSEI' AND date = ?`);
+      const s4 = this.db.prepare(
+        `SELECT stage FROM indicators_daily WHERE symbol = '^NSEI' AND date = ?`,
+      );
       const niftyRow = s4.get([signalDate]) as { stage: number | null } | null;
       s4.finalize();
       const regimeStage = niftyRow?.stage ?? null;
@@ -3143,7 +3171,9 @@ export class MarketDataStore {
       stdPnl > 0 ? (meanPnl / stdPnl) * Math.sqrt(252 / Math.max(avgHold, 1)) : 0;
 
     // Benchmark return
-    const s7 = this.db.prepare(`SELECT date, close FROM ohlcv_daily WHERE symbol = ? ORDER BY date ASC`);
+    const s7 = this.db.prepare(
+      `SELECT date, close FROM ohlcv_daily WHERE symbol = ? ORDER BY date ASC`,
+    );
     const benchmarkRows = s7.all([benchmark]) as Array<{ date: string; close: number }>;
     s7.finalize();
 
