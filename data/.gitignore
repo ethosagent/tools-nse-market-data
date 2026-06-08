@@ -1,4 +1,3 @@
 # Generated seed database — large binary, not tracked in git.
 # Run `make seed-db` to regenerate before a release.
 seed.db
-seed.db.gz

@@ -36,7 +36,7 @@
     }
   },
   "bin": {
-    "nse-market-data": "./dist/cli.js"
+    "nse-market-data": "dist/cli.js"
   },
   "files": [
     "dist",
