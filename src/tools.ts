@@ -871,9 +871,9 @@ const nseComputeIndicatorsTool: Tool<ComputeIndicatorsArgs> = {
     });
 
     const result = await store.computeIndicators({
-      symbol: args.symbol,
-      from: args.from,
-      to: args.to,
+      symbol: args.symbol || undefined,
+      from: args.from || undefined,
+      to: args.to || undefined,
     });
 
     ctx.emit?.({
@@ -884,7 +884,7 @@ const nseComputeIndicatorsTool: Tool<ComputeIndicatorsArgs> = {
       percent: 80,
     });
 
-    const marketResult = store.computeMarketState({ from: args.from, to: args.to });
+    const marketResult = store.computeMarketState({ from: args.from || undefined, to: args.to || undefined });
 
     ctx.emit?.({
       type: 'progress',
@@ -894,7 +894,7 @@ const nseComputeIndicatorsTool: Tool<ComputeIndicatorsArgs> = {
       percent: 90,
     });
 
-    const sectorResult = store.computeSectorState({ from: args.from, to: args.to });
+    const sectorResult = store.computeSectorState({ from: args.from || undefined, to: args.to || undefined });
 
     return {
       ok: true,
@@ -956,13 +956,13 @@ const nseBacktestTool: Tool<BacktestArgs> = {
     });
 
     const result = getStore().runBacktest({
-      scanId: args.scan_id,
-      screen: args.screen,
+      scanId: args.scan_id || undefined,
+      screen: args.screen || undefined,
       from: args.from,
       to: args.to,
       holdDays: args.hold_days,
       stopAtrMult: args.stop_atr_mult,
-      benchmark: args.benchmark,
+      benchmark: args.benchmark || undefined,
     });
 
     ctx.emit?.({

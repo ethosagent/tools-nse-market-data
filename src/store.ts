@@ -1906,7 +1906,7 @@ export class MarketDataStore {
     to?: string;
     adjusted?: boolean;
   }): Promise<{ processed: number; dateCount: number }> {
-    const toDate = opts.to ?? new Date().toISOString().slice(0, 10);
+    const toDate = opts.to || new Date().toISOString().slice(0, 10);
 
     // Step 1: Determine symbols
     let symbols: string[];
