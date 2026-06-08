@@ -806,7 +806,10 @@ Options:
           console.log('Usage: nse-market-data mark-inactive SYMBOL1,SYMBOL2,...');
           break;
         }
-        const symbols = symbolsArg.split(',').map((s) => s.trim()).filter(Boolean);
+        const symbols = symbolsArg
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
         const marked = store.markInactive(symbols);
         console.log(`Marked ${marked} symbol(s) as inactive.`);
         break;

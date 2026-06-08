@@ -3,7 +3,9 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Database as DatabaseType } from 'node-sqlite3-wasm';
 import _pkg from 'node-sqlite3-wasm';
+
 const { Database } = _pkg;
+
 import { fetchBhavcopayRange } from './bhavcopy';
 import { fetchOhlcv } from './fetcher';
 import {
