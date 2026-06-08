@@ -884,7 +884,10 @@ const nseComputeIndicatorsTool: Tool<ComputeIndicatorsArgs> = {
       percent: 80,
     });
 
-    const marketResult = store.computeMarketState({ from: args.from || undefined, to: args.to || undefined });
+    const marketResult = store.computeMarketState({
+      from: args.from || undefined,
+      to: args.to || undefined,
+    });
 
     ctx.emit?.({
       type: 'progress',
@@ -894,7 +897,10 @@ const nseComputeIndicatorsTool: Tool<ComputeIndicatorsArgs> = {
       percent: 90,
     });
 
-    const sectorResult = store.computeSectorState({ from: args.from || undefined, to: args.to || undefined });
+    const sectorResult = store.computeSectorState({
+      from: args.from || undefined,
+      to: args.to || undefined,
+    });
 
     return {
       ok: true,
