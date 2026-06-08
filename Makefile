@@ -60,9 +60,9 @@ seed-db: build
 	 NSE_MARKET_DATA_DB=./data/seed.db node dist/cli.js backfill --all --from $$SEED_START --concurrency 5 && \
 	 echo "Compressing..." && \
 	 gzip -k -f ./data/seed.db && \
-	 rm -f ./data/seed.db && \
 	 echo "Done: $$(du -h data/seed.db.gz | cut -f1)"
-	@node -e "const fs=require('node:fs');fs.writeFileSync('data/seed-manifest.json',JSON.stringify({generatedAt:new Date().toISOString()},null,2)+'\n');console.log('Wrote data/seed-manifest.json');"
+	@node -e "const fs=require('node:fs'),Database=require('./node_modules/better-sqlite3'); const db=new Database('data/seed.db',{readonly:true}); const rows=db.prepare('SELECT COUNT(*) as n FROM ohlcv_daily').get().n; const symbols=db.prepare('SELECT COUNT(*) as n FROM sync_meta').get().n; db.close(); fs.writeFileSync('data/seed-manifest.json',JSON.stringify({generatedAt:new Date().toISOString(),symbols,rows},null,2)+'\n');console.log('Wrote data/seed-manifest.json');"
+	@rm -f ./data/seed.db
 
 # ---------- quality ----------
 

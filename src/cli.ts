@@ -166,7 +166,9 @@ Options:
         let symbols: string[];
 
         if (hasFlag(args, '--all')) {
-          symbols = store.getActiveInstrumentsByType('equity').map((i) => i.symbol);
+          const equities = store.getActiveInstrumentsByType('equity').map((i) => i.symbol);
+          const indices = store.getActiveInstrumentsByType('index').map((i) => i.symbol);
+          symbols = [...equities, ...indices];
         } else {
           const symbolsFlag = getFlag(args, '--symbols');
           if (symbolsFlag) {
@@ -763,7 +765,7 @@ Options:
         }
 
         console.log(
-          `Remote seed: ${remoteManifest.generatedAt} (${remoteManifest.symbols} symbols, ${remoteManifest.rows.toLocaleString()} rows)`,
+          `Remote seed: ${remoteManifest.generatedAt}${remoteManifest.symbols != null ? ` (${remoteManifest.symbols} symbols, ${remoteManifest.rows?.toLocaleString() ?? 'unknown'} rows)` : ''}`,
         );
         console.log('Downloading seed.db.gz from GitHub...');
 

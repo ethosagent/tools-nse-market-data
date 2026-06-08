@@ -10,20 +10,18 @@ You are a chart renderer. Your job is to faithfully translate prior analysis int
 
 ### Step 0 — Prerequisites
 
-Run via bash:
+Run via the `terminal` tool:
 ```
-python3 -c "import mplfinance, pandas, matplotlib; print('ok')" 2>&1
-```
-
-If the output is **not** exactly `ok`, stop immediately and reply:
-
-```
-**Chart prerequisites missing.** Install with:
-    pip install mplfinance matplotlib pandas
-Then try again.
+python3 --version 2>&1
 ```
 
-Do not proceed to Step 1 until the check passes.
+If `python3` is not found, stop and reply:
+
+```
+**Python not found.** Install Python 3: https://www.python.org/downloads/
+```
+
+Do not check for pandas/matplotlib/mplfinance here — the script installs them automatically.
 
 ---
 
@@ -113,6 +111,42 @@ The agent fills in four variables at the top of the script:
 **Everything else in the script is fixed template code. Do not modify it.**
 
 ```python
+import importlib, shutil, subprocess, sys
+
+# ── Auto-install dependencies ─────────────────────────────────────────────────
+def _ensure(*packages):
+    missing = [p for p in packages if not _importable(p)]
+    if not missing:
+        return
+    # Try pip
+    r = subprocess.run(
+        [sys.executable, '-m', 'pip', 'install', '--quiet'] + missing,
+        capture_output=True,
+    )
+    if r.returncode == 0:
+        return
+    # Fall back to uv (handles externally-managed environments)
+    uv = shutil.which('uv') or shutil.which(
+        str(__import__('pathlib').Path.home() / '.local' / 'bin' / 'uv')
+    )
+    if uv:
+        subprocess.check_call([uv, 'pip', 'install', '--system'] + missing, stderr=subprocess.DEVNULL)
+        return
+    raise RuntimeError(
+        f"Cannot install {missing}.\n"
+        "Install uv (https://docs.astral.sh/uv/) or run: pip install " + ' '.join(missing)
+    )
+
+def _importable(pkg):
+    try:
+        importlib.import_module(pkg)
+        return True
+    except ImportError:
+        return False
+
+_ensure('pandas', 'matplotlib', 'mplfinance')
+# ─────────────────────────────────────────────────────────────────────────────
+
 import io, base64
 import pandas as pd
 import mplfinance as mpf
@@ -149,23 +183,25 @@ if not idf.empty and "date" in idf.columns:
     idf["Date"] = pd.to_datetime(idf["date"])
     idf = idf.set_index("Date").sort_index()
 
-# MA overlays
-COL_MAP    = {"sma20":"sma_20","sma50":"sma_50","sma200":"sma_200","ema21":"ema_21","ema9":"ema_9"}
-COLOR_MAP  = {"sma20":"#4A9EFF","sma50":"#F59E0B","sma200":"#E879F9","ema21":"#4ADE80","ema9":"#94A3B8"}
+# MA overlays — computed from OHLCV Close so they always extend to today
+COLOR_MAP = {"sma20":"#4A9EFF","sma50":"#F59E0B","sma200":"#E879F9","ema21":"#4ADE80","ema9":"#94A3B8"}
 addplots = []
-if not idf.empty:
-    for key in ANNOTATIONS.get("mas", []):
-        col = COL_MAP.get(key)
-        if col and col in idf.columns:
-            s = idf[col].reindex(df.index)
-            if s.notna().any():
-                addplots.append(mpf.make_addplot(s, color=COLOR_MAP.get(key,"#9A9A98"), width=1.2, label=key))
+for key in ANNOTATIONS.get("mas", []):
+    s = None
+    if key.startswith("sma"):
+        period = int(key[3:])
+        s = df["Close"].rolling(window=period).mean()
+    elif key.startswith("ema"):
+        period = int(key[3:])
+        s = df["Close"].ewm(span=period, adjust=False).mean()
+    if s is not None and s.notna().any():
+        addplots.append(mpf.make_addplot(s, color=COLOR_MAP.get(key, "#9A9A98"), width=1.2, label=key))
 
-    # PSAR scatter
-    if ANNOTATIONS.get("psar") and "psar" in idf.columns:
-        s = idf["psar"].reindex(df.index)
-        if s.notna().any():
-            addplots.append(mpf.make_addplot(s, type="scatter", markersize=18, marker=".", color="#F59E0B"))
+# PSAR scatter
+if ANNOTATIONS.get("psar") and not idf.empty and "psar" in idf.columns:
+    s = idf["psar"].reindex(df.index)
+    if s.notna().any():
+        addplots.append(mpf.make_addplot(s, type="scatter", markersize=18, marker=".", color="#F59E0B"))
 
 # Buy/sell markers
 for m in ANNOTATIONS.get("markers", []):
@@ -178,8 +214,19 @@ for m in ANNOTATIONS.get("markers", []):
         addplots.append(mpf.make_addplot(s, type="scatter", markersize=120, marker=marker, color=color))
 
 # Plot
+_mc = mpf.make_marketcolors(
+    up="#4ADE80", down="#F87171",
+    edge="inherit", wick="inherit",
+    volume={"up": "#4ADE80", "down": "#F87171"},
+)
+_style = mpf.make_mpf_style(
+    base_mpf_style="nightclouds",
+    marketcolors=_mc,
+    facecolor="#0F0F0F",
+    figcolor="#0F0F0F",
+)
 fig, axes = mpf.plot(
-    df, type="candle", style="nightclouds", volume=True,
+    df, type="candle", style=_style, volume=True,
     addplot=addplots if addplots else None,
     returnfig=True, figsize=(13, 7), tight_layout=True,
     title=f"\n{SYMBOL}  ·  {DAYS}d",
@@ -220,12 +267,12 @@ print(base64.b64encode(buf.read()).decode(), end="")
 
 ### Step 4 — Execute
 
-Run via bash:
+Run via the `terminal` tool:
 ```
 python3 /tmp/ethos_chart_{symbol_clean}.py
 ```
 
-Capture stdout (base64 string) and stderr separately. If the exit code is non-zero, show the full stderr as a code block and stop. Do not attempt to fix the script and re-run without user instruction.
+The script installs its own dependencies on first run. Capture stdout (base64 string) and stderr separately. If exit code is non-zero, show the full stderr as a code block and stop.
 
 ---
 
