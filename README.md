@@ -24,8 +24,107 @@ Stores historical OHLCV data locally in SQLite (pure WASM — no native compilat
 - **Corporate actions** — dividends, splits, bonus
 - **Bulk/block deals** — large institutional trades
 - **Ethos tools** — exposes `createNseMarketDataTools()` returning `Tool[]` for agent integration
+- **16 analysis skills** — morning brief, trade setup, stock scoring, stage analysis, market regime, sector rotation, chart rendering, and more
+- **Charting** — candlestick charts with annotations, support/resistance, moving averages via mplfinance
+- **Bootstrap & daily refresh skills** — automated data preparation workflows for LLM agents
 
 Data sources: Yahoo Finance (free, no API key) + NSE Bhavcopy (official bulk download).
+
+---
+
+## How it works
+
+```
+                         ┌──────────────────────────────────────────┐
+                         │           DATA SOURCES                   │
+                         │  Yahoo Finance  ·  NSE Bhavcopy          │
+                         └────────────┬─────────────────────────────┘
+                                      │ backfill / update
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          OHLCV (Raw Price Data)                             │
+│                                                                             │
+│  symbol     date        open     high     low      close    volume          │
+│  ─────────  ──────────  ───────  ───────  ───────  ───────  ──────────      │
+│  RELIANCE   2026-06-09  1280.00  1305.50  1275.20  1298.75  12,345,678     │
+│  TCS        2026-06-09   3520.00  3548.00  3510.00  3535.00   4,567,890     │
+│  INFY       2026-06-09   1480.00  1495.00  1472.00  1488.50   8,901,234     │
+└────────────────────────────────┬────────────────────────────────────────────┘
+                                 │ compute-indicators
+                                 ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      INDICATORS (60+ per symbol per day)                    │
+│                                                                             │
+│  Trend         │  Momentum      │  Volume        │  Position                │
+│  ────────────  │  ───────────── │  ───────────── │  ─────────────           │
+│  EMA 20/50/200 │  RSI (14)      │  RVOL          │  52-week high %         │
+│  SMA 50/200    │  MACD          │  OBV slope     │  ATH distance           │
+│  MA stack (0-4)│  ADX / DI+/DI- │  Delivery %    │  Price percentile       │
+│  Stage (1-4)   │  Stochastic    │  VWAP position │  Pct from EMAs          │
+│  PSAR signal   │  CCI / ROC     │  Dollar volume │  Base pattern           │
+│                │                │                │                          │
+│  Scores: sniper_score · composite_score · setup_type · setup_quality       │
+│  Multi-TF: weekly EMA/RSI · monthly EMA · tf_alignment_score               │
+└────────────────────────────────┬────────────────────────────────────────────┘
+                                 │ scan conditions
+                                 ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          SCANS (40 built-in)                                │
+│                                                                             │
+│  Scan ID              │ Condition (WHERE clause)                            │
+│  ───────────────────  │ ─────────────────────────────────────────────────── │
+│  stage2_momentum      │ stage=2 AND ma_stack=4 AND rsi_14>55               │
+│                       │   AND composite_score>=65                           │
+│                       │                                                     │
+│  52w_high_breakout    │ dist_52wk_high_pct<=1 AND rvol>=1.5                │
+│                       │   AND closed_above_vwap=1                           │
+│                       │                                                     │
+│  momentum_surge       │ return_1m>8 AND rvol>=1.5 AND ma_stack>=3          │
+│                       │   AND rsi_14>50                                     │
+│                       │                                                     │
+│  base_breakout        │ base_pattern IS NOT NULL AND base_depth_pct<25     │
+│                       │   AND stage=2 AND near_pivot=1                      │
+│                       │                                                     │
+│  rs_leaders           │ rs_rank_in_segment>80 AND stage=2                  │
+│                       │   AND return_3m>0                                   │
+│                       │                                                     │
+│  oversold_bounce      │ rsi_14<30 AND rsi_14>PREV(rsi_14)                  │
+│                       │   AND close>low                                     │
+└────────────────────────────────┬────────────────────────────────────────────┘
+                                 │ analysis / backtest
+                                 ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          OUTPUT                                             │
+│                                                                             │
+│  Morning Brief    │  Backtest Results    │  Charts         │  Alerts        │
+│  ───────────────  │  ──────────────────  │  ────────────── │  ────────────  │
+│  Market regime    │  Win rate: 62%       │  Candlestick    │  52W high hit  │
+│  Breadth score    │  Avg gain: +8.2%     │  MA overlays    │  Volume surge  │
+│  Top 3 setups     │  Avg loss: -3.1%     │  Support/resist │  Stage change  │
+│  Sector rotation  │  Expectancy: +3.8%   │  Buy/sell marks │  PSAR flip     │
+│  Risk posture     │  Alpha vs Nifty: +5% │  Pattern labels │  Setup trigger │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Example flow: finding a Minervini-style breakout
+
+```
+RELIANCE.NS daily data (5 years)
+        │
+        ▼ compute-indicators
+   EMA20=1290, EMA50=1260, EMA200=1180    ← all rising, price above all = MA stack 4
+   RSI=62, MACD histogram positive         ← momentum confirmed
+   Stage=2, composite_score=78             ← uptrend with high quality
+   base_pattern="cup_with_handle"          ← consolidation detected
+   dist_52wk_high_pct=1.2%                ← near new high
+   rvol=1.8                                ← volume 80% above average
+        │
+        ▼ stage2_momentum scan
+   ✅ MATCH: stage=2 AND ma_stack=4 AND rsi_14>55 AND composite_score>=65
+        │
+        ▼ backtest (entry next day open, 2× ATR stop, 30-day hold)
+   Entry: ₹1,299 → Exit: ₹1,412 (+8.7%) after 22 days
+```
 
 ---
 
@@ -181,32 +280,40 @@ for (const tool of createNseMarketDataTools()) tools.register(tool);
 Add this to your agent's system prompt or personality config:
 
 ```
-## NSE Market Data — Initialization Check
+## NSE Market Data — Initialization
 
-Before using any NSE market data tool (nse_run_scan, nse_market_history,
-nse_market_brief, nse_invoke_skill, nse_market_indicators, nse_watchdog),
-check if the database has data:
+Before using any NSE market data tool, check if the database is ready:
 
 1. Call nse_market_history with symbol "RELIANCE.NS" and days 1.
-   - If it returns data → DB is initialized, proceed normally.
-   - If it returns empty or errors → DB needs initialization.
+   - If it returns data → Go to step 3.
+   - If it returns empty → Go to step 2.
 
-2. To initialize, run these tools IN ORDER:
-   a. nse_market_backfill with days: 1825, skip_synced: true, limit: 200
-      — Repeat until all symbols are synced (it processes in batches).
-   b. nse_compute_indicators (no args — processes everything)
+2. Bootstrap the database. Tell the user to run:
+   mkdir -p ~/.ethos/market-data && gunzip -k -c \
+     ~/.ethos/plugins/node_modules/@ethosagent/tools-nse-market-data/data/seed.db.gz \
+     > ~/.ethos/market-data/market.db
+   After confirmed, continue to step 3.
 
-   This only needs to happen once. The seed database (bundled with the
-   package) should have been decompressed on install. If it wasn't,
-   the backfill fetches from Yahoo Finance instead.
+3. Compute indicators. Call nse_compute_indicators with no arguments.
+   - If processed > 0 → Success. Scans and analysis are ready.
+   - If processed = 0 → Tell the user to run from CLI:
+       nse-market-data refresh-instruments
+       nse-market-data compute-indicators
+     Then retry.
 
-3. For daily updates (after initial setup), call:
-   a. nse_market_update with mode "all"
-   b. nse_compute_indicators
+4. Daily updates (once per day after market close):
+   a. nse_market_update with mode: "all"
+   b. nse_compute_indicators with no arguments.
 
-Do NOT run scans, screens, or analysis tools until indicators are computed —
-they will return empty results.
+IMPORTANT: Do NOT run scans or analysis until indicators are computed.
 ```
+
+### LLM skills for data management
+
+| Skill | When to use | Trigger phrases |
+|---|---|---|
+| `nse_full_data_bootstrap` | First-time setup or major rebuild | "bootstrap NSE data", "initialize market database", "fill all market data" |
+| `nse_daily_refresh` | Daily maintenance after bootstrap is done | "refresh NSE data", "update market data", "run daily prep" |
 
 ### Tool reference
 
@@ -229,18 +336,74 @@ they will return empty results.
 
 ---
 
+## Skills
+
+The package ships 16 analysis skills in `skills/` that guide LLM agents through structured workflows:
+
+### Data Management
+| Skill | Purpose |
+|---|---|
+| `nse_full_data_bootstrap` | Full historical setup: stocks → indexes → indicators → scans → validate |
+| `nse_daily_refresh` | Daily update: sync → compute indicators → refresh scans → assess readiness |
+
+### Analysis
+| Skill | Purpose |
+|---|---|
+| `morning_brief` | Pre-market trading brief: regime, breadth, sectors, top setups, risk posture |
+| `stock_deep_analysis` | Comprehensive single-stock analysis with support/resistance levels |
+| `trade_setup` | Entry zone, stop loss, targets for a specific stock |
+| `stock_scoring` | Composite quality scoring across multiple dimensions |
+| `stage_analysis` | Weinstein stage classification and implications |
+| `market_regime` | Broad market regime assessment from breadth data |
+| `sector_rotation` | Sector relative strength ranking and rotation signals |
+| `breadth_narrative` | Market breadth interpretation for trading decisions |
+| `scan_explain` | Explain what a scan found and why it matters |
+| `base_pattern_analysis` | Chart base/consolidation pattern analysis |
+| `smart_money_scan` | Institutional activity detection (FII/DII + bulk/block deals) |
+| `risk_check` | Position sizing and risk assessment |
+| `watchdog_triage` | Alert condition evaluation with cooldown management |
+| `chart_ohlcv` | Candlestick chart rendering with annotations and MA overlays |
+
+---
+
+## Backtesting
+
+Run any scan over historical data to measure win rate, expectancy, and alpha. See [docs/backtesting.md](docs/backtesting.md) for the full guide.
+
+```bash
+# Backtest a built-in scan
+nse-market-data backtest --scan-id stage2_momentum --from 2025-01-01 --to 2026-06-01 --hold-days 30
+
+# Backtest a custom screen
+nse-market-data backtest --screen "stage = 2 AND rsi_14 > 55 AND rvol >= 1.5" --from 2025-01-01 --to 2026-06-01
+```
+
+Output includes: per-trade detail, win rate, expectancy, max drawdown, Sharpe ratio, benchmark alpha, and by-regime breakdown.
+
+---
+
 ## Seed database
 
-The npm package bundles `data/seed.db.gz` — a pre-built database with 5 years of OHLCV data and computed indicators for all active NSE symbols. On `npm install`, the postinstall script decompresses it to `~/.ethos/market-data/market.db`.
+The npm package bundles `data/seed.db.gz` — a pre-built database with 5 years of OHLCV data for all active NSE symbols (indicators are not included to keep the package under 60MB). On `npm install`, the postinstall script decompresses it to `~/.ethos/market-data/market.db`.
+
+After install, compute indicators separately:
+
+```bash
+nse-market-data compute-indicators
+nse-market-data compute-market-state
+nse-market-data compute-sector-state
+```
+
+Or tell the LLM: **"Run nse_full_data_bootstrap for 5 years"**
 
 ### Generating a fresh seed
 
 ```bash
 make build
-make seed-db    # ~2-4 hours: backfill + indicators + compress
+make seed-db    # ~2-4 hours: backfill all OHLCV + compress (no indicators)
 ```
 
-This runs: refresh instruments → backfill all → compute indicators → compute market/sector state → compress → write manifest.
+This runs: refresh instruments → refresh scans → backfill all → mark failed inactive → compress → write manifest.
 
 The seed is also uploaded to GitHub releases on `make release`, enabling `nse-market-data seed-update` to fetch newer data without upgrading the package.
 
@@ -248,7 +411,7 @@ The seed is also uploaded to GitHub releases on `make release`, enabling `nse-ma
 
 ## Database
 
-SQLite (via `node-sqlite3-wasm` — pure WASM, no native compilation) at `~/.ethos/market-data/market.db` (WAL mode, STRICT tables):
+SQLite (via `node-sqlite3-wasm` — pure WASM, no native compilation) at `~/.ethos/market-data/market.db` (STRICT tables):
 
 | Table | Purpose |
 |---|---|
