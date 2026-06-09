@@ -26,10 +26,6 @@ function getDbPath(): string {
   return process.env.NSE_MARKET_DATA_DB ?? join(homedir(), '.ethos', 'market-data', 'market.db');
 }
 
-function getStore(): MarketDataStore {
-  return new MarketDataStore(getDbPath());
-}
-
 function withStore<T>(fn: (store: MarketDataStore) => T): T {
   const store = new MarketDataStore(getDbPath());
   try {
