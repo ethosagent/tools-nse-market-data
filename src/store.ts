@@ -7,6 +7,17 @@ import _pkg from 'node-sqlite3-wasm';
 const { Database } = _pkg;
 
 import { fetchBhavcopayRange } from './bhavcopy';
+import type {
+  AdHistoryRow,
+  BreadthSnapshot,
+  CapRotation,
+  DashboardData,
+  FiiDiiRow,
+  IndexSummary,
+  SectorRow,
+  StageDist,
+  TopStockRow,
+} from './dashboard';
 import { fetchOhlcv } from './fetcher';
 import {
   aggregateToMonthly,
@@ -39,7 +50,6 @@ import {
   computeWilliamsR,
   detectCandlePatterns,
 } from './indicators';
-import type { AdHistoryRow, BreadthSnapshot, CapRotation, DashboardData, FiiDiiRow, IndexSummary, SectorRow, StageDist, TopStockRow } from './dashboard';
 import { detectChartPattern } from './patterns';
 import type {
   BulkBlockDealDbRow,

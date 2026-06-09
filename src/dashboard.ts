@@ -128,11 +128,16 @@ function changeColor(v: number | null | undefined): string {
 function stageColor(stage: number | null | undefined): string {
   if (stage == null) return '#8b949e';
   switch (stage) {
-    case 1: return '#d29922';
-    case 2: return '#3fb950';
-    case 3: return '#f0883e';
-    case 4: return '#f85149';
-    default: return '#8b949e';
+    case 1:
+      return '#d29922';
+    case 2:
+      return '#3fb950';
+    case 3:
+      return '#f0883e';
+    case 4:
+      return '#f85149';
+    default:
+      return '#8b949e';
   }
 }
 
@@ -780,7 +785,7 @@ export function generateDashboardHtml(data: DashboardData): string {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NSE Market Dashboard — ${esc(safeData.as_of)}</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" crossorigin="anonymous"><\/script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" crossorigin="anonymous"></script>
 <style>${buildCss()}</style>
 </head>
 <body>
@@ -797,7 +802,7 @@ export function generateDashboardHtml(data: DashboardData): string {
 var DASHBOARD_DATA = ${JSON.stringify(safeData)};
 window.DASHBOARD_DATA = DASHBOARD_DATA;
 </script>
-<script>${buildClientJs()}<\/script>
+<script>${buildClientJs()}</script>
 </body>
 </html>`;
 }

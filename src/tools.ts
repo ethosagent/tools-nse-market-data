@@ -1412,8 +1412,7 @@ const nseMarketDashboardTool: Tool<DashboardArgs> = {
     },
   },
   async execute(args, _ctx): Promise<ToolResult> {
-    const topN =
-      args.top_n == null || args.top_n <= 0 ? 20 : Math.min(args.top_n, 50);
+    const topN = args.top_n == null || args.top_n <= 0 ? 20 : Math.min(args.top_n, 50);
     return withStore((store) => {
       const data = store.getDashboardData(args.date, topN);
       const html = generateDashboardHtml(data);
@@ -1429,12 +1428,17 @@ export const plugin: EthosPlugin = {
       api.registerTool(tool);
     }
     // registerDataSource is new in plugin-sdk — guard until the type ships.
-    (api as EthosPluginApi & { registerDataSource?(id: string, path: string): void }).registerDataSource?.('market-db', getDbPath());
+    (
+      api as EthosPluginApi & { registerDataSource?(id: string, path: string): void }
+    ).registerDataSource?.('market-db', getDbPath());
   },
 };
 
 /** Backward-compatible activate function for v1 hosts. */
-export function activate(api: { registerTool(tool: Tool): void; registerDataSource?(id: string, path: string): void }): void {
+export function activate(api: {
+  registerTool(tool: Tool): void;
+  registerDataSource?(id: string, path: string): void;
+}): void {
   for (const tool of createNseMarketDataTools()) {
     api.registerTool(tool);
   }
