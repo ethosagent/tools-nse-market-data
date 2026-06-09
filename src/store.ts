@@ -1908,6 +1908,10 @@ export class MarketDataStore {
   }): Promise<{ processed: number; dateCount: number }> {
     const toDate = opts.to || new Date().toISOString().slice(0, 10);
 
+    // Performance: relax durability during bulk compute (WAL still protects against corruption)
+    this.db.exec('PRAGMA synchronous = NORMAL');
+    this.db.exec('PRAGMA cache_size = -64000');
+
     // Step 1: Determine symbols
     let symbols: string[];
     if (opts.symbol) {
@@ -2373,6 +2377,10 @@ export class MarketDataStore {
         s10.finalize();
       }
     }
+
+    // Restore default pragmas
+    this.db.exec('PRAGMA synchronous = FULL');
+    this.db.exec('PRAGMA cache_size = -2000');
 
     return { processed, dateCount: datesProcessed.size };
   }

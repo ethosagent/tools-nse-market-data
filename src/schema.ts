@@ -290,6 +290,7 @@ function addColumnIfNotExists(
 
 export function migrate(db: Database): void {
   db.exec('PRAGMA journal_mode = WAL');
+  db.exec('PRAGMA busy_timeout = 5000');
   db.exec('PRAGMA foreign_keys = ON');
   db.exec(SQL_CREATE_INSTRUMENTS);
   db.exec(SQL_CREATE_OHLCV_DAILY);

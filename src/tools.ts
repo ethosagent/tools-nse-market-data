@@ -22,15 +22,30 @@ function getPackageRoot(): string {
   return join(dirname(__filename), '..');
 }
 
-let _store: MarketDataStore | null = null;
+function getDbPath(): string {
+  return process.env.NSE_MARKET_DATA_DB ?? join(homedir(), '.ethos', 'market-data', 'market.db');
+}
 
 function getStore(): MarketDataStore {
-  if (!_store) {
-    const dbPath =
-      process.env.NSE_MARKET_DATA_DB ?? join(homedir(), '.ethos', 'market-data', 'market.db');
-    _store = new MarketDataStore(dbPath);
+  return new MarketDataStore(getDbPath());
+}
+
+function withStore<T>(fn: (store: MarketDataStore) => T): T {
+  const store = new MarketDataStore(getDbPath());
+  try {
+    return fn(store);
+  } finally {
+    store.close();
   }
-  return _store;
+}
+
+async function withStoreAsync<T>(fn: (store: MarketDataStore) => Promise<T>): Promise<T> {
+  const store = new MarketDataStore(getDbPath());
+  try {
+    return await fn(store);
+  } finally {
+    store.close();
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -105,11 +120,13 @@ const nseMarketCleanTool: Tool = {
   requiresApproval: true,
   schema: { type: 'object', properties: {} },
   async execute(_args, _ctx): Promise<ToolResult> {
-    const result = getStore().clean();
-    return {
-      ok: true,
-      value: `Cleaned database: ${result.rowsDeleted.ohlcv} OHLCV rows, ${result.rowsDeleted.syncMeta} sync records, ${result.rowsDeleted.watchlist} watchlist entries deleted.`,
-    };
+    return withStore((store) => {
+      const result = store.clean();
+      return {
+        ok: true,
+        value: `Cleaned database: ${result.rowsDeleted.ohlcv} OHLCV rows, ${result.rowsDeleted.syncMeta} sync records, ${result.rowsDeleted.watchlist} watchlist entries deleted.`,
+      };
+    });
   },
 };
 
@@ -157,82 +174,83 @@ const nseMarketBackfillTool: Tool<BackfillArgs> = {
     },
   },
   async execute(args, ctx): Promise<ToolResult> {
-    const store = getStore();
-    const daysBack = args.days ?? 365;
-    const fromDate =
-      args.from_date ??
-      new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    return withStoreAsync(async (store) => {
+      const daysBack = args.days ?? 365;
+      const fromDate =
+        args.from_date ??
+        new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-    let symbols: string[];
-    if (args.symbols) {
-      symbols = args.symbols
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-    } else {
-      symbols = store.listInstrumentSymbols();
-      if (symbols.length === 0) {
-        // Auto-seed instruments from bundled data/instruments.json
-        const pkgRoot = getPackageRoot();
-        const instruments = JSON.parse(
-          readFileSync(join(pkgRoot, 'data', 'instruments.json'), 'utf-8'),
-        ) as InstrumentSeedRow[];
-        store.upsertInstruments(instruments);
+      let symbols: string[];
+      if (args.symbols) {
+        symbols = args.symbols
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
+      } else {
         symbols = store.listInstrumentSymbols();
-      }
-      if (symbols.length === 0) {
-        return {
-          ok: false,
-          error: 'Could not load instruments from data/instruments.json.',
-          code: 'not_available',
-        };
-      }
-    }
-
-    // Apply limit before delegating to backfillAll
-    if (args.limit && args.limit > 0) {
-      symbols = symbols.slice(0, args.limit);
-    }
-
-    ctx.emit?.({
-      type: 'progress',
-      toolName: 'nse_market_backfill',
-      message: `Starting backfill for ${symbols.length} symbols from ${fromDate}...`,
-      audience: 'user',
-      percent: 0,
-    });
-
-    const { results, failed } = await store.backfillAll(
-      symbols,
-      fromDate,
-      (done, total, _sym, errorCount) => {
-        if (done % 10 === 0 || done === total) {
-          ctx.emit?.({
-            type: 'progress',
-            toolName: 'nse_market_backfill',
-            message: `${done}/${total} symbols synced${errorCount > 0 ? `, ${errorCount} errors` : ''}`,
-            audience: 'user',
-            percent: Math.round((done / total) * 100),
-          });
+        if (symbols.length === 0) {
+          // Auto-seed instruments from bundled data/instruments.json
+          const pkgRoot = getPackageRoot();
+          const instruments = JSON.parse(
+            readFileSync(join(pkgRoot, 'data', 'instruments.json'), 'utf-8'),
+          ) as InstrumentSeedRow[];
+          store.upsertInstruments(instruments);
+          symbols = store.listInstrumentSymbols();
         }
-      },
-      {
-        concurrency: args.concurrency,
-        skipSynced: args.skip_synced,
-      },
-    );
+        if (symbols.length === 0) {
+          return {
+            ok: false,
+            error: 'Could not load instruments from data/instruments.json.',
+            code: 'not_available',
+          };
+        }
+      }
 
-    const totalRows = results.reduce((sum, r) => sum + r.rowsInserted, 0);
+      // Apply limit before delegating to backfillAll
+      if (args.limit && args.limit > 0) {
+        symbols = symbols.slice(0, args.limit);
+      }
 
-    return {
-      ok: true,
-      value: [
-        `Backfill complete: ${results.length} symbols processed, ${totalRows} rows inserted.`,
-        failed.length > 0
-          ? `${failed.length} failed: ${failed.slice(0, 5).join(', ')}${failed.length > 5 ? ` (+${failed.length - 5} more)` : ''}.`
-          : 'No failures.',
-      ].join('\n'),
-    };
+      ctx.emit?.({
+        type: 'progress',
+        toolName: 'nse_market_backfill',
+        message: `Starting backfill for ${symbols.length} symbols from ${fromDate}...`,
+        audience: 'user',
+        percent: 0,
+      });
+
+      const { results, failed } = await store.backfillAll(
+        symbols,
+        fromDate,
+        (done, total, _sym, errorCount) => {
+          if (done % 10 === 0 || done === total) {
+            ctx.emit?.({
+              type: 'progress',
+              toolName: 'nse_market_backfill',
+              message: `${done}/${total} symbols synced${errorCount > 0 ? `, ${errorCount} errors` : ''}`,
+              audience: 'user',
+              percent: Math.round((done / total) * 100),
+            });
+          }
+        },
+        {
+          concurrency: args.concurrency,
+          skipSynced: args.skip_synced,
+        },
+      );
+
+      const totalRows = results.reduce((sum, r) => sum + r.rowsInserted, 0);
+
+      return {
+        ok: true,
+        value: [
+          `Backfill complete: ${results.length} symbols processed, ${totalRows} rows inserted.`,
+          failed.length > 0
+            ? `${failed.length} failed: ${failed.slice(0, 5).join(', ')}${failed.length > 5 ? ` (+${failed.length - 5} more)` : ''}.`
+            : 'No failures.',
+        ].join('\n'),
+      };
+    });
   },
 };
 
@@ -255,24 +273,25 @@ const nseMarketUpdateTool: Tool<UpdateArgs> = {
     },
   },
   async execute(args, ctx): Promise<ToolResult> {
-    const store = getStore();
-    const mode = args.mode ?? 'watchlist';
+    return withStoreAsync(async (store) => {
+      const mode = args.mode ?? 'watchlist';
 
-    ctx.emit?.({
-      type: 'progress',
-      toolName: 'nse_market_update',
-      message: `Updating ${mode === 'all' ? 'all' : 'watchlist'} symbols...`,
-      audience: 'user',
+      ctx.emit?.({
+        type: 'progress',
+        toolName: 'nse_market_update',
+        message: `Updating ${mode === 'all' ? 'all' : 'watchlist'} symbols...`,
+        audience: 'user',
+      });
+
+      const results = mode === 'all' ? await store.updateAll() : await store.updateWatchlist();
+      const totalRows = results.reduce((sum, r) => sum + r.rowsInserted, 0);
+      const summary = results.map((r) => `${r.symbol}: +${r.rowsInserted} rows`).join('\n');
+
+      return {
+        ok: true,
+        value: `${summary}\n\nTotal: ${results.length} symbols updated, ${totalRows} new rows.`,
+      };
     });
-
-    const results = mode === 'all' ? await store.updateAll() : await store.updateWatchlist();
-    const totalRows = results.reduce((sum, r) => sum + r.rowsInserted, 0);
-    const summary = results.map((r) => `${r.symbol}: +${r.rowsInserted} rows`).join('\n');
-
-    return {
-      ok: true,
-      value: `${summary}\n\nTotal: ${results.length} symbols updated, ${totalRows} new rows.`,
-    };
   },
 };
 
@@ -294,9 +313,11 @@ const nseWatchlistAddTool: Tool<WatchlistAddArgs> = {
     required: ['symbol'],
   },
   async execute(args, _ctx): Promise<ToolResult> {
-    getStore().watchlistAdd(args.symbol, args.list_name, args.notes);
-    const list = args.list_name ?? 'default';
-    return { ok: true, value: `Added ${args.symbol} to watchlist '${list}'.` };
+    return withStore((store) => {
+      store.watchlistAdd(args.symbol, args.list_name, args.notes);
+      const list = args.list_name ?? 'default';
+      return { ok: true, value: `Added ${args.symbol} to watchlist '${list}'.` };
+    });
   },
 };
 
@@ -314,9 +335,11 @@ const nseWatchlistRemoveTool: Tool<WatchlistRemoveArgs> = {
     required: ['symbol'],
   },
   async execute(args, _ctx): Promise<ToolResult> {
-    getStore().watchlistRemove(args.symbol, args.list_name);
-    const list = args.list_name ?? 'default';
-    return { ok: true, value: `Removed ${args.symbol} from watchlist '${list}'.` };
+    return withStore((store) => {
+      store.watchlistRemove(args.symbol, args.list_name);
+      const list = args.list_name ?? 'default';
+      return { ok: true, value: `Removed ${args.symbol} from watchlist '${list}'.` };
+    });
   },
 };
 
@@ -333,25 +356,26 @@ const nseWatchlistShowTool: Tool<WatchlistShowArgs> = {
     },
   },
   async execute(args, _ctx): Promise<ToolResult> {
-    const store = getStore();
-    const list = args.list_name ?? 'default';
-    const entries = store.watchlistList(list);
-    if (entries.length === 0) {
-      return {
-        ok: true,
-        value: `Watchlist '${list}' is empty. Add symbols with nse_watchlist_add.`,
-      };
-    }
+    return withStore((store) => {
+      const list = args.list_name ?? 'default';
+      const entries = store.watchlistList(list);
+      if (entries.length === 0) {
+        return {
+          ok: true,
+          value: `Watchlist '${list}' is empty. Add symbols with nse_watchlist_add.`,
+        };
+      }
 
-    const lines = [`Watchlist '${list}' (${entries.length} symbols):`, ''];
-    for (const entry of entries) {
-      const history = store.getHistory(entry.symbol, 1);
-      const last = history[0];
-      const price = last ? `close ${last.close} on ${last.date}` : 'no data';
-      const notePart = entry.notes ? `  — ${entry.notes}` : '';
-      lines.push(`  ${entry.symbol.padEnd(20)} ${price}${notePart}`);
-    }
-    return { ok: true, value: lines.join('\n') };
+      const lines = [`Watchlist '${list}' (${entries.length} symbols):`, ''];
+      for (const entry of entries) {
+        const history = store.getHistory(entry.symbol, 1);
+        const last = history[0];
+        const price = last ? `close ${last.close} on ${last.date}` : 'no data';
+        const notePart = entry.notes ? `  — ${entry.notes}` : '';
+        lines.push(`  ${entry.symbol.padEnd(20)} ${price}${notePart}`);
+      }
+      return { ok: true, value: lines.join('\n') };
+    });
   },
 };
 
@@ -375,21 +399,23 @@ const nseMarketHistoryTool: Tool<HistoryArgs> = {
     required: ['symbol'],
   },
   async execute(args, _ctx): Promise<ToolResult> {
-    const days = Math.min(args.days ?? 252, 504);
-    const rows = getStore().getHistory(args.symbol, days);
-    if (rows.length === 0) {
-      return {
-        ok: false,
-        error: `No data for ${args.symbol}. Run nse_market_backfill first.`,
-        code: 'not_available',
-      };
-    }
-    const header = 'Date        Open      High      Low       Close     Volume';
-    const lines = rows.map(
-      (r) =>
-        `${r.date}  ${String(r.open).padStart(9)}  ${String(r.high).padStart(9)}  ${String(r.low).padStart(9)}  ${String(r.close).padStart(9)}  ${String(r.volume).padStart(10)}`,
-    );
-    return { ok: true, value: [header, ...lines].join('\n') };
+    return withStore((store) => {
+      const days = Math.min(args.days ?? 252, 504);
+      const rows = store.getHistory(args.symbol, days);
+      if (rows.length === 0) {
+        return {
+          ok: false,
+          error: `No data for ${args.symbol}. Run nse_market_backfill first.`,
+          code: 'not_available',
+        };
+      }
+      const header = 'Date        Open      High      Low       Close     Volume';
+      const lines = rows.map(
+        (r) =>
+          `${r.date}  ${String(r.open).padStart(9)}  ${String(r.high).padStart(9)}  ${String(r.low).padStart(9)}  ${String(r.close).padStart(9)}  ${String(r.volume).padStart(10)}`,
+      );
+      return { ok: true, value: [header, ...lines].join('\n') };
+    });
   },
 };
 
@@ -415,20 +441,22 @@ const nseMarketScreenTool: Tool<ScreenArgs> = {
     },
   },
   async execute(args, _ctx): Promise<ToolResult> {
-    const rows = getStore().screen({
-      listName: args.list_name,
-      minVolumeSurge: args.min_volume_surge,
-      nearHighPct: args.near_high_pct,
+    return withStore((store) => {
+      const rows = store.screen({
+        listName: args.list_name,
+        minVolumeSurge: args.min_volume_surge,
+        nearHighPct: args.near_high_pct,
+      });
+      if (rows.length === 0) {
+        return { ok: true, value: 'No symbols matched the screen criteria.' };
+      }
+      const header = 'Symbol               Close     VolSurge  From52wH%  52wH      52wL';
+      const lines = rows.map(
+        (r) =>
+          `${r.symbol.padEnd(20)} ${String(r.close).padStart(9)} ${(`${r.volumeSurge.toFixed(1)}x`).padStart(9)} ${(`${r.pctFrom52wHigh.toFixed(1)}%`).padStart(10)} ${String(r.high52w).padStart(9)} ${String(r.low52w).padStart(9)}`,
+      );
+      return { ok: true, value: [header, ...lines].join('\n') };
     });
-    if (rows.length === 0) {
-      return { ok: true, value: 'No symbols matched the screen criteria.' };
-    }
-    const header = 'Symbol               Close     VolSurge  From52wH%  52wH      52wL';
-    const lines = rows.map(
-      (r) =>
-        `${r.symbol.padEnd(20)} ${String(r.close).padStart(9)} ${(`${r.volumeSurge.toFixed(1)}x`).padStart(9)} ${(`${r.pctFrom52wHigh.toFixed(1)}%`).padStart(10)} ${String(r.high52w).padStart(9)} ${String(r.low52w).padStart(9)}`,
-    );
-    return { ok: true, value: [header, ...lines].join('\n') };
   },
 };
 
@@ -460,117 +488,118 @@ const nseRunScanTool: Tool<RunScanArgs> = {
     required: ['scan_id'],
   },
   async execute(args, _ctx): Promise<ToolResult> {
-    const store = getStore();
-    const db = (store as unknown as { db: import('node-sqlite3-wasm').Database }).db;
+    return withStore((store) => {
+      const db = (store as unknown as { db: import('node-sqlite3-wasm').Database }).db;
 
-    // Look up the scan
-    const s1 = db.prepare('SELECT sql_template, name FROM saved_scans WHERE scan_id = ?');
-    const scanRow = s1.get([args.scan_id]) as { sql_template: string; name: string } | null;
-    s1.finalize();
-    if (!scanRow) {
-      return {
-        ok: false,
-        error: `Scan '${args.scan_id}' not found. Run nse_refresh_scans to load built-in scan definitions.`,
-        code: 'not_available',
-      };
-    }
+      // Look up the scan
+      const s1 = db.prepare('SELECT sql_template, name FROM saved_scans WHERE scan_id = ?');
+      const scanRow = s1.get([args.scan_id]) as { sql_template: string; name: string } | null;
+      s1.finalize();
+      if (!scanRow) {
+        return {
+          ok: false,
+          error: `Scan '${args.scan_id}' not found. Run nse_refresh_scans to load built-in scan definitions.`,
+          code: 'not_available',
+        };
+      }
 
-    // Determine query date
-    const queryDate =
-      args.date ??
-      (() => {
-        const s2 = db.prepare('SELECT MAX(date) as d FROM indicators_daily');
-        const row = s2.get([]) as { d: string | null } | null;
-        s2.finalize();
-        return row?.d ?? new Date().toISOString().slice(0, 10);
-      })();
+      // Determine query date
+      const queryDate =
+        args.date ??
+        (() => {
+          const s2 = db.prepare('SELECT MAX(date) as d FROM indicators_daily');
+          const row = s2.get([]) as { d: string | null } | null;
+          s2.finalize();
+          return row?.d ?? new Date().toISOString().slice(0, 10);
+        })();
 
-    const limit = args.limit ?? 50;
-    const universe = args.universe ?? 'all';
+      const limit = args.limit ?? 50;
+      const universe = args.universe ?? 'all';
 
-    // Build universe clause
-    let universeClause = '';
-    if (universe === 'watchlist') {
-      universeClause = 'AND EXISTS (SELECT 1 FROM watchlist w WHERE w.symbol = id.symbol)';
-    } else if (universe === 'nifty50') {
-      universeClause =
-        "AND id.symbol IN (SELECT member_symbol FROM index_constituents WHERE index_symbol = '^NSEI')";
-    } else if (universe === 'nifty500') {
-      universeClause =
-        "AND id.symbol IN (SELECT member_symbol FROM index_constituents WHERE index_symbol = '^CRSLDX')";
-    }
+      // Build universe clause
+      let universeClause = '';
+      if (universe === 'watchlist') {
+        universeClause = 'AND EXISTS (SELECT 1 FROM watchlist w WHERE w.symbol = id.symbol)';
+      } else if (universe === 'nifty50') {
+        universeClause =
+          "AND id.symbol IN (SELECT member_symbol FROM index_constituents WHERE index_symbol = '^NSEI')";
+      } else if (universe === 'nifty500') {
+        universeClause =
+          "AND id.symbol IN (SELECT member_symbol FROM index_constituents WHERE index_symbol = '^CRSLDX')";
+      }
 
-    const sql = `
-      SELECT id.symbol, i.name, i.sector, i.market_cap_band,
-             id.close_position_ratio, id.composite_score, id.sniper_score,
-             id.setup_type, id.stage, id.rvol, id.rsi_14, id.dist_52wk_high_pct,
-             id.rs_rank_in_segment, id.return_1m, id.tf_alignment_score
-      FROM indicators_daily id
-      JOIN instruments i ON id.symbol = i.symbol
-      LEFT JOIN ohlcv_daily o ON id.symbol = o.symbol AND id.date = o.date
-      WHERE id.date = ? AND i.instrument_type = 'equity' AND i.is_active = 1
-      AND (${scanRow.sql_template})
-      ${universeClause}
-      ORDER BY id.composite_score DESC
-      LIMIT ?
-    `;
+      const sql = `
+        SELECT id.symbol, i.name, i.sector, i.market_cap_band,
+               id.close_position_ratio, id.composite_score, id.sniper_score,
+               id.setup_type, id.stage, id.rvol, id.rsi_14, id.dist_52wk_high_pct,
+               id.rs_rank_in_segment, id.return_1m, id.tf_alignment_score
+        FROM indicators_daily id
+        JOIN instruments i ON id.symbol = i.symbol
+        LEFT JOIN ohlcv_daily o ON id.symbol = o.symbol AND id.date = o.date
+        WHERE id.date = ? AND i.instrument_type = 'equity' AND i.is_active = 1
+        AND (${scanRow.sql_template})
+        ${universeClause}
+        ORDER BY id.composite_score DESC
+        LIMIT ?
+      `;
 
-    let rows: Array<{
-      symbol: string;
-      name: string | null;
-      sector: string | null;
-      market_cap_band: string | null;
-      close_position_ratio: number | null;
-      composite_score: number | null;
-      sniper_score: number | null;
-      setup_type: string | null;
-      stage: number | null;
-      rvol: number | null;
-      rsi_14: number | null;
-      dist_52wk_high_pct: number | null;
-      rs_rank_in_segment: number | null;
-      return_1m: number | null;
-      tf_alignment_score: number | null;
-    }>;
+      let rows: Array<{
+        symbol: string;
+        name: string | null;
+        sector: string | null;
+        market_cap_band: string | null;
+        close_position_ratio: number | null;
+        composite_score: number | null;
+        sniper_score: number | null;
+        setup_type: string | null;
+        stage: number | null;
+        rvol: number | null;
+        rsi_14: number | null;
+        dist_52wk_high_pct: number | null;
+        rs_rank_in_segment: number | null;
+        return_1m: number | null;
+        tf_alignment_score: number | null;
+      }>;
 
-    try {
-      const s3 = db.prepare(sql);
-      rows = s3.all([queryDate, limit]) as typeof rows;
-      s3.finalize();
-    } catch (err) {
-      return {
-        ok: false,
-        error: `Scan query failed: ${(err as Error).message}`,
-        code: 'execution_failed',
-      };
-    }
+      try {
+        const s3 = db.prepare(sql);
+        rows = s3.all([queryDate, limit]) as typeof rows;
+        s3.finalize();
+      } catch (err) {
+        return {
+          ok: false,
+          error: `Scan query failed: ${(err as Error).message}`,
+          code: 'execution_failed',
+        };
+      }
 
-    if (rows.length === 0) {
-      return {
-        ok: true,
-        value: `No symbols matched scan '${args.scan_id}' on date ${queryDate}.`,
-      };
-    }
+      if (rows.length === 0) {
+        return {
+          ok: true,
+          value: `No symbols matched scan '${args.scan_id}' on date ${queryDate}.`,
+        };
+      }
 
-    const header =
-      `Scan: ${scanRow.name} (${args.scan_id})  |  Date: ${queryDate}  |  Universe: ${universe}\n` +
-      `${'Symbol'.padEnd(20)} ${'Name'.padEnd(25)} ${'Sector'.padEnd(18)} ${'Score'.padStart(5)} ${'Setup'.padEnd(25)} ${'RVOL'.padStart(6)} ${'RSI'.padStart(5)} ${'Dist52H%'.padStart(9)}`;
-    const lines = rows.map((r) => {
-      const sym = (r.symbol ?? '').padEnd(20);
-      const nm = (r.name ?? '').slice(0, 24).padEnd(25);
-      const sec = (r.sector ?? '').slice(0, 17).padEnd(18);
-      const score = String(r.composite_score ?? '').padStart(5);
-      const setup = (r.setup_type ?? '').slice(0, 24).padEnd(25);
-      const rvol = r.rvol !== null ? `${r.rvol.toFixed(1)}x`.padStart(6) : '     -';
-      const rsi = r.rsi_14 !== null ? r.rsi_14.toFixed(0).padStart(5) : '    -';
-      const dist =
-        r.dist_52wk_high_pct !== null
-          ? `${r.dist_52wk_high_pct.toFixed(1)}%`.padStart(9)
-          : '        -';
-      return `${sym} ${nm} ${sec} ${score} ${setup} ${rvol} ${rsi} ${dist}`;
+      const header =
+        `Scan: ${scanRow.name} (${args.scan_id})  |  Date: ${queryDate}  |  Universe: ${universe}\n` +
+        `${'Symbol'.padEnd(20)} ${'Name'.padEnd(25)} ${'Sector'.padEnd(18)} ${'Score'.padStart(5)} ${'Setup'.padEnd(25)} ${'RVOL'.padStart(6)} ${'RSI'.padStart(5)} ${'Dist52H%'.padStart(9)}`;
+      const lines = rows.map((r) => {
+        const sym = (r.symbol ?? '').padEnd(20);
+        const nm = (r.name ?? '').slice(0, 24).padEnd(25);
+        const sec = (r.sector ?? '').slice(0, 17).padEnd(18);
+        const score = String(r.composite_score ?? '').padStart(5);
+        const setup = (r.setup_type ?? '').slice(0, 24).padEnd(25);
+        const rvol = r.rvol !== null ? `${r.rvol.toFixed(1)}x`.padStart(6) : '     -';
+        const rsi = r.rsi_14 !== null ? r.rsi_14.toFixed(0).padStart(5) : '    -';
+        const dist =
+          r.dist_52wk_high_pct !== null
+            ? `${r.dist_52wk_high_pct.toFixed(1)}%`.padStart(9)
+            : '        -';
+        return `${sym} ${nm} ${sec} ${score} ${setup} ${rvol} ${rsi} ${dist}`;
+      });
+
+      return { ok: true, value: [header, ...lines].join('\n') };
     });
-
-    return { ok: true, value: [header, ...lines].join('\n') };
   },
 };
 
@@ -618,88 +647,89 @@ const nseInvokeSkillTool: Tool<InvokeSkillArgs> = {
       };
     }
 
-    const store = getStore();
-    const db = (store as unknown as { db: import('node-sqlite3-wasm').Database }).db;
-    const symbol = args.params?.symbol as string | undefined;
+    return withStore((store) => {
+      const db = (store as unknown as { db: import('node-sqlite3-wasm').Database }).db;
+      const symbol = args.params?.symbol as string | undefined;
 
-    let dataContext: unknown = null;
+      let dataContext: unknown = null;
 
-    const symbolSkills = [
-      'stock_deep_analysis',
-      'trade_setup',
-      'stock_scoring',
-      'stage_analysis',
-      'scan_explain',
-    ];
-    const marketSkills = ['market_regime', 'breadth_narrative'];
-    const sectorSkills = ['sector_rotation'];
-    const watchlistSkills = ['morning_brief'];
+      const symbolSkills = [
+        'stock_deep_analysis',
+        'trade_setup',
+        'stock_scoring',
+        'stage_analysis',
+        'scan_explain',
+      ];
+      const marketSkills = ['market_regime', 'breadth_narrative'];
+      const sectorSkills = ['sector_rotation'];
+      const watchlistSkills = ['morning_brief'];
 
-    if (symbolSkills.includes(skillId)) {
-      if (!symbol) {
-        return {
-          ok: false,
-          error: `Skill '${skillId}' requires a 'symbol' parameter.`,
-          code: 'input_invalid',
-        };
+      if (symbolSkills.includes(skillId)) {
+        if (!symbol) {
+          return {
+            ok: false,
+            error: `Skill '${skillId}' requires a 'symbol' parameter.`,
+            code: 'input_invalid',
+          };
+        }
+        // Query last 90 days of indicators
+        const sInd = db.prepare(
+          `SELECT * FROM indicators_daily WHERE symbol = ?
+           ORDER BY date DESC LIMIT 90`,
+        );
+        const rows = sInd.all([symbol]);
+        sInd.finalize();
+        const history = store.getHistory(symbol, 90);
+        dataContext = { symbol, indicators: rows, ohlcv: history };
+      } else if (marketSkills.includes(skillId)) {
+        const sMkt = db.prepare('SELECT * FROM market_state_daily ORDER BY date DESC LIMIT 20');
+        const rows = sMkt.all([]);
+        sMkt.finalize();
+        dataContext = { market_state: rows };
+      } else if (sectorSkills.includes(skillId)) {
+        const sSec = db.prepare('SELECT * FROM sector_state_daily ORDER BY date DESC LIMIT 28');
+        const rows = sSec.all([]);
+        sSec.finalize();
+        dataContext = { sector_state: rows };
+      } else if (watchlistSkills.includes(skillId)) {
+        const sLatest = db.prepare('SELECT MAX(date) as d FROM indicators_daily');
+        const latestDateRow = sLatest.get([]) as { d: string | null } | null;
+        sLatest.finalize();
+        const latestDate = latestDateRow?.d ?? new Date().toISOString().slice(0, 10);
+        const sWl = db.prepare(
+          `SELECT id.*, i.name, i.sector, i.market_cap_band
+           FROM indicators_daily id
+           JOIN instruments i ON id.symbol = i.symbol
+           JOIN watchlist w ON id.symbol = w.symbol
+           WHERE id.date = ?
+           ORDER BY id.composite_score DESC NULLS LAST
+           LIMIT 10`,
+        );
+        const rows = sWl.all([latestDate]);
+        sWl.finalize();
+        dataContext = { date: latestDate, watchlist_indicators: rows };
+      } else {
+        dataContext = { note: 'No specific data context available for this skill.' };
       }
-      // Query last 90 days of indicators
-      const sInd = db.prepare(
-        `SELECT * FROM indicators_daily WHERE symbol = ?
-         ORDER BY date DESC LIMIT 90`,
-      );
-      const rows = sInd.all([symbol]);
-      sInd.finalize();
-      const history = store.getHistory(symbol, 90);
-      dataContext = { symbol, indicators: rows, ohlcv: history };
-    } else if (marketSkills.includes(skillId)) {
-      const sMkt = db.prepare('SELECT * FROM market_state_daily ORDER BY date DESC LIMIT 20');
-      const rows = sMkt.all([]);
-      sMkt.finalize();
-      dataContext = { market_state: rows };
-    } else if (sectorSkills.includes(skillId)) {
-      const sSec = db.prepare('SELECT * FROM sector_state_daily ORDER BY date DESC LIMIT 28');
-      const rows = sSec.all([]);
-      sSec.finalize();
-      dataContext = { sector_state: rows };
-    } else if (watchlistSkills.includes(skillId)) {
-      const sLatest = db.prepare('SELECT MAX(date) as d FROM indicators_daily');
-      const latestDateRow = sLatest.get([]) as { d: string | null } | null;
-      sLatest.finalize();
-      const latestDate = latestDateRow?.d ?? new Date().toISOString().slice(0, 10);
-      const sWl = db.prepare(
-        `SELECT id.*, i.name, i.sector, i.market_cap_band
-         FROM indicators_daily id
-         JOIN instruments i ON id.symbol = i.symbol
-         JOIN watchlist w ON id.symbol = w.symbol
-         WHERE id.date = ?
-         ORDER BY id.composite_score DESC NULLS LAST
-         LIMIT 10`,
-      );
-      const rows = sWl.all([latestDate]);
-      sWl.finalize();
-      dataContext = { date: latestDate, watchlist_indicators: rows };
-    } else {
-      dataContext = { note: 'No specific data context available for this skill.' };
-    }
 
-    const result = {
-      skill_id: skillId,
-      skill_content: skillContent,
-      data_context: JSON.stringify(dataContext, null, 2),
-      usage_hint:
-        'Use skill_content as your system prompt, analyze the data_context, and produce output matching the Output Schema in the skill file.',
-    };
+      const result = {
+        skill_id: skillId,
+        skill_content: skillContent,
+        data_context: JSON.stringify(dataContext, null, 2),
+        usage_hint:
+          'Use skill_content as your system prompt, analyze the data_context, and produce output matching the Output Schema in the skill file.',
+      };
 
-    ctx.emit?.({
-      type: 'progress',
-      toolName: 'nse_invoke_skill',
-      message: 'Skill data ready.',
-      audience: 'internal',
-      percent: 100,
+      ctx.emit?.({
+        type: 'progress',
+        toolName: 'nse_invoke_skill',
+        message: 'Skill data ready.',
+        audience: 'internal',
+        percent: 100,
+      });
+
+      return { ok: true, value: JSON.stringify(result, null, 2) };
     });
-
-    return { ok: true, value: JSON.stringify(result, null, 2) };
   },
 };
 
@@ -718,8 +748,10 @@ const nseMarketBriefTool: Tool<MarketBriefArgs> = {
     },
   },
   async execute(args, _ctx): Promise<ToolResult> {
-    const brief = getStore().getMarketBrief(args.date);
-    return { ok: true, value: JSON.stringify(brief, null, 2) };
+    return withStore((store) => {
+      const brief = store.getMarketBrief(args.date);
+      return { ok: true, value: JSON.stringify(brief, null, 2) };
+    });
   },
 };
 
@@ -750,15 +782,17 @@ const nseMarketIndicatorsTool: Tool<IndicatorsArgs> = {
     if (!args.symbol) {
       return { ok: false, error: 'symbol is required', code: 'input_invalid' };
     }
-    const rows = getStore().getIndicators(args.symbol, args.days ?? 63);
-    if (rows.length === 0) {
-      return {
-        ok: false,
-        error: `No indicator data for ${args.symbol}. Run compute-indicators first.`,
-        code: 'not_available',
-      };
-    }
-    return { ok: true, value: JSON.stringify(rows, null, 2) };
+    return withStore((store) => {
+      const rows = store.getIndicators(args.symbol, args.days ?? 63);
+      if (rows.length === 0) {
+        return {
+          ok: false,
+          error: `No indicator data for ${args.symbol}. Run compute-indicators first.`,
+          code: 'not_available',
+        };
+      }
+      return { ok: true, value: JSON.stringify(rows, null, 2) };
+    });
   },
 };
 
@@ -808,14 +842,16 @@ const nseWatchdogTool: Tool<WatchdogArgs> = {
       audience: 'internal',
     });
 
-    const result = getStore().checkWatchdog({
-      symbol: args.symbol,
-      condition: args.condition,
-      cooldownDays: args.cooldown_days,
-      date: args.date,
-    });
+    return withStore((store) => {
+      const result = store.checkWatchdog({
+        symbol: args.symbol,
+        condition: args.condition,
+        cooldownDays: args.cooldown_days,
+        date: args.date,
+      });
 
-    return { ok: true, value: JSON.stringify(result, null, 2) };
+      return { ok: true, value: JSON.stringify(result, null, 2) };
+    });
   },
 };
 
@@ -860,52 +896,52 @@ const nseComputeIndicatorsTool: Tool<ComputeIndicatorsArgs> = {
     },
   },
   async execute(args, ctx): Promise<ToolResult> {
-    const store = getStore();
+    return withStoreAsync(async (store) => {
+      ctx.emit?.({
+        type: 'progress',
+        toolName: 'nse_compute_indicators',
+        message: 'Computing technical indicators…',
+        audience: 'user',
+        percent: 0,
+      });
 
-    ctx.emit?.({
-      type: 'progress',
-      toolName: 'nse_compute_indicators',
-      message: 'Computing technical indicators…',
-      audience: 'user',
-      percent: 0,
+      const result = await store.computeIndicators({
+        symbol: args.symbol || undefined,
+        from: args.from || undefined,
+        to: args.to || undefined,
+      });
+
+      ctx.emit?.({
+        type: 'progress',
+        toolName: 'nse_compute_indicators',
+        message: 'Computing market breadth…',
+        audience: 'user',
+        percent: 80,
+      });
+
+      const marketResult = store.computeMarketState({
+        from: args.from || undefined,
+        to: args.to || undefined,
+      });
+
+      ctx.emit?.({
+        type: 'progress',
+        toolName: 'nse_compute_indicators',
+        message: 'Computing sector state…',
+        audience: 'user',
+        percent: 90,
+      });
+
+      const sectorResult = store.computeSectorState({
+        from: args.from || undefined,
+        to: args.to || undefined,
+      });
+
+      return {
+        ok: true,
+        value: `Indicators: ${result.processed} symbols, ${result.dateCount} dates computed.\nMarket state: ${marketResult.processed} dates.\nSector state: ${sectorResult.processed} dates.\n\nData is ready for scans, screening, and analysis.`,
+      };
     });
-
-    const result = await store.computeIndicators({
-      symbol: args.symbol || undefined,
-      from: args.from || undefined,
-      to: args.to || undefined,
-    });
-
-    ctx.emit?.({
-      type: 'progress',
-      toolName: 'nse_compute_indicators',
-      message: 'Computing market breadth…',
-      audience: 'user',
-      percent: 80,
-    });
-
-    const marketResult = store.computeMarketState({
-      from: args.from || undefined,
-      to: args.to || undefined,
-    });
-
-    ctx.emit?.({
-      type: 'progress',
-      toolName: 'nse_compute_indicators',
-      message: 'Computing sector state…',
-      audience: 'user',
-      percent: 90,
-    });
-
-    const sectorResult = store.computeSectorState({
-      from: args.from || undefined,
-      to: args.to || undefined,
-    });
-
-    return {
-      ok: true,
-      value: `Indicators: ${result.processed} symbols, ${result.dateCount} dates computed.\nMarket state: ${marketResult.processed} dates.\nSector state: ${sectorResult.processed} dates.\n\nData is ready for scans, screening, and analysis.`,
-    };
   },
 };
 
@@ -961,25 +997,27 @@ const nseBacktestTool: Tool<BacktestArgs> = {
       audience: 'user',
     });
 
-    const result = getStore().runBacktest({
-      scanId: args.scan_id || undefined,
-      screen: args.screen || undefined,
-      from: args.from,
-      to: args.to,
-      holdDays: args.hold_days,
-      stopAtrMult: args.stop_atr_mult,
-      benchmark: args.benchmark || undefined,
-    });
+    return withStore((store) => {
+      const result = store.runBacktest({
+        scanId: args.scan_id || undefined,
+        screen: args.screen || undefined,
+        from: args.from,
+        to: args.to,
+        holdDays: args.hold_days,
+        stopAtrMult: args.stop_atr_mult,
+        benchmark: args.benchmark || undefined,
+      });
 
-    ctx.emit?.({
-      type: 'progress',
-      toolName: 'nse_backtest',
-      message: `Backtest complete: ${result.summary.total_trades} trades analyzed.`,
-      audience: 'user',
-      percent: 100,
-    });
+      ctx.emit?.({
+        type: 'progress',
+        toolName: 'nse_backtest',
+        message: `Backtest complete: ${result.summary.total_trades} trades analyzed.`,
+        audience: 'user',
+        percent: 100,
+      });
 
-    return { ok: true, value: JSON.stringify(result, null, 2) };
+      return { ok: true, value: JSON.stringify(result, null, 2) };
+    });
   },
 };
 
@@ -1010,50 +1048,51 @@ const nseGetQuoteTool: Tool<{ symbol: string; exchange?: string }> = {
     if (!args.symbol) {
       return { ok: false, error: 'symbol is required', code: 'input_invalid' };
     }
-    const store = getStore();
-    const ohlcv = store.getHistory(args.symbol, 2);
-    if (ohlcv.length === 0) {
-      return { ok: false, error: `No data for ${args.symbol}`, code: 'not_available' };
-    }
-    const latest = ohlcv.at(-1);
-    if (!latest) {
-      return { ok: false, error: `No data for ${args.symbol}`, code: 'not_available' };
-    }
-    const prev = ohlcv.length > 1 ? ohlcv.at(-2) : null;
-    const change_pct =
-      prev && prev.close > 0 ? ((latest.close - prev.close) / prev.close) * 100 : null;
+    return withStore((store) => {
+      const ohlcv = store.getHistory(args.symbol, 2);
+      if (ohlcv.length === 0) {
+        return { ok: false, error: `No data for ${args.symbol}`, code: 'not_available' };
+      }
+      const latest = ohlcv.at(-1);
+      if (!latest) {
+        return { ok: false, error: `No data for ${args.symbol}`, code: 'not_available' };
+      }
+      const prev = ohlcv.length > 1 ? ohlcv.at(-2) : null;
+      const change_pct =
+        prev && prev.close > 0 ? ((latest.close - prev.close) / prev.close) * 100 : null;
 
-    const indicators = store.getIndicators(args.symbol, 1);
-    const ind = indicators[0] ?? null;
+      const indicators = store.getIndicators(args.symbol, 1);
+      const ind = indicators[0] ?? null;
 
-    const yearData = store.getHistory(args.symbol, 252);
-    const high_52w = yearData.length > 0 ? Math.max(...yearData.map((r) => r.high)) : null;
-    const low_52w = yearData.length > 0 ? Math.min(...yearData.map((r) => r.low)) : null;
-    const dist_52wk_high_pct =
-      high_52w && high_52w > 0 ? ((latest.close - high_52w) / high_52w) * 100 : null;
+      const yearData = store.getHistory(args.symbol, 252);
+      const high_52w = yearData.length > 0 ? Math.max(...yearData.map((r) => r.high)) : null;
+      const low_52w = yearData.length > 0 ? Math.min(...yearData.map((r) => r.low)) : null;
+      const dist_52wk_high_pct =
+        high_52w && high_52w > 0 ? ((latest.close - high_52w) / high_52w) * 100 : null;
 
-    const result = {
-      symbol: args.symbol,
-      as_of: latest.date,
-      close: latest.close,
-      change_pct: change_pct !== null ? Math.round(change_pct * 100) / 100 : null,
-      open: latest.open,
-      high: latest.high,
-      low: latest.low,
-      volume: latest.volume,
-      rvol: ind?.rvol ?? null,
-      high_52w,
-      low_52w,
-      dist_52wk_high_pct:
-        dist_52wk_high_pct !== null ? Math.round(dist_52wk_high_pct * 100) / 100 : null,
-      rsi_14: ind?.rsi_14 ?? null,
-      stage: ind?.stage ?? null,
-      sniper_score: ind?.sniper_score ?? null,
-      sniper_verdict: ind?.sniper_verdict ?? null,
-      setup_type: ind?.setup_type ?? null,
-      composite_score: ind?.composite_score ?? null,
-    };
-    return { ok: true, value: JSON.stringify(result, null, 2) };
+      const result = {
+        symbol: args.symbol,
+        as_of: latest.date,
+        close: latest.close,
+        change_pct: change_pct !== null ? Math.round(change_pct * 100) / 100 : null,
+        open: latest.open,
+        high: latest.high,
+        low: latest.low,
+        volume: latest.volume,
+        rvol: ind?.rvol ?? null,
+        high_52w,
+        low_52w,
+        dist_52wk_high_pct:
+          dist_52wk_high_pct !== null ? Math.round(dist_52wk_high_pct * 100) / 100 : null,
+        rsi_14: ind?.rsi_14 ?? null,
+        stage: ind?.stage ?? null,
+        sniper_score: ind?.sniper_score ?? null,
+        sniper_verdict: ind?.sniper_verdict ?? null,
+        setup_type: ind?.setup_type ?? null,
+        composite_score: ind?.composite_score ?? null,
+      };
+      return { ok: true, value: JSON.stringify(result, null, 2) };
+    });
   },
 };
 
@@ -1102,41 +1141,42 @@ const nseGetIndexTool: Tool<{ index: string }> = {
     if (!symbol) {
       return { ok: false, error: `Unknown index: ${args.index}`, code: 'input_invalid' };
     }
-    const store = getStore();
-    const ohlcv = store.getHistory(symbol, 2);
-    const latest = ohlcv.at(-1);
-    if (!latest) {
-      return {
-        ok: false,
-        error: `No data for index ${args.index} (${symbol})`,
-        code: 'not_available',
+    return withStore((store) => {
+      const ohlcv = store.getHistory(symbol, 2);
+      const latest = ohlcv.at(-1);
+      if (!latest) {
+        return {
+          ok: false,
+          error: `No data for index ${args.index} (${symbol})`,
+          code: 'not_available',
+        };
+      }
+      const prev = ohlcv.length > 1 ? ohlcv.at(-2) : null;
+      const change_pct =
+        prev && prev.close > 0 ? ((latest.close - prev.close) / prev.close) * 100 : null;
+      const yearData = store.getHistory(symbol, 252);
+      const high_52w = yearData.length > 0 ? Math.max(...yearData.map((r) => r.high)) : null;
+      const low_52w = yearData.length > 0 ? Math.min(...yearData.map((r) => r.low)) : null;
+      const indicators = store.getIndicators(symbol, 1);
+      const ind = indicators[0] ?? null;
+      const result = {
+        index: args.index,
+        symbol,
+        as_of: latest.date,
+        level: latest.close,
+        change_pct: change_pct !== null ? Math.round(change_pct * 100) / 100 : null,
+        day_high: latest.high,
+        day_low: latest.low,
+        high_52w,
+        low_52w,
+        stage: ind?.stage ?? null,
+        sniper_score: ind?.sniper_score ?? null,
+        ema_stack: ind?.ma_stack ?? null,
+        rsi_14: ind?.rsi_14 ?? null,
+        macd_hist: ind?.macd_hist ?? null,
       };
-    }
-    const prev = ohlcv.length > 1 ? ohlcv.at(-2) : null;
-    const change_pct =
-      prev && prev.close > 0 ? ((latest.close - prev.close) / prev.close) * 100 : null;
-    const yearData = store.getHistory(symbol, 252);
-    const high_52w = yearData.length > 0 ? Math.max(...yearData.map((r) => r.high)) : null;
-    const low_52w = yearData.length > 0 ? Math.min(...yearData.map((r) => r.low)) : null;
-    const indicators = store.getIndicators(symbol, 1);
-    const ind = indicators[0] ?? null;
-    const result = {
-      index: args.index,
-      symbol,
-      as_of: latest.date,
-      level: latest.close,
-      change_pct: change_pct !== null ? Math.round(change_pct * 100) / 100 : null,
-      day_high: latest.high,
-      day_low: latest.low,
-      high_52w,
-      low_52w,
-      stage: ind?.stage ?? null,
-      sniper_score: ind?.sniper_score ?? null,
-      ema_stack: ind?.ma_stack ?? null,
-      rsi_14: ind?.rsi_14 ?? null,
-      macd_hist: ind?.macd_hist ?? null,
-    };
-    return { ok: true, value: JSON.stringify(result, null, 2) };
+      return { ok: true, value: JSON.stringify(result, null, 2) };
+    });
   },
 };
 
@@ -1163,15 +1203,17 @@ const nseGetFiiDiiTool: Tool<{ date?: string; days?: number }> = {
     required: [],
   },
   async execute(args): Promise<ToolResult> {
-    const rows = getStore().getFiiDii({ date: args.date, days: args.days });
-    if (rows.length === 0) {
-      return {
-        ok: false,
-        error: 'No FII/DII data. Run: nse-market-data fetch-fii-dii',
-        code: 'not_available',
-      };
-    }
-    return { ok: true, value: JSON.stringify(rows, null, 2) };
+    return withStore((store) => {
+      const rows = store.getFiiDii({ date: args.date, days: args.days });
+      if (rows.length === 0) {
+        return {
+          ok: false,
+          error: 'No FII/DII data. Run: nse-market-data fetch-fii-dii',
+          code: 'not_available',
+        };
+      }
+      return { ok: true, value: JSON.stringify(rows, null, 2) };
+    });
   },
 };
 
@@ -1205,15 +1247,17 @@ const nseGetCorporateActionsTool: Tool<{
     if (!args.symbol) {
       return { ok: false, error: 'symbol is required', code: 'input_invalid' };
     }
-    const rows = getStore().getCorporateActions(args.symbol, args.from_date, args.to_date);
-    if (rows.length === 0) {
-      return {
-        ok: false,
-        error: `No corporate actions for ${args.symbol}`,
-        code: 'not_available',
-      };
-    }
-    return { ok: true, value: JSON.stringify(rows, null, 2) };
+    return withStore((store) => {
+      const rows = store.getCorporateActions(args.symbol, args.from_date, args.to_date);
+      if (rows.length === 0) {
+        return {
+          ok: false,
+          error: `No corporate actions for ${args.symbol}`,
+          code: 'not_available',
+        };
+      }
+      return { ok: true, value: JSON.stringify(rows, null, 2) };
+    });
   },
 };
 
@@ -1236,11 +1280,13 @@ const nseGetBulkBlockTool: Tool<{ date?: string; symbol?: string }> = {
     required: [],
   },
   async execute(args): Promise<ToolResult> {
-    const rows = getStore().getBulkBlockDeals({ date: args.date, symbol: args.symbol });
-    if (rows.length === 0) {
-      return { ok: false, error: 'No bulk/block deal data found', code: 'not_available' };
-    }
-    return { ok: true, value: JSON.stringify(rows, null, 2) };
+    return withStore((store) => {
+      const rows = store.getBulkBlockDeals({ date: args.date, symbol: args.symbol });
+      if (rows.length === 0) {
+        return { ok: false, error: 'No bulk/block deal data found', code: 'not_available' };
+      }
+      return { ok: true, value: JSON.stringify(rows, null, 2) };
+    });
   },
 };
 
@@ -1259,10 +1305,13 @@ const nseGetGiftNiftyTool: Tool = {
     // Get Nifty 50 spot close from DB for implied gap calculation
     let spotClose: number | undefined;
     try {
-      const rows = getStore().getHistory('^NSEI', 1);
-      if (rows.length > 0 && rows[0]) {
-        spotClose = rows[0].close;
-      }
+      spotClose = withStore((store) => {
+        const rows = store.getHistory('^NSEI', 1);
+        if (rows.length > 0 && rows[0]) {
+          return rows[0].close;
+        }
+        return undefined;
+      });
     } catch {
       // DB may not have Nifty spot — proceed without it
     }
@@ -1304,7 +1353,6 @@ const nseRefreshScansTool: Tool = {
   capabilities: {},
   schema: { type: 'object', properties: {} },
   async execute(_args, _ctx): Promise<ToolResult> {
-    const store = getStore();
     const scansDir = join(getPackageRoot(), 'scans');
     const rows: SavedScanRow[] = [];
 
@@ -1330,8 +1378,10 @@ const nseRefreshScansTool: Tool = {
       return { ok: false, error: `No scan files found at ${scansDir}`, code: 'not_available' };
     }
 
-    const result = store.upsertScans(rows);
-    return { ok: true, value: `Loaded ${result.upserted} scan definitions.` };
+    return withStore((store) => {
+      const result = store.upsertScans(rows);
+      return { ok: true, value: `Loaded ${result.upserted} scan definitions.` };
+    });
   },
 };
 
