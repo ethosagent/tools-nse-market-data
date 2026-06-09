@@ -1908,7 +1908,18 @@ export class MarketDataStore {
   }): Promise<{ processed: number; dateCount: number }> {
     const toDate = opts.to || new Date().toISOString().slice(0, 10);
 
-    // Performance: relax durability during bulk compute (WAL still protects against corruption)
+    // Incremental: if no explicit from date, start from last computed date or default 30 days back
+    const defaultFrom = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const fromDate =
+      opts.from ||
+      (() => {
+        const s = this.db.prepare('SELECT MAX(date) as d FROM indicators_daily');
+        const row = s.get() as { d: string | null };
+        s.finalize();
+        return row?.d ?? defaultFrom;
+      })();
+
+    // Performance: relax durability during bulk compute
     this.db.exec('PRAGMA synchronous = NORMAL');
     this.db.exec('PRAGMA cache_size = -64000');
 
@@ -2040,7 +2051,7 @@ export class MarketDataStore {
       const rows = this.buildIndicatorRows(
         symbol,
         ohlcvRows,
-        opts.from,
+        fromDate,
         toDate,
         indexReturns,
         instrument,
@@ -2173,8 +2184,11 @@ export class MarketDataStore {
     upsertStmt.finalize();
 
     // Step 5: Pass 2 — Cross-sectional (percentile ranks, re-compute sniper/composite/setup)
+    // Skip for single-symbol runs (cross-sectional ranks need all symbols)
+    // and limit to only the last few dates for incremental runs
     const allDates = Array.from(datesProcessed).sort();
-    for (const date of allDates) {
+    const pass2Dates = opts.symbol ? [] : allDates.slice(-5);
+    for (const date of pass2Dates) {
       const s6 = this.db.prepare(
         `SELECT id.symbol, id.return_3m, id.sniper_score, id.tf_alignment_score,
                 id.psar_signal, id.macd_hist, id.macd_hist_prev, id.ma_stack,
