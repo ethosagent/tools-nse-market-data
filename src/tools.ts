@@ -173,7 +173,7 @@ const nseMarketBackfillTool: Tool<BackfillArgs> = {
     return withStoreAsync(async (store) => {
       const daysBack = args.days ?? 365;
       const fromDate =
-        args.from_date ??
+        args.from_date ||
         new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
       let symbols: string[];
@@ -501,7 +501,7 @@ const nseRunScanTool: Tool<RunScanArgs> = {
 
       // Determine query date
       const queryDate =
-        args.date ??
+        args.date ||
         (() => {
           const s2 = db.prepare('SELECT MAX(date) as d FROM indicators_daily');
           const row = s2.get([]) as { d: string | null } | null;
