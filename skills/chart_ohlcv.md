@@ -10,30 +10,27 @@ You are a chart renderer. Your job is to faithfully translate prior analysis int
 
 ### Step 0 — Prerequisites
 
-Run via the `terminal` tool:
+Verify Python is available. Check for the chart venv first:
+
 ```
-python3 --version 2>&1
+ls ~/.ethos/tools/chart-venv/bin/python 2>/dev/null && echo "venv ready" || python3 --version 2>&1
 ```
 
-If `python3` is not found, stop and reply:
+If neither is found, stop and reply:
 
 ```
 **Python not found.** Install Python 3: https://www.python.org/downloads/
 ```
 
-Do not check for pandas/matplotlib/mplfinance here — the script installs them automatically.
+The script auto-installs pandas/matplotlib/mplfinance into the venv if needed.
 
 ---
 
-### Step 1 — Collect data
+### Step 1 — Collect analysis context (optional)
 
-Call `nse_market_history` with:
-- `symbol`: the NSE symbol (e.g. `RELIANCE.NS`)
-- `days`: 90 by default, or the period the user requests
+If prior analysis is available (trade_setup, stock_deep_analysis, scan results), collect the price levels, signals, and annotations. If not, the chart renders with just MA overlays — that is still useful.
 
-Call `nse_market_indicators` with the same `symbol` and the same `days`. This is needed for MA series and PSAR overlays. Skip this call **only** if the user explicitly asks for a plain price chart with no indicators.
-
-If either tool returns an error or empty data, stop and surface the error message verbatim. Do not attempt to generate a chart with missing data.
+Call `nse_market_indicators` with the symbol and days if you need indicator values for annotations. This is optional — the chart script computes MAs directly from OHLCV data in the database.
 
 ---
 
@@ -54,154 +51,93 @@ Populate from any available source:
 | `stock_deep_analysis` output | support level | `Support` |
 | `stock_deep_analysis` output | resistance level | `Resistance` |
 | `nse_market_indicators` latest row | `high_52w` | `52W High` |
-| `nse_market_indicators` latest row | `ath` | `ATH` |
-| `nse_market_indicators` latest row | `sma_200` | `SMA200 now` |
 | User freeform input | any price the user names | as stated |
 
-Color convention — pick based on role relative to current price:
+Color convention:
 
-| Role | Color hex |
+| Role | Color |
 |---|---|
-| Stop Loss or Resistance above current price | `#F87171` (red) |
-| Support below current price or Target | `#4ADE80` (green) |
-| Entry | `#4A9EFF` (blue) |
-| User-specified / neutral | `#F59E0B` (amber) |
-
-Line style (`ls`): use `"--"` for most levels; use `"-"` for entry.
+| Stop Loss / Resistance | `red` |
+| Support / Target | `green` |
+| Entry | `blue` |
+| User-specified / neutral | `orange` |
 
 #### `vlines` — vertical date lines
 
-Populate from:
-- The date of a scan signal that triggered this analysis
-- Any date the user explicitly calls out (e.g. "mark the breakout on March 15")
-
-Use `"#9A9A98"` (grey) as the default color.
+Populate from scan signal dates or user-specified dates.
 
 #### `markers` — buy/sell arrows on candles
 
-Populate from:
-- Scan signal candle: set `type` to `"buy"` or `"sell"`, date to signal date, price to the close on that date
-- Any explicit entry or exit point the user mentions
-
-#### `mas` — MA overlays
-
-Default to `["sma20", "sma50", "sma200", "ema21"]`. Remove any MA name for which no corresponding column exists in the indicator rows. Honor user overrides (e.g. "show EMA9 instead of EMA21").
-
-#### `psar` — Parabolic SAR scatter
-
-Default to `true`. Set to `false` if the user says "no PSAR" or if the indicator data does not contain a `psar` column.
+Populate from scan signals or explicit entry/exit points.
 
 #### `labels` — free text annotations
 
-Use for ATH zone labels, stage labels, or anything that does not fit a horizontal or vertical line. Each entry needs `date`, `price`, `text`, and optionally `color`.
+Use for ATH zone labels, stage labels, or anything that does not fit a line.
 
 ---
 
 ### Step 3 — Write the Python script
 
-Use bash to write the script below to `/tmp/ethos_chart_{symbol_clean}.py` where `symbol_clean` is the symbol with `.` replaced by `_` (e.g. `RELIANCE_NS`).
+Write the script to `/tmp/ethos_chart_{symbol_clean}.py` where `symbol_clean` is the symbol with `.` replaced by `_`.
 
-The agent fills in four variables at the top of the script:
+The agent fills in THREE variables at the top:
 - `SYMBOL` — the NSE symbol string
-- `DAYS` — integer number of days requested
-- `OHLCV_ROWS` — list of tuples `(date_str, open, high, low, close, volume)` from `nse_market_history` output, oldest row first
-- `INDICATOR_ROWS` — list of dicts from `nse_market_indicators` output (the JSON rows), oldest row first. Use `[]` if indicators were not fetched.
-- `ANNOTATIONS` — the dict built in Step 2
+- `DAYS` — integer number of days
+- `ANNOTATIONS` — the dict from Step 2
 
-**Everything else in the script is fixed template code. Do not modify it.**
+The script reads OHLCV data directly from the SQLite database. Do not pass OHLCV or indicator data as Python literals.
+
+**Everything below the agent variables is fixed template code. Do not modify it.**
 
 ```python
-import importlib, shutil, subprocess, sys
-
-# ── Auto-install dependencies ─────────────────────────────────────────────────
-def _ensure(*packages):
-    missing = [p for p in packages if not _importable(p)]
-    if not missing:
-        return
-    # Try pip
-    r = subprocess.run(
-        [sys.executable, '-m', 'pip', 'install', '--quiet'] + missing,
-        capture_output=True,
-    )
-    if r.returncode == 0:
-        return
-    # Fall back to uv (handles externally-managed environments)
-    uv = shutil.which('uv') or shutil.which(
-        str(__import__('pathlib').Path.home() / '.local' / 'bin' / 'uv')
-    )
-    if uv:
-        subprocess.check_call([uv, 'pip', 'install', '--system'] + missing, stderr=subprocess.DEVNULL)
-        return
-    raise RuntimeError(
-        f"Cannot install {missing}.\n"
-        "Install uv (https://docs.astral.sh/uv/) or run: pip install " + ' '.join(missing)
-    )
-
-def _importable(pkg):
-    try:
-        importlib.import_module(pkg)
-        return True
-    except ImportError:
-        return False
-
-_ensure('pandas', 'matplotlib', 'mplfinance')
-# ─────────────────────────────────────────────────────────────────────────────
-
-import io, base64
+import os, sqlite3
 import pandas as pd
 import mplfinance as mpf
 import matplotlib
-matplotlib.use("Agg")
+matplotlib.use('Agg')
 
 # ── Agent fills these in ──────────────────────────────────────────────────────
 SYMBOL = "RELIANCE.NS"
-DAYS   = 90
-OHLCV_ROWS = [
-    # ("2024-01-02", 2300.0, 2350.0, 2280.0, 2320.0, 1234567),
-]
-INDICATOR_ROWS = [
-    # {"date": "2024-01-02", "sma_20": 2290.0, "sma_50": 2250.0, ...}
-]
+DAYS = 90
 ANNOTATIONS = {
     "hlines":  [],  # {"price": float, "label": str, "color": str, "ls": str}
-    "vlines":  [],  # {"date": str, "label": str, "color": str}
-    "markers": [],  # {"date": str, "price": float, "type": "buy"|"sell", "label": str}
-    "mas":     ["sma20", "sma50", "sma200", "ema21"],
-    "psar":    True,
+    "vlines":  [],  # {"date": str, "label": str}
+    "markers": [],  # {"date": str, "price": float, "type": "buy"|"sell"}
     "labels":  [],  # {"date": str, "price": float, "text": str, "color": str}
+    "mas":     ["sma20", "sma50"],
 }
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Build main DataFrame
-df = pd.DataFrame(OHLCV_ROWS, columns=["Date","Open","High","Low","Close","Volume"])
-df["Date"] = pd.to_datetime(df["Date"])
-df = df.set_index("Date").sort_index()
+SAVE_PATH = f"/tmp/ethos_chart_{SYMBOL.replace('.', '_')}.png"
+DB = os.path.expanduser('~/.ethos/market-data/market.db')
+conn = sqlite3.connect(DB)
+df = pd.read_sql_query(
+    "SELECT date, open, high, low, close, volume FROM ohlcv_daily WHERE symbol = ? ORDER BY date DESC LIMIT ?",
+    conn, params=[SYMBOL, DAYS]
+).iloc[::-1].copy()
+conn.close()
 
-# Build indicator DataFrame
-idf = pd.DataFrame(INDICATOR_ROWS) if INDICATOR_ROWS else pd.DataFrame()
-if not idf.empty and "date" in idf.columns:
-    idf["Date"] = pd.to_datetime(idf["date"])
-    idf = idf.set_index("Date").sort_index()
+if df.empty:
+    print(f"ERROR: No OHLCV data for {SYMBOL}")
+    exit(1)
 
-# MA overlays — computed from OHLCV Close so they always extend to today
-COLOR_MAP = {"sma20":"#4A9EFF","sma50":"#F59E0B","sma200":"#E879F9","ema21":"#4ADE80","ema9":"#94A3B8"}
+df.columns = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume']
+df['Date'] = pd.to_datetime(df['Date'])
+df = df.set_index('Date')
+
+# MA overlays
+COLOR_MAP = {"sma20": "blue", "sma50": "orange", "sma200": "purple", "ema21": "green", "ema9": "gray"}
 addplots = []
 for key in ANNOTATIONS.get("mas", []):
     s = None
     if key.startswith("sma"):
         period = int(key[3:])
-        s = df["Close"].rolling(window=period).mean()
+        s = df['Close'].rolling(window=period).mean()
     elif key.startswith("ema"):
         period = int(key[3:])
-        s = df["Close"].ewm(span=period, adjust=False).mean()
+        s = df['Close'].ewm(span=period, adjust=False).mean()
     if s is not None and s.notna().any():
-        addplots.append(mpf.make_addplot(s, color=COLOR_MAP.get(key, "#9A9A98"), width=1.2, label=key))
-
-# PSAR scatter
-if ANNOTATIONS.get("psar") and not idf.empty and "psar" in idf.columns:
-    s = idf["psar"].reindex(df.index)
-    if s.notna().any():
-        addplots.append(mpf.make_addplot(s, type="scatter", markersize=18, marker=".", color="#F59E0B"))
+        addplots.append(mpf.make_addplot(s, color=COLOR_MAP.get(key, 'gray'), width=1))
 
 # Buy/sell markers
 for m in ANNOTATIONS.get("markers", []):
@@ -209,91 +145,82 @@ for m in ANNOTATIONS.get("markers", []):
     dt = pd.to_datetime(m["date"])
     if dt in s.index:
         s[dt] = float(m["price"])
-        color  = "#4ADE80" if m["type"] == "buy" else "#F87171"
-        marker = "^"       if m["type"] == "buy" else "v"
-        addplots.append(mpf.make_addplot(s, type="scatter", markersize=120, marker=marker, color=color))
+        color = "green" if m["type"] == "buy" else "red"
+        marker = "^" if m["type"] == "buy" else "v"
+        addplots.append(mpf.make_addplot(s, type='scatter', markersize=120, marker=marker, color=color))
+
+# Horizontal lines via mplfinance built-in
+hline_prices = [h["price"] for h in ANNOTATIONS.get("hlines", [])]
+hline_colors = [h.get("color", "gray") for h in ANNOTATIONS.get("hlines", [])]
+hlines_kwarg = dict(hlines=hline_prices, colors=hline_colors, linestyle='--') if hline_prices else {}
 
 # Plot
-_mc = mpf.make_marketcolors(
-    up="#4ADE80", down="#F87171",
-    edge="inherit", wick="inherit",
-    volume={"up": "#4ADE80", "down": "#F87171"},
-)
-_style = mpf.make_mpf_style(
-    base_mpf_style="nightclouds",
-    marketcolors=_mc,
-    facecolor="#0F0F0F",
-    figcolor="#0F0F0F",
-)
 fig, axes = mpf.plot(
-    df, type="candle", style=_style, volume=True,
+    df, type='candle', volume=True,
     addplot=addplots if addplots else None,
     returnfig=True, figsize=(13, 7), tight_layout=True,
-    title=f"\n{SYMBOL}  ·  {DAYS}d",
+    title=f'\n{SYMBOL}  ·  {DAYS}d',
+    **hlines_kwarg,
 )
 ax = axes[0]
 
-# Horizontal lines with right-edge labels
+# Label horizontal lines on right edge
 for hl in ANNOTATIONS.get("hlines", []):
-    ax.axhline(y=hl["price"], color=hl["color"], linestyle=hl.get("ls","--"), linewidth=1, alpha=0.85)
-    ax.text(df.index[-1], hl["price"], f"  {hl['label']} {hl['price']:.1f}",
-            color=hl["color"], fontsize=7.5, va="center", ha="left", clip_on=False,
-            fontfamily="monospace")
+    ax.text(df.index[-1], hl["price"], f'  {hl["label"]} {hl["price"]:.1f}',
+            color=hl.get("color", "gray"), fontsize=8, va='center', ha='left',
+            clip_on=False, fontfamily='monospace')
 
 # Vertical date lines
 for vl in ANNOTATIONS.get("vlines", []):
     dt = pd.to_datetime(vl["date"])
-    if dt in df.index or (df.index.min() <= dt <= df.index.max()):
-        ax.axvline(x=dt, color=vl["color"], linestyle="--", linewidth=1, alpha=0.7)
+    if df.index.min() <= dt <= df.index.max():
+        ax.axvline(x=dt, color='gray', linestyle='--', linewidth=1, alpha=0.7)
         ylim = ax.get_ylim()
-        ax.text(dt, ylim[1] * 0.995, f" {vl['label']}",
-                color=vl["color"], fontsize=7, va="top", rotation=90,
-                fontfamily="monospace")
+        ax.text(dt, ylim[1] * 0.995, f' {vl["label"]}',
+                color='gray', fontsize=7, va='top', rotation=90, fontfamily='monospace')
 
 # Free text labels
 for lbl in ANNOTATIONS.get("labels", []):
     ax.text(pd.to_datetime(lbl["date"]), float(lbl["price"]), lbl["text"],
-            color=lbl.get("color","#9A9A98"), fontsize=7.5, ha="center",
-            fontfamily="monospace",
-            bbox=dict(boxstyle="round,pad=0.2", facecolor="#1A1A1A", alpha=0.7, edgecolor="none"))
+            color=lbl.get("color", "gray"), fontsize=8, ha='center', fontfamily='monospace',
+            bbox=dict(boxstyle='round,pad=0.2', facecolor='#FFFFCC', alpha=0.8, edgecolor='none'))
 
-buf = io.BytesIO()
-fig.savefig(buf, dpi=130, bbox_inches="tight", facecolor="#0F0F0F")
-buf.seek(0)
-print(base64.b64encode(buf.read()).decode(), end="")
+fig.savefig(SAVE_PATH, dpi=130, bbox_inches='tight')
+print(f"Chart saved to {SAVE_PATH}")
 ```
 
 ---
 
 ### Step 4 — Execute
 
-Run via the `terminal` tool:
+Determine the Python binary:
+
 ```
-python3 /tmp/ethos_chart_{symbol_clean}.py
+PYTHON=$([ -x ~/.ethos/tools/chart-venv/bin/python ] && echo ~/.ethos/tools/chart-venv/bin/python || echo python3)
+$PYTHON /tmp/ethos_chart_{symbol_clean}.py
 ```
 
-The script installs its own dependencies on first run. Capture stdout (base64 string) and stderr separately. If exit code is non-zero, show the full stderr as a code block and stop.
+If exit code is non-zero, show the full error and stop.
 
 ---
 
 ### Step 5 — Return the chart
 
-Reply with the inline image:
+Reply with the saved file path and open it:
+
 ```
-![{SYMBOL} · {DAYS}d](data:image/png;base64,{base64_output})
+open /tmp/ethos_chart_{symbol_clean}.png
 ```
 
 Then on a new line, a single sentence summarising what is marked on the chart, for example:
-> Levels marked: Entry 2320 · Stop 2250 · T1 2600 · T2 2700 · Support 2180 · Resistance 2450
+> Levels marked: Entry 2320 · Stop 2250 · T1 2600 · Support 2180 · Resistance 2450
 
 List only the levels that are actually present in `ANNOTATIONS.hlines`. If `hlines` is empty, omit the summary line entirely.
 
 ## Data Context
 
-`{{nse_market_history}}` — OHLCV rows for the symbol over the requested period. Each row contains `date`, `open`, `high`, `low`, `close`, `volume`. Oldest row first.
+`{{nse_market_indicators}}` — optional. Indicator rows for the symbol. Used only to populate annotation values (support, resistance, 52W high, etc.), not for chart data. The script reads OHLCV directly from the database.
 
-`{{nse_market_indicators}}` — indicator rows for the same symbol and period. Each row contains `date` plus computed columns: `sma_20`, `sma_50`, `sma_200`, `ema_9`, `ema_21`, `psar`, `psar_bullish`, `rsi_14`, `macd_hist`, `atr_14`, `rvol`, `high_52w`, `low_52w`, `ath`, `sniper_score`, and others. Oldest row first.
+`{{trade_setup}}` — optional. If available, its `entry_zone.low`, `stop_loss`, `target_1`, and `target_2` fields populate `hlines` automatically.
 
-`{{trade_setup}}` — optional. If a `trade_setup` skill result is available in the current context, its `entry_zone.low`, `stop_loss`, `target_1`, and `target_2` fields populate `hlines` automatically.
-
-`{{stock_deep_analysis}}` — optional. If a `stock_deep_analysis` result is available, its support and resistance levels populate `hlines` automatically.
+`{{stock_deep_analysis}}` — optional. If available, its support and resistance levels populate `hlines` automatically.
