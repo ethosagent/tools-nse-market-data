@@ -391,24 +391,16 @@ function buildMarketHealthPanel(data: DashboardData): string {
       : 'var(--muted)';
 
   const adRatioColor =
-    b.ad_ratio != null
-      ? b.ad_ratio >= 1.0
-        ? 'var(--green)'
-        : 'var(--red)'
-      : 'var(--muted)';
+    b.ad_ratio != null ? (b.ad_ratio >= 1.0 ? 'var(--green)' : 'var(--red)') : 'var(--muted)';
 
-  const breadthBar = (
-    label: string,
-    value: number | null,
-    color: string,
-  ): string => {
+  const breadthBar = (label: string, value: number | null, color: string): string => {
     const pct = value != null ? Math.max(0, Math.min(100, value)) : 0;
     return `<div class="breadth-bar-row">
       <span class="breadth-bar-label">${esc(label)}</span>
       <div class="breadth-bar-track">
         <div class="breadth-bar-fill" style="width:${pct.toFixed(1)}%;background:${color}"></div>
       </div>
-      <span class="breadth-bar-pct" style="color:${color}">${value != null ? value.toFixed(1) + '%' : '—'}</span>
+      <span class="breadth-bar-pct" style="color:${color}">${value != null ? `${value.toFixed(1)}%` : '—'}</span>
     </div>`;
   };
 
@@ -480,13 +472,9 @@ function buildMarketHealthPanel(data: DashboardData): string {
 
 function buildAdHistoryPanel(data: DashboardData): string {
   const latestRatio =
-    data.ad_history.length > 0
-      ? data.ad_history[data.ad_history.length - 1].ad_ratio
-      : null;
-  const badgeColor =
-    latestRatio != null && latestRatio >= 1.0 ? 'var(--green)' : 'var(--red)';
-  const badgeText =
-    latestRatio != null ? `A/D ${latestRatio.toFixed(2)}` : 'A/D';
+    data.ad_history.length > 0 ? data.ad_history[data.ad_history.length - 1].ad_ratio : null;
+  const badgeColor = latestRatio != null && latestRatio >= 1.0 ? 'var(--green)' : 'var(--red)';
+  const badgeText = latestRatio != null ? `A/D ${latestRatio.toFixed(2)}` : 'A/D';
 
   const headerHtml = `<div class="panel-header">
     <span class="panel-title">Advance / Decline</span>
@@ -545,8 +533,7 @@ function buildFiiDiiPanel(data: DashboardData): string {
     fiiCum += row.fii_net ?? 0;
     diiCum += row.dii_net ?? 0;
   }
-  const fmtCr = (v: number) =>
-    `${v >= 0 ? '+' : ''}${Math.round(v).toLocaleString('en-IN')}`;
+  const fmtCr = (v: number) => `${v >= 0 ? '+' : ''}${Math.round(v).toLocaleString('en-IN')}`;
   const summaryHtml = `<div class="flow-summary">FII Net ₹${fmtCr(fiiCum)} Cr &nbsp;|&nbsp; DII Net ₹${fmtCr(diiCum)} Cr &nbsp;|&nbsp; ${data.fii_dii.length}-day cumulative</div>`;
 
   return `<div class="panel">
@@ -645,11 +632,8 @@ function buildTopStocksPanel(data: DashboardData): string {
       const sym = s.symbol.replace(/\.NS$/i, '');
       const stColor = stageColor(s.stage);
       const scoreColor =
-        s.composite_score != null && s.composite_score >= 70
-          ? 'var(--green)'
-          : 'var(--text)';
-      const scoreWeight =
-        s.composite_score != null && s.composite_score >= 70 ? '700' : '400';
+        s.composite_score != null && s.composite_score >= 70 ? 'var(--green)' : 'var(--text)';
+      const scoreWeight = s.composite_score != null && s.composite_score >= 70 ? '700' : '400';
       const rvolHot = s.rvol != null && s.rvol >= 2.0;
       const rsiColor =
         s.rsi_14 != null
@@ -675,11 +659,11 @@ function buildTopStocksPanel(data: DashboardData): string {
         <td class="col-symbol">${esc(sym)}</td>
         <td class="col-name">${esc(s.name ?? '')}</td>
         <td class="col-sector">${esc(s.sector ?? '')}</td>
-        <td><span class="stage-pill" style="color:${stColor};border-color:${stColor}">${s.stage != null ? 'S' + s.stage : '—'}</span></td>
+        <td><span class="stage-pill" style="color:${stColor};border-color:${stColor}">${s.stage != null ? `S${s.stage}` : '—'}</span></td>
         <td class="col-num" style="color:${scoreColor};font-weight:${scoreWeight}">${fmtNum(s.composite_score, 1)}</td>
         <td><span class="verdict-pill ${verdictClass(s.sniper_verdict)}">${esc(s.sniper_verdict ?? '—')}</span></td>
         <td><span class="setup-pill">${esc(setupLabel(s.setup_type))}</span></td>
-        <td class="col-num${rvolHot ? ' rvol-hot' : ''}">${s.rvol != null ? s.rvol.toFixed(1) + 'x' : '—'}</td>
+        <td class="col-num${rvolHot ? ' rvol-hot' : ''}">${s.rvol != null ? `${s.rvol.toFixed(1)}x` : '—'}</td>
         <td class="col-num" style="color:${rsiColor}">${fmtNum(s.rsi_14, 1)}</td>
         <td class="col-num" style="color:${retColor};font-weight:${retWeight}">${fmtPct(s.return_1m, 1)}</td>
         <td class="col-num" style="color:${distColor}">${fmtPct(s.dist_52wk_high_pct, 1)}</td>
@@ -1000,7 +984,7 @@ export function generateDashboardHtml(data: DashboardData): string {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NSE Market Dashboard — Swing Trader View</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" crossorigin="anonymous"><\/script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" crossorigin="anonymous"></script>
 <style>${buildCss()}</style>
 </head>
 <body>
@@ -1012,8 +996,8 @@ export function generateDashboardHtml(data: DashboardData): string {
   ${buildStageDistPanel(safeData)}
   ${buildTopStocksPanel(safeData)}
 </div>
-<script>var DASHBOARD_DATA = ${JSON.stringify(safeData)};window.DASHBOARD_DATA = DASHBOARD_DATA;<\/script>
-<script>${buildClientJs()}<\/script>
+<script>var DASHBOARD_DATA = ${JSON.stringify(safeData)};window.DASHBOARD_DATA = DASHBOARD_DATA;</script>
+<script>${buildClientJs()}</script>
 </body>
 </html>`;
 }
