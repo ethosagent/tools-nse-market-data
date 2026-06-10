@@ -121,643 +121,858 @@ function fmtInt(v: number | null | undefined): string {
 }
 
 function changeColor(v: number | null | undefined): string {
-  if (v == null || Number.isNaN(v)) return '#8b949e';
-  return v >= 0 ? '#3fb950' : '#f85149';
+  if (v == null || Number.isNaN(v)) return 'var(--muted)';
+  return v >= 0 ? 'var(--green)' : 'var(--red)';
 }
 
 function stageColor(stage: number | null | undefined): string {
-  if (stage == null) return '#8b949e';
+  if (stage == null) return 'var(--muted)';
   switch (stage) {
     case 1:
-      return '#d29922';
+      return 'var(--amber)';
     case 2:
-      return '#3fb950';
+      return 'var(--green)';
     case 3:
-      return '#f0883e';
+      return 'var(--orange)';
     case 4:
-      return '#f85149';
+      return 'var(--red)';
     default:
-      return '#8b949e';
+      return 'var(--muted)';
   }
 }
 
-function verdictColor(verdict: string | null | undefined): string {
-  if (!verdict) return '#8b949e';
-  const v = verdict.toLowerCase().trim();
-  if (v === 'strong buy') return '#56d364';
-  if (v === 'buy') return '#3fb950';
-  if (v === 'watch') return '#d29922';
-  if (v === 'avoid') return '#f0883e';
-  if (v === 'sell') return '#f85149';
-  return '#8b949e';
+function stageLabel(stage: number): string {
+  switch (stage) {
+    case 1:
+      return 'Base';
+    case 2:
+      return 'Uptrend';
+    case 3:
+      return 'Topping';
+    case 4:
+      return 'Decline';
+    default:
+      return `Stage ${stage}`;
+  }
+}
+
+function setupLabel(id: string | null | undefined): string {
+  if (!id) return '—';
+  const map: Record<string, string> = {
+    base_breakout: 'Base Breakout',
+    momentum_surge: 'Momentum Surge',
+    pullback_to_ema: 'Pullback to EMA',
+    cup_with_handle: 'Cup & Handle',
+    breakout_confirmed: 'Breakout',
+  };
+  if (map[id]) return map[id];
+  return id
+    .split('_')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
+function verdictClass(v: string | null | undefined): string {
+  if (!v) return 'verdict-muted';
+  const lc = v.toLowerCase().trim();
+  if (lc === 'strong buy') return 'verdict-strong-buy';
+  if (lc === 'buy') return 'verdict-buy';
+  if (lc === 'hold' || lc === 'watch') return 'verdict-muted';
+  return 'verdict-muted';
 }
 
 function placeholder(msg: string): string {
   return `<div class="placeholder"><span>${esc(msg)}</span></div>`;
 }
 
+// ── CSS ─────────────────────────────────────────────────────────────────────
+
+function buildCss(): string {
+  return `
+:root {
+  --bg: #0d1117;
+  --panel: #161b22;
+  --border: #21262d;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --blue: #58a6ff;
+  --green: #3fb950;
+  --red: #f85149;
+  --amber: #e3b341;
+  --orange: #d29922;
+  --purple: #bc8cff;
+  --teal: #39d353;
+  --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  font-size:14px;line-height:1.5;
+}
+
+/* ── Dashboard Grid ────────────────────────────────────────────── */
+.dashboard{
+  padding:16px 20px;
+  display:grid;
+  grid-template-columns:260px 1fr 1fr;
+  grid-template-rows:auto auto auto auto;
+  gap:14px;
+  max-width:1600px;margin:0 auto;
+}
+
+/* ── Panel Chrome ──────────────────────────────────────────────── */
+.panel{
+  background:var(--panel);border:1px solid var(--border);border-radius:8px;
+  overflow:hidden;display:flex;flex-direction:column;
+}
+.panel-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;border-bottom:1px solid var(--border);
+}
+.panel-title{
+  font-size:11px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.8px;
+}
+.panel-badge{
+  font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;
+  white-space:nowrap;
+}
+.panel-body{padding:14px;flex:1;min-height:0;display:flex;flex-direction:column}
+
+/* ── Placeholder ───────────────────────────────────────────────── */
+.placeholder{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  color:#484f58;font-style:italic;text-align:center;padding:24px;
+}
+
+/* ── Market Health Panel ───────────────────────────────────────── */
+.mood-score{
+  text-align:center;padding:12px 0 8px;
+}
+.mood-score .value{
+  font-size:52px;font-weight:700;font-family:var(--font-mono);line-height:1;
+}
+.mood-score .label{
+  font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;
+  margin-top:4px;
+}
+.health-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.health-stat{
+  background:var(--bg);border:1px solid var(--border);border-radius:6px;
+  padding:8px 10px;text-align:center;
+}
+.health-stat .stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.health-stat .stat-value{font-size:18px;font-weight:700;font-family:var(--font-mono)}
+.nh-nl-row{display:flex;gap:10px;margin:10px 0;justify-content:center}
+.nh-nl-item{
+  display:flex;flex-direction:column;align-items:center;
+  background:var(--bg);border:1px solid var(--border);border-radius:6px;
+  padding:6px 14px;flex:1;
+}
+.nh-nl-item .nh-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.nh-nl-item .nh-value{font-size:20px;font-weight:700;font-family:var(--font-mono)}
+.breadth-bars{display:flex;flex-direction:column;gap:8px;margin:8px 0}
+.breadth-bar-row{display:flex;align-items:center;gap:8px}
+.breadth-bar-label{font-size:10px;color:var(--muted);width:90px;flex-shrink:0;text-align:right;white-space:nowrap}
+.breadth-bar-track{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.breadth-bar-fill{height:100%;border-radius:3px}
+.breadth-bar-pct{font-size:10px;font-family:var(--font-mono);width:44px;flex-shrink:0;text-align:right}
+.cap-section-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 6px;text-align:center}
+.cap-bars{display:flex;flex-direction:column;gap:8px}
+.cap-bar-row{display:flex;align-items:center;gap:8px}
+.cap-bar-label{font-size:10px;color:var(--muted);width:50px;flex-shrink:0;text-align:right}
+.cap-bar-track{flex:1;height:6px;background:var(--border);border-radius:3px;position:relative;overflow:hidden}
+.cap-bar-center{position:absolute;left:50%;top:0;bottom:0;width:1px;background:#484f58}
+.cap-bar-fill{position:absolute;top:0;height:100%;border-radius:3px}
+.cap-bar-val{font-size:10px;font-family:var(--font-mono);width:50px;flex-shrink:0}
+
+/* ── Chart Panels ──────────────────────────────────────────────── */
+.chart-wrap{flex:1;min-height:200px;position:relative}
+.chart-wrap canvas{width:100%!important;height:100%!important}
+
+/* ── FII/DII summary ──────────────────────────────────────────── */
+.flow-summary{
+  font-size:11px;color:var(--muted);padding:0 0 10px;text-align:center;
+  font-family:var(--font-mono);
+}
+
+/* ── Stage Distribution ────────────────────────────────────────── */
+.stage-dist-layout{display:flex;gap:16px;align-items:flex-start;flex:1;min-height:0}
+.stage-donut-wrap{width:160px;flex-shrink:0;position:relative}
+.stage-donut-wrap canvas{width:100%!important;height:160px!important}
+.stage-legend-col{flex:1;display:flex;flex-direction:column;gap:10px;justify-content:center}
+.stage-legend-row{display:flex;flex-direction:column;gap:3px}
+.stage-legend-top{display:flex;align-items:center;gap:6px;font-size:12px}
+.stage-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.stage-legend-name{flex:1;color:var(--text)}
+.stage-legend-pct{font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+.stage-legend-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.stage-legend-bar-fill{height:100%;border-radius:2px}
+.stage-footer{font-size:10px;color:var(--muted);text-align:center;padding-top:8px;margin-top:auto}
+
+/* ── Top Stocks Table ──────────────────────────────────────────── */
+.table-wrap{overflow-x:auto;flex:1}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead{position:sticky;top:0;z-index:1}
+th{
+  background:var(--bg);color:var(--muted);font-weight:600;text-align:left;
+  padding:8px 10px;border-bottom:1px solid var(--border);
+  white-space:nowrap;font-size:10px;text-transform:uppercase;letter-spacing:.5px;
+}
+td{padding:6px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+tr.stage2{background:rgba(63,185,80,0.03)}
+tr.stage2:hover td{background:rgba(63,185,80,0.07)}
+tr:hover td{background:#1c2128}
+.col-rank{width:32px;text-align:center;color:var(--muted);font-size:11px}
+.col-symbol{font-family:var(--font-mono);font-weight:600;color:var(--blue)}
+.col-name{color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.col-sector{color:var(--muted);font-size:11px}
+.col-num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--font-mono)}
+.stage-pill{
+  display:inline-block;padding:1px 7px;border-radius:10px;
+  font-size:10px;font-weight:700;border:1px solid;
+  background:transparent;
+}
+.verdict-pill{
+  display:inline-block;padding:2px 8px;border-radius:10px;
+  font-size:10px;font-weight:600;color:#fff;white-space:nowrap;
+}
+.verdict-strong-buy{background:var(--green)}
+.verdict-buy{background:var(--blue)}
+.verdict-muted{background:var(--border);color:var(--muted)}
+.setup-pill{
+  display:inline-block;padding:2px 8px;border-radius:10px;
+  font-size:10px;font-weight:600;
+  background:rgba(88,166,255,0.15);color:var(--blue);
+  white-space:nowrap;
+}
+.rvol-hot{color:var(--green);font-weight:700}
+.span-3{grid-column:span 3}
+
+/* ── Responsive ────────────────────────────────────────────────── */
+@media (max-width:1100px){
+  .dashboard{grid-template-columns:240px 1fr}
+}
+@media (max-width:768px){
+  .dashboard{grid-template-columns:1fr;padding:10px}
+  .span-2,.span-3{grid-column:span 1}
+  .stage-dist-layout{flex-direction:column}
+  .stage-donut-wrap{width:100%}
+}
+`;
+}
+
 // ── Panel builders ──────────────────────────────────────────────────────────
 
 function buildMarketHealthPanel(data: DashboardData): string {
-  if (!data.breadth) {
-    return `<div class="panel" style="grid-column:1/4;grid-row:1/9">
-      <h2>Market Health</h2>
-      ${placeholder(`No breadth data for ${data.as_of}`)}
+  const b = data.breadth;
+  const cap = data.cap_rotation;
+
+  const headerHtml = `<div class="panel-header">
+    <span class="panel-title">Market Health</span>
+    <span class="panel-badge" style="background:rgba(88,166,255,0.15);color:var(--blue)">Breadth</span>
+  </div>`;
+
+  if (!b) {
+    return `<div class="panel" style="grid-row:span 2">
+      ${headerHtml}
+      <div class="panel-body">${placeholder('No breadth data available')}</div>
     </div>`;
   }
 
-  const b = data.breadth;
+  const moodColor =
+    b.mood_score != null
+      ? b.mood_score >= 60
+        ? 'var(--green)'
+        : b.mood_score >= 40
+          ? 'var(--amber)'
+          : 'var(--red)'
+      : 'var(--muted)';
 
-  // Index 2x2 sub-grid
-  const indexCards = data.indices
-    .map(
-      (ix) => `
-      <div class="index-card">
-        <div class="index-name">${esc(ix.name)}</div>
-        <div class="index-close">${fmtNum(ix.close)}</div>
-        <div class="index-change" style="color:${changeColor(ix.change_pct)}">${fmtPct(ix.change_pct)}</div>
-      </div>`,
-    )
-    .join('');
+  const adRatioColor =
+    b.ad_ratio != null
+      ? b.ad_ratio >= 1.0
+        ? 'var(--green)'
+        : 'var(--red)'
+      : 'var(--muted)';
 
-  // Mini horizontal bar helper
-  const miniBar = (label: string, value: number | null, color: string) => {
+  const breadthBar = (
+    label: string,
+    value: number | null,
+    color: string,
+  ): string => {
     const pct = value != null ? Math.max(0, Math.min(100, value)) : 0;
-    return `
-      <div class="mini-bar-row">
-        <span class="mini-bar-label">${esc(label)}</span>
-        <div class="mini-bar-track">
-          <div class="mini-bar-fill" style="width:${pct}%;background:${color}"></div>
-        </div>
-        <span class="mini-bar-value">${fmtPct(value, 1)}</span>
-      </div>`;
+    return `<div class="breadth-bar-row">
+      <span class="breadth-bar-label">${esc(label)}</span>
+      <div class="breadth-bar-track">
+        <div class="breadth-bar-fill" style="width:${pct.toFixed(1)}%;background:${color}"></div>
+      </div>
+      <span class="breadth-bar-pct" style="color:${color}">${value != null ? value.toFixed(1) + '%' : '—'}</span>
+    </div>`;
   };
 
-  // Cap rotation bars
-  const capBar = (label: string, value: number | null) => {
+  const capBar = (label: string, value: number | null): string => {
     const pct = value != null ? Math.max(-100, Math.min(100, value)) : 0;
-    const offset = 50 + pct / 2;
     const width = Math.abs(pct) / 2;
-    const left = pct >= 0 ? 50 : offset;
-    return `
-      <div class="mini-bar-row">
-        <span class="mini-bar-label">${esc(label)}</span>
-        <div class="mini-bar-track" style="position:relative">
-          <div class="cap-center-line"></div>
-          <div class="mini-bar-fill" style="position:absolute;left:${left}%;width:${width}%;background:${pct >= 0 ? '#3fb950' : '#f85149'}"></div>
-        </div>
-        <span class="mini-bar-value">${fmtPct(value, 1)}</span>
-      </div>`;
+    const left = pct >= 0 ? 50 : 50 - width;
+    const color = pct >= 0 ? 'var(--green)' : 'var(--red)';
+    return `<div class="cap-bar-row">
+      <span class="cap-bar-label">${esc(label)}</span>
+      <div class="cap-bar-track">
+        <div class="cap-bar-center"></div>
+        <div class="cap-bar-fill" style="left:${left.toFixed(1)}%;width:${width.toFixed(1)}%;background:${color}"></div>
+      </div>
+      <span class="cap-bar-val" style="color:${color}">${fmtPct(value, 1)}</span>
+    </div>`;
   };
 
-  return `<div class="panel" style="grid-column:1/4;grid-row:1/9">
-    <h2>Market Health</h2>
-    <div class="index-grid">${indexCards}</div>
-    <div class="mood-block">
-      <div class="mood-label">Mood Score</div>
-      <div class="mood-value" style="color:${changeColor(b.mood_score)}">${fmtNum(b.mood_score, 1)}</div>
-    </div>
-    <div class="ad-counts">
-      <span class="adv-count" style="color:#3fb950">Adv ${fmtInt(b.advances)}</span>
-      <span class="dec-count" style="color:#f85149">Dec ${fmtInt(b.declines)}</span>
-      <span class="unch-count" style="color:#8b949e">Unch ${fmtInt(b.unchanged_count)}</span>
-    </div>
-    <div class="mini-bars">
-      ${miniBar('% > 50 MA', b.pct_above_50ma, '#58a6ff')}
-      ${miniBar('% > 200 MA', b.pct_above_200ma, '#58a6ff')}
-      ${miniBar('Stage 2 %', b.stage2_pct, '#3fb950')}
-      ${miniBar('EMA Bull %', b.ema_stack_bull_pct, '#3fb950')}
-    </div>
-    <h3 class="sub-heading">Cap Rotation (RS vs Broad)</h3>
-    <div class="mini-bars">
-      ${capBar('Large', data.cap_rotation.large_rs_vs_broad)}
-      ${capBar('Mid', data.cap_rotation.mid_rs_vs_broad)}
-      ${capBar('Small', data.cap_rotation.small_rs_vs_broad)}
-    </div>
-    <div class="nh-nl">
-      <span style="color:#3fb950">New Highs: ${fmtInt(b.new_highs)}</span>
-      <span style="color:#f85149">New Lows: ${fmtInt(b.new_lows)}</span>
+  return `<div class="panel" style="grid-row:span 2">
+    ${headerHtml}
+    <div class="panel-body">
+      <div class="mood-score">
+        <div class="value" style="color:${moodColor}">${b.mood_score != null ? Math.round(b.mood_score) : '—'}</div>
+        <div class="label">MARKET MOOD SCORE &middot; /100</div>
+      </div>
+      <div class="health-grid">
+        <div class="health-stat">
+          <div class="stat-label">Advances</div>
+          <div class="stat-value" style="color:var(--green)">${fmtInt(b.advances)}</div>
+        </div>
+        <div class="health-stat">
+          <div class="stat-label">Declines</div>
+          <div class="stat-value" style="color:var(--red)">${fmtInt(b.declines)}</div>
+        </div>
+        <div class="health-stat">
+          <div class="stat-label">A/D Ratio</div>
+          <div class="stat-value" style="color:${adRatioColor}">${fmtNum(b.ad_ratio)}</div>
+        </div>
+        <div class="health-stat">
+          <div class="stat-label">Unchanged</div>
+          <div class="stat-value" style="color:var(--muted)">${fmtInt(b.unchanged_count)}</div>
+        </div>
+      </div>
+      <div class="nh-nl-row">
+        <div class="nh-nl-item">
+          <span class="nh-label">New Highs</span>
+          <span class="nh-value" style="color:var(--green)">${fmtInt(b.new_highs)}</span>
+        </div>
+        <div class="nh-nl-item">
+          <span class="nh-label">New Lows</span>
+          <span class="nh-value" style="color:var(--red)">${fmtInt(b.new_lows)}</span>
+        </div>
+      </div>
+      <div class="breadth-bars">
+        ${breadthBar('% Above 50-MA', b.pct_above_50ma, 'var(--green)')}
+        ${breadthBar('% Above 200-MA', b.pct_above_200ma, 'var(--teal)')}
+        ${breadthBar('Stage 2 Stocks', b.stage2_pct, 'var(--blue)')}
+        ${breadthBar('EMA Stack Bull', b.ema_stack_bull_pct, 'var(--purple)')}
+      </div>
+      <div class="cap-section-label">Cap Rotation (RS vs Broad)</div>
+      <div class="cap-bars">
+        ${capBar('Large', cap.large_rs_vs_broad)}
+        ${capBar('Mid', cap.mid_rs_vs_broad)}
+        ${capBar('Small', cap.small_rs_vs_broad)}
+      </div>
     </div>
   </div>`;
 }
 
 function buildAdHistoryPanel(data: DashboardData): string {
+  const latestRatio =
+    data.ad_history.length > 0
+      ? data.ad_history[data.ad_history.length - 1].ad_ratio
+      : null;
+  const badgeColor =
+    latestRatio != null && latestRatio >= 1.0 ? 'var(--green)' : 'var(--red)';
+  const badgeText =
+    latestRatio != null ? `A/D ${latestRatio.toFixed(2)}` : 'A/D';
+
+  const headerHtml = `<div class="panel-header">
+    <span class="panel-title">Advance / Decline</span>
+    <span class="panel-badge" style="background:color-mix(in srgb, ${badgeColor} 15%, transparent);color:${badgeColor}">${esc(badgeText)}</span>
+  </div>`;
+
   if (data.ad_history.length === 0) {
-    return `<div class="panel" style="grid-column:4/9;grid-row:1/5">
-      <h2>A/D 7-Day</h2>
-      ${placeholder('No A/D history available')}
+    return `<div class="panel">
+      ${headerHtml}
+      <div class="panel-body">${placeholder('No A/D history available')}</div>
     </div>`;
   }
 
-  return `<div class="panel" style="grid-column:4/9;grid-row:1/5">
-    <h2>A/D 7-Day</h2>
-    <div class="chart-wrap"><canvas id="adChart"></canvas></div>
+  return `<div class="panel">
+    ${headerHtml}
+    <div class="panel-body"><div class="chart-wrap"><canvas id="adChart"></canvas></div></div>
   </div>`;
 }
 
 function buildSectorPanel(data: DashboardData): string {
+  const badgeText = `${data.sectors.length} sectors`;
+  const headerHtml = `<div class="panel-header">
+    <span class="panel-title">Sector Rotation</span>
+    <span class="panel-badge" style="background:rgba(88,166,255,0.15);color:var(--blue)">${esc(badgeText)}</span>
+  </div>`;
+
   if (data.sectors.length === 0) {
-    return `<div class="panel" style="grid-column:9/13;grid-row:1/9">
-      <h2>Sector Rotation</h2>
-      ${placeholder(`No sector data for ${data.as_of}`)}
+    return `<div class="panel">
+      ${headerHtml}
+      <div class="panel-body">${placeholder('No sector data available')}</div>
     </div>`;
   }
 
-  return `<div class="panel" style="grid-column:9/13;grid-row:1/9">
-    <h2>Sector Rotation</h2>
-    <div class="chart-wrap"><canvas id="sectorChart"></canvas></div>
+  return `<div class="panel">
+    ${headerHtml}
+    <div class="panel-body"><div class="chart-wrap"><canvas id="sectorChart"></canvas></div></div>
   </div>`;
 }
 
 function buildFiiDiiPanel(data: DashboardData): string {
+  const headerHtml = `<div class="panel-header">
+    <span class="panel-title">FII / DII Flows</span>
+    <span class="panel-badge" style="background:rgba(188,140,255,0.15);color:var(--purple)">${data.fii_dii.length} days</span>
+  </div>`;
+
   if (data.fii_dii.length === 0) {
-    return `<div class="panel" style="grid-column:4/9;grid-row:5/9">
-      <h2>FII / DII Flows</h2>
-      ${placeholder('No flows data available')}
+    return `<div class="panel">
+      ${headerHtml}
+      <div class="panel-body">${placeholder('No flows data available')}</div>
     </div>`;
   }
 
-  return `<div class="panel" style="grid-column:4/9;grid-row:5/9">
-    <h2>FII / DII Flows</h2>
-    <div class="chart-wrap"><canvas id="fiiDiiChart"></canvas></div>
-  </div>`;
-}
-
-function buildStageDistPanel(data: DashboardData): string {
-  if (data.stage_dist.length === 0) {
-    return `<div class="panel" style="grid-column:1/7;grid-row:9/13">
-      <h2>Stage Distribution</h2>
-      ${placeholder(`No stage data for ${data.as_of}`)}
-    </div>`;
+  let fiiCum = 0;
+  let diiCum = 0;
+  for (const row of data.fii_dii) {
+    fiiCum += row.fii_net ?? 0;
+    diiCum += row.dii_net ?? 0;
   }
+  const fmtCr = (v: number) =>
+    `${v >= 0 ? '+' : ''}${Math.round(v).toLocaleString('en-IN')}`;
+  const summaryHtml = `<div class="flow-summary">FII Net ₹${fmtCr(fiiCum)} Cr &nbsp;|&nbsp; DII Net ₹${fmtCr(diiCum)} Cr &nbsp;|&nbsp; ${data.fii_dii.length}-day cumulative</div>`;
 
-  return `<div class="panel" style="grid-column:1/7;grid-row:9/13">
-    <h2>Stage Distribution</h2>
-    <div class="chart-wrap"><canvas id="stageChart"></canvas></div>
-    <div class="stage-legend"></div>
-  </div>`;
-}
-
-function buildTopStocksPanel(data: DashboardData): string {
-  if (data.top_stocks.length === 0) {
-    return `<div class="panel full-width" style="grid-column:1/13;grid-row:13/19">
-      <h2>Top Momentum Stocks</h2>
-      ${placeholder(`No Stage 2 equities found for ${data.as_of}`)}
-    </div>`;
-  }
-
-  const headerCols = [
-    { key: 'symbol', label: 'Symbol' },
-    { key: 'name', label: 'Name' },
-    { key: 'sector', label: 'Sector' },
-    { key: 'stage', label: 'Stage' },
-    { key: 'composite_score', label: 'Composite' },
-    { key: 'sniper_verdict', label: 'Verdict' },
-    { key: 'setup_type', label: 'Setup' },
-    { key: 'rvol', label: 'RVOL' },
-    { key: 'rsi_14', label: 'RSI' },
-    { key: 'return_1m', label: '1M Ret%' },
-    { key: 'dist_52wk_high_pct', label: 'Dist 52W%' },
-    { key: 'rs_rank_in_segment', label: 'RS Rank' },
-  ];
-
-  const headers = headerCols
-    .map(
-      (c) =>
-        `<th data-col="${esc(c.key)}" class="sortable">${esc(c.label)} <span class="sort-arrow"></span></th>`,
-    )
-    .join('');
-
-  const rows = data.top_stocks
-    .map((s) => {
-      const sColor = stageColor(s.stage);
-      const vColor = verdictColor(s.sniper_verdict);
-      return `<tr>
-        <td class="mono">${esc(s.symbol)}</td>
-        <td>${esc(s.name ?? '')}</td>
-        <td>${esc(s.sector ?? '')}</td>
-        <td><span class="badge" style="background:${sColor}">${s.stage != null ? s.stage : '—'}</span></td>
-        <td class="num">${fmtNum(s.composite_score)}</td>
-        <td><span class="badge" style="background:${vColor}">${esc(s.sniper_verdict ?? '—')}</span></td>
-        <td>${esc(s.setup_type ?? '—')}</td>
-        <td class="num">${fmtNum(s.rvol)}</td>
-        <td class="num">${fmtNum(s.rsi_14)}</td>
-        <td class="num" style="color:${changeColor(s.return_1m)}">${fmtPct(s.return_1m)}</td>
-        <td class="num">${fmtPct(s.dist_52wk_high_pct)}</td>
-        <td class="num">${s.rs_rank_in_segment != null ? s.rs_rank_in_segment : '—'}</td>
-      </tr>`;
-    })
-    .join('');
-
-  return `<div class="panel full-width" style="grid-column:1/13;grid-row:13/19">
-    <h2>Top Momentum Stocks</h2>
-    <div class="table-wrap">
-      <table id="stocksTable">
-        <thead><tr>${headers}</tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
+  return `<div class="panel">
+    ${headerHtml}
+    <div class="panel-body">
+      ${summaryHtml}
+      <div class="chart-wrap"><canvas id="fiiDiiChart"></canvas></div>
     </div>
   </div>`;
 }
 
-// ── CSS ─────────────────────────────────────────────────────────────────────
+function buildStageDistPanel(data: DashboardData): string {
+  const s2 = data.stage_dist.find((d) => d.stage === 2);
+  const total = data.stage_dist.reduce((s, r) => s + r.count, 0);
+  const s2Pct = s2 && total > 0 ? ((s2.count / total) * 100).toFixed(1) : '0';
+  const badgeText = `Stage 2 ↑ ${s2Pct}%`;
 
-function buildCss(): string {
-  return `
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    body{
-      background:#0d1117;color:#c9d1d9;
-      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
-      font-size:14px;line-height:1.5;padding:24px;
-    }
-    h1{font-size:20px;font-weight:600;margin-bottom:16px;color:#e6edf3}
-    h2{font-size:15px;font-weight:600;margin-bottom:12px;color:#e6edf3}
-    h3.sub-heading{font-size:12px;font-weight:600;margin:12px 0 6px;color:#8b949e;text-transform:uppercase;letter-spacing:.5px}
+  const headerHtml = `<div class="panel-header">
+    <span class="panel-title">Stage Distribution</span>
+    <span class="panel-badge" style="background:rgba(63,185,80,0.15);color:var(--green)">${esc(badgeText)}</span>
+  </div>`;
 
-    .dashboard{
-      display:grid;
-      grid-template-columns:repeat(12,1fr);
-      grid-template-rows:repeat(18,minmax(40px,auto));
-      gap:12px;
-      max-width:1440px;margin:0 auto;
-    }
+  if (data.stage_dist.length === 0) {
+    return `<div class="panel">
+      ${headerHtml}
+      <div class="panel-body">${placeholder('No stage data available')}</div>
+    </div>`;
+  }
 
-    .panel{
-      background:#161b22;border:1px solid #21262d;border-radius:8px;
-      padding:16px;overflow:hidden;display:flex;flex-direction:column;
-    }
-    .chart-wrap{flex:1;min-height:0;position:relative}
-    .chart-wrap canvas{width:100%!important;height:100%!important}
+  const stageColors: Record<number, string> = {
+    1: 'var(--amber)',
+    2: 'var(--green)',
+    3: 'var(--orange)',
+    4: 'var(--red)',
+  };
 
-    /* Placeholder */
-    .placeholder{
-      flex:1;display:flex;align-items:center;justify-content:center;
-      color:#484f58;font-style:italic;text-align:center;padding:24px;
-    }
+  const legendRows = data.stage_dist
+    .map((r) => {
+      const pct = total > 0 ? ((r.count / total) * 100).toFixed(1) : '0.0';
+      const c = stageColors[r.stage] ?? 'var(--muted)';
+      return `<div class="stage-legend-row">
+        <div class="stage-legend-top">
+          <span class="stage-legend-dot" style="background:${c}"></span>
+          <span class="stage-legend-name">Stage ${r.stage} — ${esc(stageLabel(r.stage))}</span>
+          <span class="stage-legend-pct">${pct}%</span>
+        </div>
+        <div class="stage-legend-bar">
+          <div class="stage-legend-bar-fill" style="width:${pct}%;background:${c}"></div>
+        </div>
+      </div>`;
+    })
+    .join('');
 
-    /* Index 2x2 grid */
-    .index-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
-    .index-card{
-      background:#0d1117;border:1px solid #21262d;border-radius:6px;
-      padding:8px;text-align:center;
-    }
-    .index-name{font-size:11px;color:#8b949e;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .index-close{font-size:16px;font-weight:600;color:#e6edf3}
-    .index-change{font-size:13px;font-weight:500}
+  const dateStr = data.as_of
+    ? new Date(data.as_of).toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })
+    : data.as_of;
 
-    /* Mood block */
-    .mood-block{text-align:center;margin:8px 0}
-    .mood-label{font-size:11px;color:#8b949e;text-transform:uppercase;letter-spacing:.5px}
-    .mood-value{font-size:36px;font-weight:700}
+  return `<div class="panel">
+    ${headerHtml}
+    <div class="panel-body">
+      <div class="stage-dist-layout">
+        <div class="stage-donut-wrap"><canvas id="stageChart"></canvas></div>
+        <div class="stage-legend-col">${legendRows}</div>
+      </div>
+      <div class="stage-footer">${total} active equities &middot; ${esc(dateStr)}</div>
+    </div>
+  </div>`;
+}
 
-    /* A/D counts */
-    .ad-counts{display:flex;gap:12px;justify-content:center;margin-bottom:10px;font-size:13px;font-weight:500}
+function buildTopStocksPanel(data: DashboardData): string {
+  const badgeText = `${data.top_stocks.length} setups`;
+  const headerHtml = `<div class="panel-header">
+    <span class="panel-title">Top Momentum Stocks</span>
+    <span class="panel-badge" style="background:rgba(63,185,80,0.15);color:var(--green)">${esc(badgeText)}</span>
+  </div>`;
 
-    /* Mini bars */
-    .mini-bars{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
-    .mini-bar-row{display:flex;align-items:center;gap:8px}
-    .mini-bar-label{font-size:11px;color:#8b949e;width:80px;flex-shrink:0;text-align:right}
-    .mini-bar-track{flex:1;height:8px;background:#21262d;border-radius:4px;overflow:hidden;position:relative}
-    .mini-bar-fill{height:100%;border-radius:4px;transition:width .3s}
-    .mini-bar-value{font-size:11px;color:#c9d1d9;width:56px;flex-shrink:0}
-    .cap-center-line{position:absolute;left:50%;top:0;bottom:0;width:1px;background:#484f58}
+  if (data.top_stocks.length === 0) {
+    return `<div class="panel span-3">
+      ${headerHtml}
+      <div class="panel-body">${placeholder('No Stage 2 equities found')}</div>
+    </div>`;
+  }
 
-    .nh-nl{display:flex;gap:16px;justify-content:center;margin-top:8px;font-size:12px;font-weight:500}
+  const headers = `<tr>
+    <th>#</th><th>Symbol</th><th>Name</th><th>Sector</th><th>Stage</th>
+    <th>Score</th><th>Sniper</th><th>Setup</th><th>RVOL</th><th>RSI</th>
+    <th>1M Ret%</th><th>Dist 52wH%</th><th style="text-align:right">RS Rank</th>
+  </tr>`;
 
-    /* Table */
-    .table-wrap{overflow-x:auto;flex:1}
-    table{width:100%;border-collapse:collapse;font-size:13px}
-    thead{position:sticky;top:0;z-index:1}
-    th{
-      background:#0d1117;color:#8b949e;font-weight:600;text-align:left;
-      padding:8px 10px;border-bottom:1px solid #21262d;cursor:pointer;
-      white-space:nowrap;user-select:none;
-    }
-    th:hover{color:#e6edf3}
-    td{padding:6px 10px;border-bottom:1px solid #21262d;white-space:nowrap}
-    tr:hover td{background:#1c2128}
-    .mono{font-family:'SF Mono',SFMono-Regular,Consolas,monospace;font-weight:500}
-    .num{text-align:right;font-variant-numeric:tabular-nums}
-    .badge{
-      display:inline-block;padding:2px 8px;border-radius:12px;
-      font-size:11px;font-weight:600;color:#fff;
-    }
-    .sort-arrow{font-size:10px;margin-left:2px}
-    .sortable{position:relative}
-    .sort-asc .sort-arrow::after{content:'\\25B2'}
-    .sort-desc .sort-arrow::after{content:'\\25BC'}
+  const rows = data.top_stocks
+    .map((s, i) => {
+      const sym = s.symbol.replace(/\.NS$/i, '');
+      const stColor = stageColor(s.stage);
+      const scoreColor =
+        s.composite_score != null && s.composite_score >= 70
+          ? 'var(--green)'
+          : 'var(--text)';
+      const scoreWeight =
+        s.composite_score != null && s.composite_score >= 70 ? '700' : '400';
+      const rvolHot = s.rvol != null && s.rvol >= 2.0;
+      const rsiColor =
+        s.rsi_14 != null
+          ? s.rsi_14 > 60
+            ? 'var(--green)'
+            : s.rsi_14 < 40
+              ? 'var(--red)'
+              : 'var(--text)'
+          : 'var(--muted)';
+      const retColor = changeColor(s.return_1m);
+      const retWeight = s.return_1m != null ? '700' : '400';
+      const distColor =
+        s.dist_52wk_high_pct != null
+          ? s.dist_52wk_high_pct > -3
+            ? 'var(--green)'
+            : s.dist_52wk_high_pct > -8
+              ? 'var(--text)'
+              : 'var(--red)'
+          : 'var(--muted)';
 
-    /* Stage dist legend (beside donut) */
-    .stage-legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:8px;justify-content:center}
-    .stage-legend-item{display:flex;align-items:center;gap:4px;font-size:12px}
-    .stage-legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-  `;
+      return `<tr class="stage2">
+        <td class="col-rank">${i + 1}</td>
+        <td class="col-symbol">${esc(sym)}</td>
+        <td class="col-name">${esc(s.name ?? '')}</td>
+        <td class="col-sector">${esc(s.sector ?? '')}</td>
+        <td><span class="stage-pill" style="color:${stColor};border-color:${stColor}">${s.stage != null ? 'S' + s.stage : '—'}</span></td>
+        <td class="col-num" style="color:${scoreColor};font-weight:${scoreWeight}">${fmtNum(s.composite_score, 1)}</td>
+        <td><span class="verdict-pill ${verdictClass(s.sniper_verdict)}">${esc(s.sniper_verdict ?? '—')}</span></td>
+        <td><span class="setup-pill">${esc(setupLabel(s.setup_type))}</span></td>
+        <td class="col-num${rvolHot ? ' rvol-hot' : ''}">${s.rvol != null ? s.rvol.toFixed(1) + 'x' : '—'}</td>
+        <td class="col-num" style="color:${rsiColor}">${fmtNum(s.rsi_14, 1)}</td>
+        <td class="col-num" style="color:${retColor};font-weight:${retWeight}">${fmtPct(s.return_1m, 1)}</td>
+        <td class="col-num" style="color:${distColor}">${fmtPct(s.dist_52wk_high_pct, 1)}</td>
+        <td class="col-num" style="text-align:right">${s.rs_rank_in_segment != null ? s.rs_rank_in_segment : '—'}</td>
+      </tr>`;
+    })
+    .join('');
+
+  return `<div class="panel span-3">
+    ${headerHtml}
+    <div class="panel-body">
+      <div class="table-wrap">
+        <table id="stocksTable">
+          <thead>${headers}</thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
 }
 
 // ── Client-side JS ──────────────────────────────────────────────────────────
 
 function buildClientJs(): string {
   return `
-    document.addEventListener('DOMContentLoaded', function() {
-      var D = window.DASHBOARD_DATA;
-      if (!D) return;
+(function() {
+  Chart.defaults.color = '#8b949e';
+  Chart.defaults.borderColor = '#21262d';
+  Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif";
+  Chart.defaults.font.size = 11;
 
-      var STAGE_COLORS = {1:'#d29922',2:'#3fb950',3:'#f0883e',4:'#f85149'};
+  var D = window.DASHBOARD_DATA;
+  if (!D) return;
 
-      // ── A/D 7-Day stacked bar + line ──────────────────────────────────
-      (function() {
-        var el = document.getElementById('adChart');
-        if (!el || !D.ad_history || D.ad_history.length === 0) return;
+  var STAGE_COLORS = {1:'#e3b341',2:'#3fb950',3:'#d29922',4:'#f85149'};
 
-        var labels = D.ad_history.map(function(r){ return r.date; });
-        var advs   = D.ad_history.map(function(r){ return r.advances; });
-        var decs   = D.ad_history.map(function(r){ return r.declines != null ? -r.declines : null; });
-        var ratio  = D.ad_history.map(function(r){ return r.ad_ratio; });
+  // ── A/D Chart: stacked bar + line ──────────────────────────────
+  (function() {
+    var el = document.getElementById('adChart');
+    if (!el || !D.ad_history || D.ad_history.length === 0) return;
 
-        new Chart(el, {
-          type: 'bar',
-          data: {
-            labels: labels,
-            datasets: [
-              {
-                label: 'Advances',
-                data: advs,
-                backgroundColor: '#3fb950',
-                stack: 'ad',
-                yAxisID: 'y',
-                order: 2
-              },
-              {
-                label: 'Declines',
-                data: decs,
-                backgroundColor: '#f85149',
-                stack: 'ad',
-                yAxisID: 'y',
-                order: 2
-              },
-              {
-                label: 'A/D Ratio',
-                data: ratio,
-                type: 'line',
-                borderColor: '#58a6ff',
-                backgroundColor: 'transparent',
-                borderWidth: 2,
-                pointRadius: 3,
-                pointBackgroundColor: '#58a6ff',
-                yAxisID: 'y1',
-                order: 1
-              }
-            ]
+    var labels = D.ad_history.map(function(r){ return r.date; });
+    var advs   = D.ad_history.map(function(r){ return r.advances; });
+    var decs   = D.ad_history.map(function(r){ return r.declines != null ? -r.declines : null; });
+    var ratio  = D.ad_history.map(function(r){ return r.ad_ratio; });
+
+    new Chart(el, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Advances',
+            data: advs,
+            backgroundColor: 'rgba(63,185,80,0.7)',
+            stack: 'ad',
+            yAxisID: 'y',
+            order: 2
           },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
-            plugins: {
-              legend: { labels: { color: '#8b949e', boxWidth: 12, font: { size: 11 } } }
-            },
-            scales: {
-              x: {
-                ticks: { color: '#8b949e', font: { size: 10 } },
-                grid: { color: '#21262d' }
-              },
-              y: {
-                stacked: true,
-                ticks: { color: '#8b949e', font: { size: 10 } },
-                grid: { color: '#21262d' }
-              },
-              y1: {
-                position: 'right',
-                ticks: { color: '#58a6ff', font: { size: 10 } },
-                grid: { drawOnChartArea: false }
-              }
-            }
+          {
+            label: 'Declines',
+            data: decs,
+            backgroundColor: 'rgba(248,81,73,0.7)',
+            stack: 'ad',
+            yAxisID: 'y',
+            order: 2
+          },
+          {
+            label: 'A/D Ratio',
+            data: ratio,
+            type: 'line',
+            borderColor: '#58a6ff',
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            pointRadius: 3,
+            pointBackgroundColor: '#58a6ff',
+            tension: 0.3,
+            yAxisID: 'y2',
+            order: 1
           }
-        });
-      })();
-
-      // ── Sector Rotation horizontal bar ────────────────────────────────
-      (function() {
-        var el = document.getElementById('sectorChart');
-        if (!el || !D.sectors || D.sectors.length === 0) return;
-
-        var sorted = D.sectors.slice().sort(function(a,b){
-          return (b.return_1w || 0) - (a.return_1w || 0);
-        });
-        var labels = sorted.map(function(r){ return r.sector; });
-        var vals   = sorted.map(function(r){ return r.return_1w; });
-        var colors = vals.map(function(v){ return v != null && v >= 0 ? '#3fb950' : '#f85149'; });
-
-        new Chart(el, {
-          type: 'bar',
-          data: {
-            labels: labels,
-            datasets: [{
-              label: '1W Return %',
-              data: vals,
-              backgroundColor: colors,
-              borderRadius: 3
-            }]
+        ]
+      },
+      options: {
+        animation: false,
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { labels: { boxWidth: 12, font: { size: 11 } } }
+        },
+        scales: {
+          x: {
+            stacked: true,
+            ticks: { font: { size: 10 } },
+            grid: { color: '#21262d' }
           },
-          options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                callbacks: {
-                  label: function(ctx) {
-                    var v = ctx.parsed.x;
-                    return v != null ? (v >= 0 ? '+' : '') + v.toFixed(2) + '%' : '—';
-                  }
-                }
-              }
+          y: {
+            stacked: true,
+            ticks: {
+              font: { size: 10 },
+              callback: function(v) { return Math.abs(v); }
             },
-            scales: {
-              x: {
-                ticks: { color: '#8b949e', font: { size: 10 }, callback: function(v){ return v + '%'; } },
-                grid: { color: '#21262d' }
-              },
-              y: {
-                ticks: { color: '#c9d1d9', font: { size: 11 } },
-                grid: { display: false }
-              }
-            }
+            grid: { color: '#21262d' }
+          },
+          y2: {
+            position: 'right',
+            min: 0,
+            max: 3,
+            ticks: { color: '#58a6ff', font: { size: 10 } },
+            grid: { drawOnChartArea: false }
           }
-        });
-      })();
-
-      // ── FII / DII Flows grouped bar ───────────────────────────────────
-      (function() {
-        var el = document.getElementById('fiiDiiChart');
-        if (!el || !D.fii_dii || D.fii_dii.length === 0) return;
-
-        var labels = D.fii_dii.map(function(r){ return r.date; });
-        var fii = D.fii_dii.map(function(r){ return r.fii_net; });
-        var dii = D.fii_dii.map(function(r){ return r.dii_net; });
-
-        new Chart(el, {
-          type: 'bar',
-          data: {
-            labels: labels,
-            datasets: [
-              { label: 'FII Net', data: fii, backgroundColor: '#58a6ff', borderRadius: 2 },
-              { label: 'DII Net', data: dii, backgroundColor: '#d29922', borderRadius: 2 }
-            ]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
-            plugins: {
-              legend: { labels: { color: '#8b949e', boxWidth: 12, font: { size: 11 } } },
-              annotation: undefined
-            },
-            scales: {
-              x: {
-                ticks: { color: '#8b949e', font: { size: 10 } },
-                grid: { color: '#21262d' }
-              },
-              y: {
-                ticks: {
-                  color: '#8b949e',
-                  font: { size: 10 },
-                  callback: function(v) {
-                    if (typeof v !== 'number') return v;
-                    if (Math.abs(v) >= 1e4) return (v / 1000).toFixed(0) + 'K';
-                    return v;
-                  }
-                },
-                grid: { color: '#21262d' }
-              }
-            }
-          },
-          plugins: [{
-            id: 'zeroLine',
-            afterDraw: function(chart) {
-              var yScale = chart.scales.y;
-              if (!yScale) return;
-              var zero = yScale.getPixelForValue(0);
-              var ctx = chart.ctx;
-              ctx.save();
-              ctx.beginPath();
-              ctx.moveTo(chart.chartArea.left, zero);
-              ctx.lineTo(chart.chartArea.right, zero);
-              ctx.lineWidth = 1;
-              ctx.strokeStyle = '#484f58';
-              ctx.stroke();
-              ctx.restore();
-            }
-          }]
-        });
-      })();
-
-      // ── Stage Distribution donut ──────────────────────────────────────
-      (function() {
-        var el = document.getElementById('stageChart');
-        if (!el || !D.stage_dist || D.stage_dist.length === 0) return;
-
-        var total = D.stage_dist.reduce(function(s,r){ return s + r.count; }, 0);
-        var labels = D.stage_dist.map(function(r){ return 'Stage ' + r.stage; });
-        var values = D.stage_dist.map(function(r){ return r.count; });
-        var colors = D.stage_dist.map(function(r){ return STAGE_COLORS[r.stage] || '#8b949e'; });
-
-        new Chart(el, {
-          type: 'doughnut',
-          data: {
-            labels: labels,
-            datasets: [{
-              data: values,
-              backgroundColor: colors,
-              borderColor: '#161b22',
-              borderWidth: 2
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '60%',
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                callbacks: {
-                  label: function(ctx) {
-                    var pct = total > 0 ? (ctx.parsed / total * 100).toFixed(1) : '0.0';
-                    return ctx.label + ': ' + ctx.parsed + ' (' + pct + '%)';
-                  }
-                }
-              }
-            }
-          }
-        });
-
-        // Build legend
-        var legendEl = el.closest('.panel').querySelector('.stage-legend');
-        if (legendEl) {
-          legendEl.innerHTML = D.stage_dist.map(function(r) {
-            var pct = total > 0 ? (r.count / total * 100).toFixed(1) : '0.0';
-            var c = STAGE_COLORS[r.stage] || '#8b949e';
-            return '<span class="stage-legend-item">'
-              + '<span class="stage-legend-dot" style="background:' + c + '"></span>'
-              + 'S' + r.stage + ': ' + r.count + ' (' + pct + '%)'
-              + '</span>';
-          }).join('');
         }
-      })();
-
-      // ── Table sorting ─────────────────────────────────────────────────
-      (function() {
-        var table = document.getElementById('stocksTable');
-        if (!table) return;
-        var thead = table.querySelector('thead');
-        var tbody = table.querySelector('tbody');
-        var ths = thead.querySelectorAll('th');
-        var currentSort = { col: null, dir: 'asc' };
-
-        ths.forEach(function(th, idx) {
-          th.addEventListener('click', function() {
-            var col = th.getAttribute('data-col');
-            if (currentSort.col === col) {
-              currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
-            } else {
-              currentSort.col = col;
-              currentSort.dir = 'asc';
-            }
-
-            ths.forEach(function(t){ t.classList.remove('sort-asc','sort-desc'); });
-            th.classList.add(currentSort.dir === 'asc' ? 'sort-asc' : 'sort-desc');
-
-            var rows = Array.from(tbody.querySelectorAll('tr'));
-            rows.sort(function(a,b) {
-              var aVal = a.children[idx].textContent.replace(/[,%+\\s]/g,'').trim();
-              var bVal = b.children[idx].textContent.replace(/[,%+\\s]/g,'').trim();
-
-              var aNum = parseFloat(aVal);
-              var bNum = parseFloat(bVal);
-              var aIsNum = !isNaN(aNum) && aVal !== '' && aVal !== '\\u2014';
-              var bIsNum = !isNaN(bNum) && bVal !== '' && bVal !== '\\u2014';
-
-              var cmp;
-              if (aIsNum && bIsNum) {
-                cmp = aNum - bNum;
-              } else if (aIsNum) {
-                cmp = -1;
-              } else if (bIsNum) {
-                cmp = 1;
-              } else {
-                cmp = aVal.localeCompare(bVal);
-              }
-
-              return currentSort.dir === 'asc' ? cmp : -cmp;
-            });
-
-            rows.forEach(function(r){ tbody.appendChild(r); });
-          });
-        });
-      })();
+      }
     });
-  `;
+  })();
+
+  // ── Sector Rotation horizontal bar ────────────────────────────
+  (function() {
+    var el = document.getElementById('sectorChart');
+    if (!el || !D.sectors || D.sectors.length === 0) return;
+
+    var sorted = D.sectors.slice().sort(function(a,b){
+      return (a.return_1w || 0) - (b.return_1w || 0);
+    });
+    var labels = sorted.map(function(r){ return r.sector; });
+    var vals   = sorted.map(function(r){ return r.return_1w; });
+    var colors = vals.map(function(v){
+      if (v == null) return '#8b949e';
+      if (v >= 2.5) return '#3fb950';
+      if (v >= 1) return 'rgba(63,185,80,0.6)';
+      if (v >= 0) return 'rgba(88,166,255,0.6)';
+      if (v >= -1) return 'rgba(248,81,73,0.6)';
+      return '#f85149';
+    });
+
+    new Chart(el, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: '1W Return %',
+          data: vals,
+          backgroundColor: colors,
+          borderRadius: 3
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        animation: false,
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                var v = ctx.parsed.x;
+                return v != null ? (v >= 0 ? '+' : '') + v.toFixed(2) + '%' : '\\u2014';
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { font: { size: 10 }, callback: function(v){ return v + '%'; } },
+            grid: { color: '#21262d' }
+          },
+          y: {
+            ticks: { font: { size: 11 } },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  })();
+
+  // ── FII / DII Flows grouped bar ───────────────────────────────
+  (function() {
+    var el = document.getElementById('fiiDiiChart');
+    if (!el || !D.fii_dii || D.fii_dii.length === 0) return;
+
+    var labels = D.fii_dii.map(function(r){ return r.date; });
+    var fii = D.fii_dii.map(function(r){ return r.fii_net; });
+    var dii = D.fii_dii.map(function(r){ return r.dii_net; });
+
+    var fiiColors = fii.map(function(v){
+      return v != null && v >= 0 ? 'rgba(88,166,255,0.7)' : 'rgba(88,166,255,0.35)';
+    });
+    var diiColors = dii.map(function(v){
+      return v != null && v >= 0 ? 'rgba(227,179,65,0.7)' : 'rgba(227,179,65,0.35)';
+    });
+
+    new Chart(el, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          { label: 'FII Net', data: fii, backgroundColor: fiiColors, borderRadius: 2 },
+          { label: 'DII Net', data: dii, backgroundColor: diiColors, borderRadius: 2 }
+        ]
+      },
+      options: {
+        animation: false,
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { labels: { boxWidth: 12, font: { size: 11 } } },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                var v = ctx.parsed.y;
+                if (v == null) return ctx.dataset.label + ': \\u2014';
+                var sign = v >= 0 ? '+' : '';
+                return ctx.dataset.label + ': \\u20b9' + sign + Math.round(v).toLocaleString('en-IN') + ' Cr';
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { font: { size: 10 } },
+            grid: { color: '#21262d' }
+          },
+          y: {
+            ticks: {
+              font: { size: 10 },
+              callback: function(v) {
+                if (typeof v !== 'number') return v;
+                var sign = v >= 0 ? '+' : '';
+                return '\\u20b9' + sign + v;
+              }
+            },
+            grid: { color: '#21262d' }
+          }
+        }
+      }
+    });
+  })();
+
+  // ── Stage Distribution donut ──────────────────────────────────
+  (function() {
+    var el = document.getElementById('stageChart');
+    if (!el || !D.stage_dist || D.stage_dist.length === 0) return;
+
+    var values = D.stage_dist.map(function(r){ return r.count; });
+    var colors = D.stage_dist.map(function(r){
+      var c = STAGE_COLORS[r.stage] || '#8b949e';
+      return c.replace(')', ',0.75)').replace('rgb(', 'rgba(').replace('#', '');
+    });
+
+    // Convert hex to rgba with 0.75 opacity
+    var bgColors = D.stage_dist.map(function(r){
+      var hex = STAGE_COLORS[r.stage] || '#8b949e';
+      var rr = parseInt(hex.slice(1,3), 16);
+      var gg = parseInt(hex.slice(3,5), 16);
+      var bb = parseInt(hex.slice(5,7), 16);
+      return 'rgba(' + rr + ',' + gg + ',' + bb + ',0.75)';
+    });
+
+    new Chart(el, {
+      type: 'doughnut',
+      data: {
+        labels: D.stage_dist.map(function(r){ return 'Stage ' + r.stage; }),
+        datasets: [{
+          data: values,
+          backgroundColor: bgColors,
+          borderColor: '#0d1117',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        animation: false,
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '65%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                var total = values.reduce(function(a,b){ return a+b; }, 0);
+                var pct = total > 0 ? (ctx.parsed / total * 100).toFixed(1) : '0.0';
+                return ctx.label + ': ' + ctx.parsed + ' (' + pct + '%)';
+              }
+            }
+          }
+        }
+      }
+    });
+  })();
+})();
+`;
 }
 
 // ── Main export ─────────────────────────────────────────────────────────────
@@ -782,14 +997,13 @@ export function generateDashboardHtml(data: DashboardData): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>NSE Market Dashboard — ${esc(safeData.as_of)}</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NSE Market Dashboard — Swing Trader View</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" crossorigin="anonymous"><\/script>
 <style>${buildCss()}</style>
 </head>
 <body>
-<h1>NSE Market Dashboard &mdash; ${esc(safeData.as_of)}</h1>
 <div class="dashboard">
   ${buildMarketHealthPanel(safeData)}
   ${buildAdHistoryPanel(safeData)}
@@ -798,11 +1012,8 @@ export function generateDashboardHtml(data: DashboardData): string {
   ${buildStageDistPanel(safeData)}
   ${buildTopStocksPanel(safeData)}
 </div>
-<script>
-var DASHBOARD_DATA = ${JSON.stringify(safeData)};
-window.DASHBOARD_DATA = DASHBOARD_DATA;
-</script>
-<script>${buildClientJs()}</script>
+<script>var DASHBOARD_DATA = ${JSON.stringify(safeData)};window.DASHBOARD_DATA = DASHBOARD_DATA;<\/script>
+<script>${buildClientJs()}<\/script>
 </body>
 </html>`;
 }

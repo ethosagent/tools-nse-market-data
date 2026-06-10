@@ -14,7 +14,7 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generateDashboardHtml } from './dashboard';
-import { fetchGiftNifty } from './nse-fetcher';
+import { fetchFiiDii, fetchGiftNifty } from './nse-fetcher';
 import type { InstrumentSeedRow, SavedScanRow } from './schema';
 import { MarketDataStore } from './store';
 
@@ -1184,7 +1184,7 @@ const nseGetIndexTool: Tool<{ index: string }> = {
 const nseGetFiiDiiTool: Tool<{ date?: string; days?: number }> = {
   name: 'nse_get_fii_dii',
   description:
-    'Get FII/DII institutional net flows by date. Returns pre-fetched data from fii_dii_daily table. Use fetch-fii-dii CLI command to populate.',
+    'Get FII/DII institutional net flows by date. Returns stored data from fii_dii_daily table. Use nse_fetch_fii_dii to refresh.',
   toolset: 'market',
   capabilities: { network: { allowedHosts: ['www.nseindia.com'] } },
   cache: { ttlMs: 3_600_000 },
@@ -1210,6 +1210,76 @@ const nseGetFiiDiiTool: Tool<{ date?: string; days?: number }> = {
         };
       }
       return { ok: true, value: JSON.stringify(rows, null, 2) };
+    });
+  },
+};
+
+// ---------------------------------------------------------------------------
+// nse_fetch_fii_dii
+// ---------------------------------------------------------------------------
+
+const nseFetchFiiDiiTool: Tool<{ days?: number; date?: string }> = {
+  name: 'nse_fetch_fii_dii',
+  description:
+    'Fetch FII/DII institutional net flows from NSE and store in fii_dii_daily. Use days to backfill multiple trading days (default: 1 = today). Use date to fetch a specific day.',
+  toolset: 'market',
+  capabilities: { network: { allowedHosts: ['www.nseindia.com'] } },
+  schema: {
+    type: 'object',
+    properties: {
+      days: {
+        type: 'number',
+        description: 'Number of past trading days to fetch and store (default: 1).',
+      },
+      date: {
+        type: 'string',
+        description: 'Specific date YYYY-MM-DD. Ignored when days > 1.',
+      },
+    },
+    required: [],
+  },
+  async execute(args, ctx): Promise<ToolResult> {
+    return withStoreAsync(async (store) => {
+      const days = args.days ?? 1;
+      ctx.emit?.({
+        type: 'progress',
+        toolName: 'nse_fetch_fii_dii',
+        message:
+          days > 1 ? `Fetching FII/DII data for last ${days} days…` : 'Fetching FII/DII data…',
+        audience: 'user',
+      });
+
+      let totalSaved = 0;
+      const lines: string[] = [];
+
+      if (days > 1) {
+        const today = new Date();
+        for (let i = days - 1; i >= 0; i--) {
+          const d = new Date(today);
+          d.setDate(d.getDate() - i);
+          const dateStr = d.toISOString().slice(0, 10);
+          const rows = await fetchFiiDii(dateStr);
+          if (rows.length > 0) {
+            const saved = store.upsertFiiDii(rows);
+            totalSaved += saved;
+            lines.push(`${dateStr}: ${saved} rows`);
+          }
+        }
+      } else {
+        const rows = await fetchFiiDii(args.date);
+        totalSaved = store.upsertFiiDii(rows);
+        const dateStr = args.date ?? new Date().toISOString().slice(0, 10);
+        lines.push(`${dateStr}: ${totalSaved} rows`);
+      }
+
+      if (totalSaved === 0) {
+        return { ok: true, value: 'No FII/DII data returned (market may be closed today).' };
+      }
+
+      return {
+        ok: true,
+        value: `Saved ${totalSaved} FII/DII rows.\n\n${lines.join('\n')}`,
+      };
     });
   },
 };
@@ -1466,6 +1536,7 @@ export function createNseMarketDataTools(): Tool[] {
     nseGetQuoteTool as Tool,
     nseGetIndexTool as Tool,
     nseGetFiiDiiTool as Tool,
+    nseFetchFiiDiiTool as Tool,
     nseGetCorporateActionsTool as Tool,
     nseGetBulkBlockTool as Tool,
     nseGetGiftNiftyTool as Tool,

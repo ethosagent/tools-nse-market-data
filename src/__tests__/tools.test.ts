@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { createNseMarketDataTools } from '../tools';
 
 describe('createNseMarketDataTools()', () => {
-  it('returns 23 tools', () => {
+  it('returns 24 tools', () => {
     const tools = createNseMarketDataTools();
-    expect(tools).toHaveLength(23);
+    expect(tools).toHaveLength(24);
   });
 
   it('all tools have required fields', () => {
