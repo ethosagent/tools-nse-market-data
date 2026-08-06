@@ -60,6 +60,24 @@ import type {
   SavedScanRow,
 } from './schema';
 import { migrate } from './schema';
+import { guardSelect, SqlGuardError } from './sql-guard';
+
+/** Hard ceiling on rows returned by query(), whatever the caller asks for. */
+export const MAX_QUERY_ROWS = 1000;
+/**
+ * Char budget for the accumulated JSON of a query() result. Deliberately below
+ * nse_market_query's maxResultChars so our own truncation note is what the model
+ * sees, rather than the tool registry's opaque [truncated] marker.
+ */
+export const MAX_QUERY_RESULT_CHARS = 30_000;
+
+export interface QueryResultSet {
+  columns: string[];
+  rows: Record<string, unknown>[];
+  truncated: boolean;
+  truncationReason: 'row_limit' | 'byte_budget' | null;
+  elapsedMs: number;
+}
 
 export interface OhlcvRow {
   symbol: string;
@@ -328,18 +346,41 @@ function runTransaction<T>(db: DatabaseType, fn: () => T): T {
 
 export class MarketDataStore {
   private readonly db: DatabaseType;
+  private readonly dbPath: string;
+  private roDb: DatabaseType | null = null;
 
   constructor(dbPath: string) {
     if (dbPath !== ':memory:') {
       mkdirSync(dirname(dbPath), { recursive: true });
     }
+    this.dbPath = dbPath;
     this.db = new Database(dbPath);
     migrate(this.db);
     this.seedBuiltinScans();
   }
 
   close(): void {
+    if (this.roDb !== null) {
+      this.roDb.close();
+      this.roDb = null;
+    }
     this.db.close();
+  }
+
+  /**
+   * Lazily-opened read-only handle, used only by query(). Never used by a write
+   * path: SQLite refuses writes on it at the engine, so a hole in the statement
+   * guard still cannot corrupt data.
+   *
+   * Note: with ':memory:' this is a *different*, empty database — query() cannot
+   * see fixtures written through this.db. Tests that exercise query() need a file.
+   */
+  private readOnlyDb(): DatabaseType {
+    if (this.roDb === null) {
+      this.roDb = new Database(this.dbPath, { readOnly: true });
+      this.roDb.exec('PRAGMA query_only = 1');
+    }
+    return this.roDb;
   }
 
   private seedBuiltinScans(): void {
@@ -932,6 +973,58 @@ export class MarketDataStore {
     const result = s.all() as Record<string, unknown>[];
     s.finalize();
     return result;
+  }
+
+  /**
+   * Run a caller-supplied read-only SELECT on the read-only handle.
+   *
+   * Bounded three ways, because each fails differently: the wrap enforces the row
+   * limit in the engine, the iterate loop enforces it again in JS, and the byte
+   * budget stops a small number of very wide rows from flooding the caller.
+   *
+   * There is no statement timeout — node-sqlite3-wasm 0.8.58 exposes no
+   * interrupt() and no progress handler, and it is synchronous. These caps bound
+   * the output, not the runtime.
+   */
+  query(sql: string, limit: number): QueryResultSet {
+    const guard = guardSelect(sql);
+    if (!guard.ok) throw new SqlGuardError(guard.reason);
+
+    const rowLimit = Math.min(Math.max(Math.trunc(limit) || 0, 1), MAX_QUERY_ROWS);
+    const inner = sql.trim().replace(/;\s*$/, '');
+    const started = Date.now();
+
+    const stmt = this.readOnlyDb().prepare(`SELECT * FROM (${inner}) LIMIT ?`);
+    try {
+      const rows: Record<string, unknown>[] = [];
+      let chars = 0;
+      let truncationReason: 'row_limit' | 'byte_budget' | null = null;
+
+      for (const row of stmt.iterate([rowLimit])) {
+        const size = JSON.stringify(row).length;
+        if (chars + size > MAX_QUERY_RESULT_CHARS) {
+          truncationReason = 'byte_budget';
+          break;
+        }
+        rows.push(row as Record<string, unknown>);
+        chars += size;
+        if (rows.length >= rowLimit) {
+          truncationReason = 'row_limit';
+          break;
+        }
+      }
+
+      const firstRow = rows[0];
+      return {
+        columns: firstRow ? Object.keys(firstRow) : [],
+        rows,
+        truncated: truncationReason !== null,
+        truncationReason,
+        elapsedMs: Date.now() - started,
+      };
+    } finally {
+      stmt.finalize();
+    }
   }
 
   listInstrumentSymbols(): string[] {

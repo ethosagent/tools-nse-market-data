@@ -1,7 +1,7 @@
 // Ethos Tool wrappers around MarketDataStore
 // Implemented per Section 14 of tools-nse-market-data.md
 
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 
 import type { EthosPlugin, EthosPluginApi } from '@ethosagent/plugin-sdk';
 import type { Tool, ToolResult } from '@ethosagent/types';
@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { generateDashboardHtml } from './dashboard';
 import { fetchFiiDii, fetchGiftNifty } from './nse-fetcher';
 import type { InstrumentSeedRow, SavedScanRow } from './schema';
+import { SqlGuardError } from './sql-guard';
 import { MarketDataStore } from './store';
 
 function getPackageRoot(): string {
@@ -1491,6 +1492,142 @@ const nseMarketDashboardTool: Tool<DashboardArgs> = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// nse_market_query — read-only SQL escape hatch
+// ---------------------------------------------------------------------------
+
+/**
+ * Inlined schema. Kept in sync with schema.ts by the drift-gate test in
+ * src/__tests__/tools.test.ts, which asserts every column of every migrated
+ * table appears in this string.
+ */
+export const MARKET_QUERY_DESCRIPTION = `Run one read-only SQL SELECT against the local NSE market database and get JSON rows back. Use it for questions the curated tools do not cover — prefer nse_run_scan or nse_market_screen when one of them already answers the question, since they encode domain judgement this tool does not.
+
+RULES
+- One statement only. No semicolons, no PRAGMA, no ATTACH, no writes: the connection is opened read-only.
+- Start with SELECT or WITH ... SELECT.
+- Alias every output column. Duplicate names collapse into one key: SELECT i.symbol, c.symbol ... returns a single "symbol".
+- Results are capped: limit defaults to 200, max 1000, and ~30,000 characters of JSON. A truncated result without an ORDER BY is an arbitrary sample.
+- "columns": [] means the query returned zero rows, not that the table has no columns.
+- There is no query timeout. A cartesian product over ohlcv_daily (millions of rows) blocks the whole agent until it finishes, so always constrain by date or symbol.
+
+JOIN KEYS
+- ohlcv_daily and indicators_daily both key on (symbol, date).
+- instruments.symbol is the join target for both.
+- index_constituents(index_symbol, member_symbol) maps an index to its members.
+- Universe filter every built-in scan applies: instruments.instrument_type = 'equity' AND instruments.is_active = 1.
+- Latest date idiom: WHERE date = (SELECT MAX(date) FROM indicators_daily).
+
+TABLES
+instruments: symbol, name, exchange, sector, isin, added_at, industry, market_cap_band, instrument_type ('equity' or 'index'), index_category, is_active, as_of_date
+ohlcv_daily: symbol, date, open, high, low, close, volume, adj_close, adj_factor, delivery_qty, delivery_pct
+sync_meta: symbol, last_sync, last_date
+watchlist: symbol, list_name, notes, added_at
+watchlist_alerts: symbol, condition_hash, last_alerted, alert_count
+index_constituents: index_symbol, member_symbol, weight, as_of_date
+ath_tracker: symbol, ath_price, ath_date
+saved_scans: scan_id, name, category, description, sql_template, tags, is_builtin, created_at
+schema_version: version, applied_at, description
+fii_dii_daily: date, fii_buy, fii_sell, fii_net, dii_buy, dii_sell, dii_net
+corporate_actions: symbol, ex_date, purpose, value
+bulk_block_deals: id, date, symbol, client_name, deal_type, trade_type, quantity, price
+
+indicators_daily — keyed on symbol, date, then:
+  Trend / moving averages: ema_20, ema_50, ema_100, ema_200, sma_50, sma_200, ma_stack, ema_50_slope
+  Momentum: rsi_14, macd, macd_signal, macd_hist, macd_hist_prev, adx, adx_di_plus, adx_di_minus, stoch_k, stoch_d, cci_20, williams_r, psar, psar_signal, psar_signal_prev, roc_5, return_1d, return_1w, return_1m, return_3m, return_6m, return_1y, return_ytd
+  Relative strength: rs_vs_segment, rs_vs_broad, rs_rank_in_segment, rs_rank_in_sector
+  Volatility / range: atr_14, adr_pct, bb_upper, bb_lower, bb_middle, bb_width, keltner_upper, keltner_lower, donchian_upper_20, donchian_lower_20
+  Volume: rvol, vol_sma_20, avg_dollar_volume_20, delivery_pct, delivery_ma_20, obv, obv_slope_5d, close_position_ratio
+  VWAP: vwap, closed_above_vwap
+  Price levels: dist_52wk_high_pct, dist_52wk_low_pct, dist_ath_pct, pct_from_ema20, pct_from_ema50, pct_from_ema200, price_percentile_52w
+  Candle: candle_pattern
+  Multi-timeframe: ema_20_weekly, ema_50_weekly, close_vs_ema20w, close_vs_ema50w, rsi_14_weekly, macd_hist_weekly, ema_10_monthly, close_vs_ema10m, tf_alignment_score
+  Stage: stage
+  Sniper: sniper_score, sniper_verdict
+  Composite: composite_score, composite_grade
+  Setup: setup_type, setup_quality
+  Chart patterns: base_pattern, pivot_price, buy_range_top, base_start_date, base_length_weeks, base_depth_pct, base_quality_score, near_pivot
+
+market_state_daily — one row per date: date, nifty_close, nifty_vs_ema50, nifty_vs_ema200, nifty_ema50_slope, nifty_stage, nifty_sniper_score, advances, declines, unchanged_count, ad_ratio, pct_above_50ma, pct_above_200ma, new_highs, new_lows, up_volume, down_volume, pct_up_2, pct_down_2, pct_above_vwap, ema_stack_bull_pct, ema200_breadth_pct, ema50_breadth_pct, macd_breadth_pct, adx_trending_pct, avg_rsi, pct_oversold, pct_overbought, smart_money_acc_count, smart_money_dist_count, bull_divergence_count, bear_divergence_count, bb_squeeze_count, gap_ups_count, gap_downs_count, vol_surges_count, stage2_pct, stage4_pct, mood_score, india_vix
+
+sector_state_daily — one row per (date, sector): date, sector, sector_index_symbol, sector_return_1d, sector_return_1w, sector_return_1m, sector_return_3m, sector_return_6m, sector_return_ytd, rs_rank, rs_rank_prev_week, rs_rank_delta_1w, pct_members_uptrend, pct_members_stage2, advances, declines, avg_member_rs, avg_member_composite, top_stock_symbol, top_stock_return_1d, breadth_pct`;
+
+interface MarketQueryArgs {
+  sql?: string;
+  limit?: number;
+}
+
+const nseMarketQueryTool: Tool<MarketQueryArgs> = {
+  name: 'nse_market_query',
+  description: MARKET_QUERY_DESCRIPTION,
+  toolset: 'market_query',
+  capabilities: {},
+  maxResultChars: 40000,
+  cache: { ttlMs: 60_000 },
+  schema: {
+    type: 'object',
+    properties: {
+      sql: {
+        type: 'string',
+        description:
+          'A single read-only SELECT (or WITH ... SELECT). No semicolons, no PRAGMA, no ATTACH, no writes. Alias every output column — duplicate names collapse.',
+      },
+      limit: {
+        type: 'number',
+        description: 'Max rows to return (default 200, max 1000). Out-of-range values are clamped.',
+      },
+    },
+    required: ['sql'],
+  },
+  async execute(args, _ctx): Promise<ToolResult> {
+    const sql = (args.sql ?? '').trim();
+    if (sql.length === 0) {
+      return { ok: false, error: 'sql is required.', code: 'input_invalid' };
+    }
+
+    const dbPath = getDbPath();
+    if (!existsSync(dbPath)) {
+      return {
+        ok: false,
+        error: `Market database not found at ${dbPath}. Run nse_market_backfill first.`,
+        code: 'not_available',
+      };
+    }
+
+    try {
+      return withStore((store) => {
+        const result = store.query(sql, args.limit ?? 200);
+        const note =
+          result.truncationReason === 'byte_budget'
+            ? 'Truncated on result size. Select fewer columns or add a narrower WHERE.'
+            : result.truncationReason === 'row_limit'
+              ? 'Truncated at the row limit. There may be more rows — add an ORDER BY so the cut is not arbitrary, or narrow the WHERE.'
+              : undefined;
+        return {
+          ok: true,
+          value: JSON.stringify({
+            row_count: result.rows.length,
+            truncated: result.truncated,
+            elapsed_ms: result.elapsedMs,
+            columns: result.columns,
+            rows: result.rows,
+            ...(note ? { note } : {}),
+          }),
+        };
+      });
+    } catch (err) {
+      if (err instanceof SqlGuardError) {
+        return { ok: false, error: err.message, code: 'input_invalid' };
+      }
+      return {
+        ok: false,
+        error: `Query failed: ${err instanceof Error ? err.message : String(err)}`,
+        code: 'execution_failed',
+      };
+    }
+  },
+};
+
 /** v2 plugin entry point — registers all tools via EthosPluginApi. */
 export const plugin: EthosPlugin = {
   activate(api: EthosPluginApi) {
@@ -1542,6 +1679,7 @@ export function createNseMarketDataTools(): Tool[] {
     nseGetGiftNiftyTool as Tool,
     nseRefreshScansTool,
     nseMarketDashboardTool as Tool,
+    nseMarketQueryTool as Tool,
   ];
   return tools;
 }

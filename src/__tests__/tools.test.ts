@@ -1,10 +1,14 @@
+import _pkg from 'node-sqlite3-wasm';
 import { describe, expect, it } from 'vitest';
-import { createNseMarketDataTools } from '../tools';
+import { migrate } from '../schema';
+import { createNseMarketDataTools, MARKET_QUERY_DESCRIPTION } from '../tools';
+
+const { Database } = _pkg;
 
 describe('createNseMarketDataTools()', () => {
-  it('returns 24 tools', () => {
+  it('returns 25 tools', () => {
     const tools = createNseMarketDataTools();
-    expect(tools).toHaveLength(24);
+    expect(tools).toHaveLength(25);
   });
 
   it('all tools have required fields', () => {
@@ -12,7 +16,9 @@ describe('createNseMarketDataTools()', () => {
     for (const tool of tools) {
       expect(tool.name).toBeTruthy();
       expect(tool.description).toBeTruthy();
-      expect(tool.toolset).toBe('market');
+      // nse_market_query is on its own toolset so a personality can hold the
+      // curated scans without holding arbitrary SQL.
+      expect(tool.toolset).toBe(tool.name === 'nse_market_query' ? 'market_query' : 'market');
       expect(tool.schema).toBeDefined();
       expect(typeof tool.execute).toBe('function');
     }
@@ -42,5 +48,37 @@ describe('createNseMarketDataTools()', () => {
     expect(names).toContain('nse_get_corporate_actions');
     expect(names).toContain('nse_get_bulk_block');
     expect(names).toContain('nse_get_gift_nifty');
+    expect(names).toContain('nse_market_query');
+  });
+});
+
+// Drift gate: the schema is inlined in the tool description, so a column added to
+// schema.ts without a description update would leave the model querying blind.
+describe('MARKET_QUERY_DESCRIPTION', () => {
+  it('names every column of every migrated table', () => {
+    const db = new Database(':memory:');
+    migrate(db);
+    const tables = (
+      db
+        .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+        .all() as Array<{ name: string }>
+    ).map((t) => t.name);
+
+    const missing: string[] = [];
+    for (const table of tables) {
+      if (!MARKET_QUERY_DESCRIPTION.includes(table)) {
+        missing.push(table);
+        continue;
+      }
+      const cols = db.prepare(`PRAGMA table_info("${table}")`).all() as Array<{ name: string }>;
+      for (const col of cols) {
+        if (!MARKET_QUERY_DESCRIPTION.includes(col.name)) {
+          missing.push(`${table}.${col.name}`);
+        }
+      }
+    }
+    db.close();
+
+    expect(missing).toEqual([]);
   });
 });

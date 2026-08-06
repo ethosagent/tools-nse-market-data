@@ -1,7 +1,14 @@
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import _pkg from 'node-sqlite3-wasm';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { IndexConstituentSeedRow, InstrumentSeedRow, SavedScanRow } from '../schema';
+import { SqlGuardError } from '../sql-guard';
 import type { OhlcvRow } from '../store';
 import { MarketDataStore } from '../store';
+
+const { Database } = _pkg;
 
 function makeRow(symbol: string, date: string, close: number, volume = 1_000_000): OhlcvRow {
   return {
@@ -615,5 +622,94 @@ describe('MarketDataStore', () => {
       expect(filtered).toHaveLength(1);
       expect(filtered[0]?.deal_type).toBe('block');
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// query() — needs a file-backed DB.
+//
+// A second Database(':memory:', { readOnly: true }) is a *different*, empty
+// database, so the read-only handle cannot see fixtures written through the
+// read-write one. This is the one place the project's "always use ':memory:'"
+// testing convention does not apply.
+// ---------------------------------------------------------------------------
+
+describe('MarketDataStore.query()', () => {
+  let dir: string;
+  let store: MarketDataStore;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'nse-query-'));
+    store = new MarketDataStore(join(dir, 'market.db'));
+    store.upsertInstruments([
+      { symbol: 'RELIANCE.NS', name: 'Reliance Industries' },
+      { symbol: 'TCS.NS', name: 'Tata Consultancy Services' },
+      { symbol: 'INFY.NS', name: 'Infosys' },
+    ]);
+  });
+
+  afterEach(() => {
+    store.close();
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('returns rows and column names', () => {
+    const result = store.query('SELECT symbol, name FROM instruments ORDER BY symbol', 200);
+    expect(result.columns).toEqual(['symbol', 'name']);
+    expect(result.rows).toHaveLength(3);
+    expect(result.rows[0]?.symbol).toBe('INFY.NS');
+    expect(result.truncated).toBe(false);
+  });
+
+  it('returns no columns for an empty result set', () => {
+    const result = store.query("SELECT symbol FROM instruments WHERE symbol = 'NOPE'", 200);
+    expect(result.rows).toEqual([]);
+    expect(result.columns).toEqual([]);
+  });
+
+  it('enforces the row cap and flags truncation', () => {
+    const result = store.query('SELECT symbol FROM instruments', 2);
+    expect(result.rows).toHaveLength(2);
+    expect(result.truncated).toBe(true);
+    expect(result.truncationReason).toBe('row_limit');
+  });
+
+  it('clamps limit into [1, 1000]', () => {
+    expect(store.query('SELECT symbol FROM instruments', 0).rows).toHaveLength(1);
+    expect(store.query('SELECT symbol FROM instruments', -5).rows).toHaveLength(1);
+    expect(store.query('SELECT symbol FROM instruments', 100_000).rows).toHaveLength(3);
+  });
+
+  it('preserves an inner ORDER BY and an inner LIMIT through the wrap', () => {
+    const result = store.query('SELECT symbol FROM instruments ORDER BY symbol DESC LIMIT 2', 200);
+    expect(result.rows.map((r) => r.symbol)).toEqual(['TCS.NS', 'RELIANCE.NS']);
+  });
+
+  it('supports a WITH ... SELECT', () => {
+    const result = store.query(
+      "WITH x AS (SELECT symbol FROM instruments WHERE symbol LIKE 'T%') SELECT symbol FROM x",
+      200,
+    );
+    expect(result.rows).toHaveLength(1);
+  });
+
+  it('rejects multi-statement input rather than silently truncating it', () => {
+    expect(() => store.query('SELECT 1 AS a; DELETE FROM instruments', 200)).toThrow(SqlGuardError);
+    expect(store.query('SELECT COUNT(*) AS n FROM instruments', 1).rows[0]?.n).toBe(3);
+  });
+
+  it('rejects ATTACH', () => {
+    expect(() => store.query("ATTACH DATABASE '/tmp/x.db' AS y", 200)).toThrow(SqlGuardError);
+  });
+
+  it('rejects a write', () => {
+    expect(() => store.query("UPDATE instruments SET name = 'x'", 200)).toThrow(SqlGuardError);
+  });
+
+  it('is read-only at the engine, not just at the guard', () => {
+    // Proves the structural half: even a statement the guard never sees cannot write.
+    const ro = new Database(join(dir, 'market.db'), { readOnly: true });
+    expect(() => ro.exec("UPDATE instruments SET name = 'x'")).toThrow(/readonly/i);
+    ro.close();
   });
 });
