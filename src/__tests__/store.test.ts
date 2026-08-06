@@ -623,6 +623,115 @@ describe('MarketDataStore', () => {
       expect(filtered[0]?.deal_type).toBe('block');
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Curation — addInstrument / getInstrument / getSymbolCoverage
+  // ---------------------------------------------------------------------------
+
+  describe('addInstrument', () => {
+    it('creates a row', () => {
+      const result = store.addInstrument({ symbol: 'ZOMATO.NS', name: 'Zomato Limited' });
+      expect(result.status).toBe('created');
+      expect(result.existing).toBeNull();
+      expect(store.getInstrument('ZOMATO.NS')?.name).toBe('Zomato Limited');
+    });
+
+    it('reports an existing row without mutating it', () => {
+      store.addInstrument({ symbol: 'ZOMATO.NS', name: 'Zomato Limited', sector: 'Retail' });
+      const result = store.addInstrument({ symbol: 'ZOMATO.NS', name: 'Something Else' });
+      expect(result.status).toBe('exists');
+      expect(result.existing?.name).toBe('Zomato Limited');
+      expect(store.getInstrument('ZOMATO.NS')?.name).toBe('Zomato Limited');
+      expect(store.getInstrument('ZOMATO.NS')?.sector).toBe('Retail');
+    });
+
+    it('mutates only when update is set, preserving added_at', () => {
+      store.addInstrument({ symbol: 'ZOMATO.NS', name: 'Zomato Limited' });
+      const addedAt = store.getInstrument('ZOMATO.NS')?.added_at;
+      const result = store.addInstrument(
+        { symbol: 'ZOMATO.NS', name: 'Eternal Limited', sector: 'Retail trade' },
+        { update: true },
+      );
+      expect(result.status).toBe('updated');
+      const row = store.getInstrument('ZOMATO.NS');
+      expect(row?.name).toBe('Eternal Limited');
+      expect(row?.sector).toBe('Retail trade');
+      expect(row?.added_at).toBe(addedAt);
+    });
+
+    it('registers an index with a category', () => {
+      store.addInstrument({
+        symbol: '^NIFTYMIDCAP150',
+        name: 'Nifty Midcap 150',
+        instrument_type: 'index',
+        index_category: 'cap_segment',
+      });
+      const row = store.getInstrument('^NIFTYMIDCAP150');
+      expect(row?.instrument_type).toBe('index');
+      expect(row?.index_category).toBe('cap_segment');
+    });
+  });
+
+  describe('getSymbolCoverage', () => {
+    it('reports zero rows for an unknown symbol', () => {
+      expect(store.getSymbolCoverage('NOPE.NS')).toEqual({
+        rows: 0,
+        firstDate: null,
+        lastDate: null,
+      });
+    });
+
+    it('reports row count and date range', () => {
+      store.insertOhlcv([
+        makeRow('RELIANCE.NS', '2024-01-01', 2400),
+        makeRow('RELIANCE.NS', '2024-01-02', 2410),
+      ]);
+      expect(store.getSymbolCoverage('RELIANCE.NS')).toEqual({
+        rows: 2,
+        firstDate: '2024-01-01',
+        lastDate: '2024-01-02',
+      });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Soft delete — a curated instrument must survive a refresh sweep
+  // ---------------------------------------------------------------------------
+
+  describe('upsertInstruments soft delete', () => {
+    it('deactivates instead of deleting a symbol absent from the batch', () => {
+      store.addInstrument({ symbol: 'ZOMATO.NS', name: 'Zomato Limited' });
+      store.insertOhlcv([makeRow('ZOMATO.NS', '2024-01-01', 274)]);
+
+      const result = store.upsertInstruments([
+        { symbol: 'RELIANCE.NS', name: 'Reliance Industries' },
+      ]);
+
+      expect(result.removed).toBe(1);
+      const row = store.getInstrument('ZOMATO.NS');
+      expect(row).not.toBeNull();
+      expect(row?.is_active).toBe(0);
+      // Price history is not orphaned — the row it belongs to still exists.
+      expect(store.getSymbolCoverage('ZOMATO.NS').rows).toBe(1);
+    });
+
+    it('does not recount an already-deactivated row on the next refresh', () => {
+      store.addInstrument({ symbol: 'ZOMATO.NS', name: 'Zomato Limited' });
+      const batch = [{ symbol: 'RELIANCE.NS', name: 'Reliance Industries' }];
+      expect(store.upsertInstruments(batch).removed).toBe(1);
+      expect(store.upsertInstruments(batch).removed).toBe(0);
+    });
+
+    it('reactivates a symbol that returns to the batch', () => {
+      store.addInstrument({ symbol: 'ZOMATO.NS', name: 'Zomato Limited' });
+      store.upsertInstruments([{ symbol: 'RELIANCE.NS', name: 'Reliance Industries' }]);
+      store.upsertInstruments([
+        { symbol: 'RELIANCE.NS', name: 'Reliance Industries' },
+        { symbol: 'ZOMATO.NS', name: 'Zomato Limited' },
+      ]);
+      expect(store.getInstrument('ZOMATO.NS')?.is_active).toBe(1);
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -695,7 +804,7 @@ describe('MarketDataStore.query()', () => {
 
   it('rejects multi-statement input rather than silently truncating it', () => {
     expect(() => store.query('SELECT 1 AS a; DELETE FROM instruments', 200)).toThrow(SqlGuardError);
-    expect(store.query('SELECT COUNT(*) AS n FROM instruments', 1).rows[0]?.n).toBe(3);
+    expect(store.getInstrument('TCS.NS')).not.toBeNull();
   });
 
   it('rejects ATTACH', () => {

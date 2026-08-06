@@ -79,6 +79,21 @@ export interface QueryResultSet {
   elapsedMs: number;
 }
 
+export interface InstrumentRow {
+  symbol: string;
+  name: string;
+  exchange: string;
+  sector: string | null;
+  isin: string | null;
+  added_at: number;
+  industry: string | null;
+  market_cap_band: string | null;
+  instrument_type: string;
+  index_category: string | null;
+  is_active: number;
+  as_of_date: string | null;
+}
+
 export interface OhlcvRow {
   symbol: string;
   date: string;
@@ -857,16 +872,21 @@ export class MarketDataStore {
     });
     stmt.finalize();
 
+    // Soft delete: a symbol missing from the batch is deactivated, not dropped.
+    // A hard DELETE here destroyed every manually added instrument (they are never
+    // in the shipped seed JSON) and orphaned its price history — there are no
+    // foreign keys to cascade. `removed` now counts deactivations.
     const symbols = rows.map((r) => r.symbol);
     let removed = 0;
     if (symbols.length > 0) {
       const placeholders = symbols.map(() => '?').join(', ');
-      const delStmt = this.db.prepare(
-        `DELETE FROM instruments WHERE symbol NOT IN (${placeholders})`,
+      const deactivateStmt = this.db.prepare(
+        `UPDATE instruments SET is_active = 0
+          WHERE symbol NOT IN (${placeholders}) AND is_active = 1`,
       );
-      const result = delStmt.run(symbols);
+      const result = deactivateStmt.run(symbols);
       removed = result.changes;
-      delStmt.finalize();
+      deactivateStmt.finalize();
     }
 
     return { upserted: rows.length, removed };
@@ -1025,6 +1045,80 @@ export class MarketDataStore {
     } finally {
       stmt.finalize();
     }
+  }
+
+  getInstrument(symbol: string): InstrumentRow | null {
+    const s = this.db.prepare('SELECT * FROM instruments WHERE symbol = ?');
+    const row = s.get([symbol]) as InstrumentRow | null;
+    s.finalize();
+    return row;
+  }
+
+  /** OHLCV coverage for one symbol — "registered" and "has data" are different states. */
+  getSymbolCoverage(symbol: string): {
+    rows: number;
+    firstDate: string | null;
+    lastDate: string | null;
+  } {
+    const s = this.db.prepare(
+      'SELECT COUNT(*) AS n, MIN(date) AS first_date, MAX(date) AS last_date FROM ohlcv_daily WHERE symbol = ?',
+    );
+    const row = s.get([symbol]) as {
+      n: number;
+      first_date: string | null;
+      last_date: string | null;
+    };
+    s.finalize();
+    return { rows: row.n, firstDate: row.first_date, lastDate: row.last_date };
+  }
+
+  /**
+   * Register a single curated instrument. Idempotent: an existing symbol is
+   * reported back untouched unless opts.update is set.
+   */
+  addInstrument(
+    row: InstrumentSeedRow,
+    opts: { update?: boolean } = {},
+  ): { status: 'created' | 'updated' | 'exists'; existing: InstrumentRow | null } {
+    const existing = this.getInstrument(row.symbol);
+    if (existing !== null && opts.update !== true) {
+      return { status: 'exists', existing };
+    }
+
+    const stmt = this.db.prepare(
+      `INSERT INTO instruments
+         (symbol, name, exchange, sector, isin, added_at,
+          industry, market_cap_band, instrument_type, index_category, is_active, as_of_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(symbol) DO UPDATE SET
+         name            = excluded.name,
+         exchange        = excluded.exchange,
+         sector          = excluded.sector,
+         isin            = excluded.isin,
+         industry        = excluded.industry,
+         market_cap_band = excluded.market_cap_band,
+         instrument_type = excluded.instrument_type,
+         index_category  = excluded.index_category,
+         is_active       = excluded.is_active,
+         as_of_date      = excluded.as_of_date`,
+    );
+    stmt.run([
+      row.symbol,
+      row.name,
+      row.exchange ?? 'NSE',
+      row.sector ?? null,
+      row.isin ?? null,
+      existing?.added_at ?? Date.now(),
+      row.industry ?? null,
+      row.market_cap_band ?? null,
+      row.instrument_type ?? 'equity',
+      row.index_category ?? null,
+      row.is_active ?? 1,
+      row.as_of_date ?? null,
+    ]);
+    stmt.finalize();
+
+    return { status: existing === null ? 'created' : 'updated', existing };
   }
 
   listInstrumentSymbols(): string[] {

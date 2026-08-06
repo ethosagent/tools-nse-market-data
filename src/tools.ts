@@ -14,9 +14,11 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generateDashboardHtml } from './dashboard';
+import { fetchQuote, searchSymbol } from './fetcher';
 import { fetchFiiDii, fetchGiftNifty } from './nse-fetcher';
-import type { InstrumentSeedRow, SavedScanRow } from './schema';
+import type { IndexConstituentSeedRow, InstrumentSeedRow, SavedScanRow } from './schema';
 import { SqlGuardError } from './sql-guard';
+import type { InstrumentRow, SyncResult } from './store';
 import { MarketDataStore } from './store';
 
 function getPackageRoot(): string {
@@ -1628,6 +1630,395 @@ const nseMarketQueryTool: Tool<MarketQueryArgs> = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// nse_instrument_add — curation
+// ---------------------------------------------------------------------------
+
+interface InstrumentAddArgs {
+  symbol?: string;
+  name?: string;
+  exchange?: string;
+  sector?: string;
+  industry?: string;
+  isin?: string;
+  market_cap_band?: string;
+  instrument_type?: 'equity' | 'index';
+  index_category?: string;
+  members?: Array<{ symbol: string; weight?: number }>;
+  as_of_date?: string;
+  validate?: boolean;
+  update?: boolean;
+  backfill?: boolean;
+  backfill_days?: number;
+}
+
+const SYMBOL_PATTERN = /^\^?[A-Z0-9&-]+(\.[A-Z]{2})?$/;
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * True only when the feed positively established that the symbol does not exist.
+ * Everything else — timeouts, 429s, 5xx, unrecognised errors — is "could not
+ * validate" and must proceed. The else branch defaults to proceed on purpose: a
+ * new failure mode added to fetcher.ts must not silently start blocking
+ * registrations.
+ */
+function isDefinitiveMiss(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const msg = err.message.toLowerCase();
+  return msg.includes('symbol not found:') || msg.includes('no data found, symbol may be delisted');
+}
+
+function todayIst(): string {
+  return new Date(Date.now() + 5.5 * 3600_000).toISOString().slice(0, 10);
+}
+
+async function notFoundResult(symbol: string): Promise<ToolResult> {
+  let suggestion = '';
+  try {
+    const candidates = await searchSymbol(symbol);
+    if (candidates.length > 0) {
+      suggestion = ` Did you mean: ${candidates
+        .slice(0, 3)
+        .map((c) => c.symbol)
+        .join(', ')}?`;
+    }
+  } catch {
+    // Suggestions are a courtesy — a second failure must not change the verdict.
+  }
+  return {
+    ok: false,
+    error: `'${symbol}' was not found on the price feed. Nothing was registered.${suggestion} Pass validate: false to add it anyway.`,
+    code: 'not_available',
+  };
+}
+
+function formatInstrument(
+  row: InstrumentRow,
+  coverage: ReturnType<MarketDataStore['getSymbolCoverage']>,
+): string {
+  const lines = [
+    `  name             ${row.name}`,
+    `  exchange         ${row.exchange}`,
+    `  sector           ${row.sector ?? '-'}`,
+    `  industry         ${row.industry ?? '-'}`,
+    `  isin             ${row.isin ?? '-'}`,
+    `  instrument_type  ${row.instrument_type}`,
+    `  index_category   ${row.index_category ?? '-'}`,
+    `  is_active        ${row.is_active}`,
+  ];
+  lines.push(
+    coverage.rows > 0
+      ? `  price history    ${coverage.rows.toLocaleString('en-IN')} rows, ${coverage.firstDate} → ${coverage.lastDate}`
+      : '  price history    none',
+  );
+  return lines.join('\n');
+}
+
+/** Attach constituents to an index. Members are upserted; unknown ones are reported. */
+function attachMembers(
+  store: MarketDataStore,
+  indexSymbol: string,
+  members: Array<{ symbol: string; weight?: number }>,
+  asOfDate: string,
+): { attached: number; deduped: number; unknown: string[]; weightSum: number | null } {
+  const bySymbol = new Map<string, number | null>();
+  for (const m of members) {
+    bySymbol.set(m.symbol.trim().toUpperCase(), m.weight ?? null);
+  }
+  const deduped = members.length - bySymbol.size;
+
+  const rows: IndexConstituentSeedRow[] = [];
+  for (const [symbol, weight] of bySymbol) {
+    rows.push({ index_symbol: indexSymbol, member_symbol: symbol, weight, as_of_date: asOfDate });
+  }
+  store.upsertIndexConstituents(rows);
+
+  const known = new Set(store.listInstrumentSymbols());
+  const unknown = rows.map((r) => r.member_symbol).filter((s) => !known.has(s));
+
+  const weights = rows.map((r) => r.weight).filter((w): w is number => w !== null);
+  const weightSum = weights.length > 0 ? weights.reduce((a, b) => a + b, 0) : null;
+
+  return { attached: rows.length, deduped, unknown, weightSum };
+}
+
+const nseInstrumentAddTool: Tool<InstrumentAddArgs> = {
+  name: 'nse_instrument_add',
+  description:
+    'Register an NSE instrument (equity or index) that already exists on the price feed. ' +
+    'Confirms the symbol against the feed before registering; a symbol the feed positively ' +
+    'rejects is refused, a symbol that merely could not be checked is registered with a caveat. ' +
+    'Does NOT download price history unless backfill is true — without it the instrument is ' +
+    'invisible to nse_run_scan, nse_market_screen and nse_market_indicators. Idempotent: an ' +
+    'existing symbol is reported with its current values, not overwritten (pass update: true to ' +
+    'change it). For an index, pass instrument_type: "index" and optionally members to attach ' +
+    'constituents — members are attached even when the index is already registered.',
+  toolset: 'market',
+  capabilities: { network: { allowedHosts: ['query1.finance.yahoo.com'] } },
+  maxResultChars: 4000,
+  requiresApproval: false,
+  schema: {
+    type: 'object',
+    properties: {
+      symbol: {
+        type: 'string',
+        description: 'NSE symbol, e.g. ZOMATO.NS. Indices are ^-prefixed, e.g. ^NSEBANK.',
+      },
+      name: {
+        type: 'string',
+        description: 'Display name. Auto-filled from the price feed when omitted.',
+      },
+      exchange: { type: 'string', description: "Exchange code. Default 'NSE'." },
+      sector: { type: 'string', description: 'Sector label used by sector scans.' },
+      industry: { type: 'string', description: 'Industry label.' },
+      isin: { type: 'string', description: 'ISIN, if known.' },
+      market_cap_band: {
+        type: 'string',
+        description: 'Cap segment label, e.g. largecap / midcap / smallcap.',
+      },
+      instrument_type: {
+        type: 'string',
+        enum: ['equity', 'index'],
+        description: "Default 'equity'. Indices live in the same table with 'index'.",
+      },
+      index_category: {
+        type: 'string',
+        description:
+          'Only for indices: broad, sector, cap_segment, regime, thematic. Ignored for equities.',
+      },
+      members: {
+        type: 'array',
+        description:
+          'Only for instrument_type: "index". Constituents to attach, e.g. [{"symbol": "TCS.NS", "weight": 8.2}]. Weights are optional. Members are upserted, never swept.',
+        items: {
+          type: 'object',
+          properties: {
+            symbol: { type: 'string' },
+            weight: { type: 'number' },
+          },
+          required: ['symbol'],
+        },
+      },
+      as_of_date: {
+        type: 'string',
+        description: 'YYYY-MM-DD stamped on the constituent rows. Defaults to today (IST).',
+      },
+      validate: {
+        type: 'boolean',
+        description:
+          'Check the symbol against the price feed before registering. Default true. Set false for offline use — then name is required.',
+      },
+      update: {
+        type: 'boolean',
+        description: 'Overwrite an existing row. Default false, which reports the row instead.',
+      },
+      backfill: {
+        type: 'boolean',
+        description:
+          'Download price history immediately after registering. Default false. When false the instrument is registered but invisible to nse_run_scan, nse_market_screen and nse_market_indicators until you run nse_market_backfill and nse_compute_indicators.',
+      },
+      backfill_days: {
+        type: 'number',
+        description:
+          'How many days of history to download. Default 365. Ignored when backfill is false.',
+      },
+    },
+    required: ['symbol'],
+  },
+  async execute(args, _ctx): Promise<ToolResult> {
+    const symbol = (args.symbol ?? '').trim().toUpperCase();
+    if (symbol.length === 0) {
+      return { ok: false, error: 'symbol is required.', code: 'input_invalid' };
+    }
+    if (!SYMBOL_PATTERN.test(symbol)) {
+      return {
+        ok: false,
+        error: `'${symbol}' is not a valid symbol. Expected forms: RELIANCE.NS, TATASTEEL.BO, ^NSEBANK.`,
+        code: 'input_invalid',
+      };
+    }
+
+    const instrumentType = args.instrument_type ?? 'equity';
+    const members = args.members;
+    if (members !== undefined) {
+      if (instrumentType !== 'index') {
+        return {
+          ok: false,
+          error: 'members is only valid with instrument_type: "index".',
+          code: 'input_invalid',
+        };
+      }
+      if (members.length === 0) {
+        return {
+          ok: false,
+          error: 'Pass members with at least one entry, or omit it.',
+          code: 'input_invalid',
+        };
+      }
+    }
+
+    const asOfDate = args.as_of_date ?? todayIst();
+    if (!DATE_PATTERN.test(asOfDate)) {
+      return { ok: false, error: 'as_of_date must be YYYY-MM-DD.', code: 'input_invalid' };
+    }
+
+    const suffixWarning =
+      !symbol.startsWith('^') && !/\.[A-Z]{2}$/.test(symbol)
+        ? `Note: '${symbol}' has no .NS / .BO suffix. Every other row in this database uses the suffixed form.\n\n`
+        : '';
+
+    return withStoreAsync(async (store) => {
+      const existing = store.getInstrument(symbol);
+
+      if (existing !== null && args.update !== true) {
+        const memberNote =
+          members !== undefined
+            ? `\n\n${describeMembers(attachMembers(store, symbol, members, asOfDate), asOfDate)}`
+            : '';
+        return {
+          ok: true,
+          value: `${suffixWarning}${symbol} is already registered. Current values:\n${formatInstrument(
+            existing,
+            store.getSymbolCoverage(symbol),
+          )}\n\nThe instrument row was not changed. Pass update: true to overwrite these values.${memberNote}`,
+        };
+      }
+
+      let name = args.name?.trim() || undefined;
+      let confirmation: string | null = null;
+      let caveat: string | null = null;
+
+      if (args.validate === false) {
+        if (name === undefined) {
+          return {
+            ok: false,
+            error:
+              'name is required when validate is false — instruments.name is NOT NULL and there is no feed call to source it from.',
+            code: 'input_invalid',
+          };
+        }
+        caveat = `Not checked against the price feed (validate: false). If the symbol is wrong, every sync for it will fail silently and this row will sit inert.`;
+      } else if (args.backfill !== true || name === undefined) {
+        // One feed call, not two: with backfill: true the backfill itself proves the
+        // symbol resolves, so fetchQuote runs only when name has to come from somewhere.
+        try {
+          const quote = await fetchQuote(symbol);
+          name = name ?? quote.name;
+          confirmation = `Confirmed on the price feed: ${quote.price} ${quote.currency}.`;
+        } catch (err) {
+          if (isDefinitiveMiss(err)) return notFoundResult(symbol);
+          const reason = err instanceof Error ? err.message : String(err);
+          if (name === undefined) {
+            return {
+              ok: false,
+              error: `Could not reach the price feed to look up a name for ${symbol} (${reason}), and instruments.name is NOT NULL. Retry, or pass name explicitly.`,
+              code: 'input_invalid',
+            };
+          }
+          caveat = `Could not confirm ${symbol} against the price feed — ${reason}. Registered anyway. If the symbol is wrong, the next backfill will return nothing.`;
+        }
+      }
+
+      // Backfill runs BEFORE the write so a symbol the feed rejects never lands.
+      // Legal because the schema declares no foreign keys.
+      let backfilled: SyncResult | null = null;
+      let backfillError: string | null = null;
+      if (args.backfill === true) {
+        const days = args.backfill_days ?? 365;
+        const fromDate = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+        try {
+          backfilled = await store.backfillSymbol(symbol, fromDate);
+        } catch (err) {
+          if (isDefinitiveMiss(err)) return notFoundResult(symbol);
+          backfillError = err instanceof Error ? err.message : String(err);
+          caveat =
+            caveat ??
+            `Could not confirm ${symbol} against the price feed — ${backfillError}. Registered anyway. If the symbol is wrong, the next backfill will return nothing.`;
+        }
+      }
+
+      if (name === undefined) {
+        return {
+          ok: false,
+          error: `name is required for ${symbol} — instruments.name is NOT NULL and the feed lookup did not supply one.`,
+          code: 'input_invalid',
+        };
+      }
+
+      const result = store.addInstrument(
+        {
+          symbol,
+          name,
+          exchange: args.exchange ?? 'NSE',
+          sector: args.sector ?? null,
+          industry: args.industry ?? null,
+          isin: args.isin ?? null,
+          market_cap_band: args.market_cap_band ?? null,
+          instrument_type: instrumentType,
+          index_category: args.index_category ?? null,
+          is_active: 1,
+          as_of_date: args.as_of_date ?? null,
+        },
+        { update: args.update === true },
+      );
+
+      const lines: string[] = [];
+      if (suffixWarning) lines.push(suffixWarning.trim());
+      if (caveat) lines.push(caveat);
+      lines.push(
+        `${result.status === 'updated' ? 'Updated' : 'Registered'} ${symbol} (${name})${
+          instrumentType === 'index' ? ` — index, category: ${args.index_category ?? '-'}` : ''
+        }${args.sector ? ` — sector: ${args.sector}` : ''}.`,
+      );
+      if (confirmation) lines.push(confirmation);
+
+      if (backfilled !== null) {
+        lines.push(
+          backfilled.rowsInserted === 0
+            ? `Backfilled 0 rows — the symbol resolves on the feed but has no candles in the last ${args.backfill_days ?? 365} days. It may be newly listed or suspended. Try a longer backfill_days.`
+            : `Backfilled ${backfilled.rowsInserted.toLocaleString('en-IN')} rows (${backfilled.fromDate} → ${backfilled.toDate}). Run nse_compute_indicators to make it scannable.`,
+        );
+      } else if (backfillError !== null) {
+        lines.push(
+          `The backfill failed (${backfillError}). Retry it with nse_market_backfill symbols: "${symbol}".`,
+        );
+      } else {
+        lines.push(
+          `No price history yet. This symbol is invisible to nse_run_scan, nse_market_screen and nse_market_indicators until you run:\n  nse_market_backfill  symbols: "${symbol}", days: 1825\nthen:\n  nse_compute_indicators`,
+        );
+      }
+
+      if (members !== undefined) {
+        lines.push(describeMembers(attachMembers(store, symbol, members, asOfDate), asOfDate));
+      }
+
+      return { ok: true, value: lines.join('\n\n') };
+    });
+  },
+};
+
+function describeMembers(summary: ReturnType<typeof attachMembers>, asOfDate: string): string {
+  const parts = [
+    `Attached ${summary.attached} constituents as of ${asOfDate}${
+      summary.deduped > 0 ? ` (${summary.deduped} duplicate entries collapsed)` : ''
+    }.`,
+  ];
+  if (summary.weightSum !== null && (summary.weightSum < 95 || summary.weightSum > 105)) {
+    parts.push(
+      `Supplied weights sum to ${summary.weightSum.toFixed(2)}, not ~100 — check whether they are fractions rather than percentages, or whether the list is partial.`,
+    );
+  }
+  if (summary.unknown.length > 0) {
+    const shown = summary.unknown.slice(0, 10).join(', ');
+    parts.push(
+      `${summary.unknown.length} member symbol(s) are not in instruments and will not appear in scans:\n  ${shown}${
+        summary.unknown.length > 10 ? `, +${summary.unknown.length - 10} more` : ''
+      }\n  Register them with nse_instrument_add, then nse_market_backfill.`,
+    );
+  }
+  return parts.join('\n');
+}
+
 /** v2 plugin entry point — registers all tools via EthosPluginApi. */
 export const plugin: EthosPlugin = {
   activate(api: EthosPluginApi) {
@@ -1680,6 +2071,7 @@ export function createNseMarketDataTools(): Tool[] {
     nseRefreshScansTool,
     nseMarketDashboardTool as Tool,
     nseMarketQueryTool as Tool,
+    nseInstrumentAddTool as Tool,
   ];
   return tools;
 }

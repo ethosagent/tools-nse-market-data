@@ -6,9 +6,9 @@ import { createNseMarketDataTools, MARKET_QUERY_DESCRIPTION } from '../tools';
 const { Database } = _pkg;
 
 describe('createNseMarketDataTools()', () => {
-  it('returns 25 tools', () => {
+  it('returns 26 tools', () => {
     const tools = createNseMarketDataTools();
-    expect(tools).toHaveLength(25);
+    expect(tools).toHaveLength(26);
   });
 
   it('all tools have required fields', () => {
@@ -49,6 +49,7 @@ describe('createNseMarketDataTools()', () => {
     expect(names).toContain('nse_get_bulk_block');
     expect(names).toContain('nse_get_gift_nifty');
     expect(names).toContain('nse_market_query');
+    expect(names).toContain('nse_instrument_add');
   });
 });
 
