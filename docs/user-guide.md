@@ -264,3 +264,55 @@ Before acting on a new scan or screen you've been watching, use `nse_backtest` t
 
 Example prompt:
 > "Backtest the base_breakout scan from 2024-01-01 to 2024-12-31. 10-day hold, 2x ATR stop. Show me regime-sliced results."
+
+### Ad-hoc Queries
+
+`nse_market_query` runs one read-only SQL `SELECT` against the local database and returns JSON rows. It exists for the questions nobody pre-built a scan for — a one-off cross-section, a sanity check on the data, a correlation you want to look at once. For anything the scan library already covers, `nse_run_scan` and `nse_market_screen` remain the better path: they encode domain judgement that raw SQL does not.
+
+The case it is really for is joining tables the curated tools return separately — today's price row against today's indicators:
+
+```sql
+SELECT o.symbol AS symbol, n.name AS name, o.close AS close,
+       o.volume AS volume, i.rsi_14 AS rsi, i.rvol AS rvol
+  FROM ohlcv_daily o
+  JOIN indicators_daily i ON i.symbol = o.symbol AND i.date = o.date
+  JOIN instruments n ON n.symbol = o.symbol
+ WHERE o.date = (SELECT MAX(date) FROM indicators_daily)
+   AND n.instrument_type = 'equity'
+   AND n.is_active = 1
+   AND i.rvol >= 2
+ ORDER BY i.rvol DESC
+```
+
+`ohlcv_daily` and `indicators_daily` both key on `(symbol, date)`, and `instruments.symbol` is the join target for both. `WHERE date = (SELECT MAX(date) FROM indicators_daily)` is the latest-date idiom. `instrument_type = 'equity' AND is_active = 1` is the universe filter the built-in scans apply.
+
+Things to know before using it:
+
+- One statement, starting with `SELECT` or `WITH`. Writes, `PRAGMA`, `ATTACH`, and anything after a `;` are rejected — the connection is opened read-only.
+- Alias every output column. Duplicate names collapse into one key.
+- `limit` defaults to 200 and caps at 1000, and the JSON payload is capped at ~30,000 characters. A truncated result without an `ORDER BY` is an arbitrary sample, not the top of anything.
+- **There is no query timeout.** An unconstrained join over `ohlcv_daily` — millions of rows — blocks the agent until it finishes. Always constrain by date or symbol.
+
+The tool sits in its own toolset, `market_query`, rather than `market`. A personality can be given the curated scans without being given arbitrary SQL.
+
+Example prompt:
+> "Query the database directly: for the latest date, which active equities have rvol above 2 and RSI between 55 and 70? Join ohlcv_daily to indicators_daily."
+
+### Adding an Instrument the Seed Missed
+
+The seed database ships ~1,400 NSE symbols. When something you want to track is not among them — a recent listing, a sector index you follow — `nse_instrument_add` registers it.
+
+The tool confirms the symbol against the price feed before writing anything. A symbol the feed positively rejects is refused; one that merely could not be checked (a timeout, a 5xx) is registered with a caveat noted in the response. Pass `backfill: true` and the history download runs *before* the row is written, so a typo is caught before it lands.
+
+Registering is not the same as being scannable. Without price history and computed indicators, the instrument is invisible to `nse_run_scan`, `nse_market_screen`, and `nse_market_indicators`. The full sequence is `nse_instrument_add` with `backfill: true`, then `nse_compute_indicators`.
+
+The tool is idempotent: a symbol that is already registered is reported back with its current values and OHLCV coverage, and nothing is written. Changing an existing row requires `update: true`.
+
+Indices go through the same tool with `instrument_type: 'index'` — they live in the `instruments` table, there is no separate indices table. An optional `members` list attaches constituents to `index_constituents`; members that are not themselves registered are attached, but named back to you so you can register them too.
+
+**Manually added instruments come back deactivated after a data refresh.** `refresh-instruments` and `init` reload the instrument list from the shipped seed JSON and then sweep everything not in it — and a manually added symbol is never in the seed. The sweep no longer deletes the row (it used to, taking the price history with it); it sets `is_active = 0`. Your instrument survives, but the scan runner filters the universe to `is_active = 1`, so it stops appearing in results until you reactivate it. If a symbol you added has quietly vanished from your scans, this is the reason — re-run `nse_instrument_add` with `update: true` to set it active again.
+
+Example prompts:
+> "Add ZOMATO.NS to the instrument list, sector Consumer Services, and backfill 5 years of history."
+>
+> "Register the ^CNXPHARMA index as a sector index with its constituents."

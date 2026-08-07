@@ -49,8 +49,10 @@ Other distinguishing features:
 | `nse_run_scan` | Run any named scan against the full universe or a subset |
 | `nse_market_indicators` | Get indicator history for a specific symbol (up to 63 days) |
 | `nse_market_screen` | Filter watchlist by indicator conditions |
+| `nse_market_query` | Run one read-only SQL SELECT against the local database and get JSON rows back |
 | `nse_market_backfill` | Fetch OHLCV history via Yahoo Finance |
 | `nse_market_update` | Incremental sync from last stored date to today |
+| `nse_instrument_add` | Register an equity or index the seed data missed |
 | `nse_invoke_skill` | Execute an analytical playbook from the skills/ folder |
 | `nse_watchdog` | Evaluate a condition on latest indicators and fire alert if matched |
 | `nse_backtest` | Replay a screen historically with P&L and benchmark comparison |

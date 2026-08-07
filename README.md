@@ -201,7 +201,7 @@ node dist/cli.js fetch-corporate-actions --symbol RELIANCE.NS
 |---|---|
 | `init [--years N]` | Full initialization: seed instruments + scans, backfill index + watchlist, compute indicators (default 5 years) |
 | `seed-update` | Import new symbols from GitHub seed (additive) |
-| `refresh-instruments` | Reload instruments + index constituents from data/ |
+| `refresh-instruments` | Reload instruments + index constituents from data/. Symbols not in the seed are deactivated (`is_active = 0`), not deleted — the `removed` count is deactivations |
 | `refresh-scans` | Reload scan definitions from scans/ |
 
 ### Data Sync
@@ -322,17 +322,97 @@ IMPORTANT: Do NOT run scans or analysis until indicators are computed.
 | `nse_market_clean` | Wipe all stored data |
 | `nse_market_backfill` | Backfill historical OHLCV (supports batched execution) |
 | `nse_market_update` | Incremental sync to today |
+| `nse_instrument_add` | Register an equity or index the seed data missed |
 | `nse_watchlist_add` | Add symbol to watchlist |
 | `nse_watchlist_remove` | Remove from watchlist |
 | `nse_watchlist_show` | Show watchlist with prices |
 | `nse_market_history` | Get OHLCV rows for a symbol |
 | `nse_market_screen` | Screener against stored data |
 | `nse_run_scan` | Run a saved scan by ID |
+| `nse_market_query` | Run one read-only SQL SELECT against the local database |
 | `nse_invoke_skill` | Invoke an analysis skill (stock_deep_analysis, trade_setup, etc.) |
 | `nse_market_brief` | Comprehensive market overview |
 | `nse_market_indicators` | Get technical indicators for a symbol |
 | `nse_watchdog` | Alert condition checker with cooldown |
 | `nse_compute_indicators` | Compute/refresh all indicators |
+
+#### `nse_market_query` — ad-hoc SQL
+
+For questions nobody pre-built a scan for. Anything the scan library already covers is better answered by `nse_run_scan` or `nse_market_screen` — those encode domain judgement this tool does not.
+
+It sits in its own toolset, `market_query`, rather than `market`, so a personality can hold the curated scans without holding arbitrary SQL.
+
+| Argument | Default | Notes |
+|---|---|---|
+| `sql` | — | Required. One statement, starting with `SELECT` or `WITH`. |
+| `limit` | `200` | Max 1000. Out-of-range values are clamped. |
+
+Joining today's price row to today's indicators — the case the tool exists for:
+
+```json
+{
+  "sql": "SELECT o.symbol AS symbol, n.name AS name, o.close AS close, i.rsi_14 AS rsi, i.rvol AS rvol FROM ohlcv_daily o JOIN indicators_daily i ON i.symbol = o.symbol AND i.date = o.date JOIN instruments n ON n.symbol = o.symbol WHERE o.date = (SELECT MAX(date) FROM indicators_daily) AND n.instrument_type = 'equity' AND n.is_active = 1 AND i.rvol >= 2 ORDER BY i.rvol DESC",
+  "limit": 25
+}
+```
+
+Returns JSON: `row_count`, `truncated`, `elapsed_ms`, `columns`, `rows`, and a `note` when the result was cut short.
+
+Constraints:
+
+- Read-only. The connection is opened `readOnly` with `PRAGMA query_only = 1`, and a tokenizer scrubs comments and string literals before rejecting `ATTACH`, `PRAGMA`, writes, and anything after a `;`.
+- Alias every output column. Duplicate names collapse — `SELECT i.symbol, c.symbol` returns one `symbol` key.
+- Output is capped three ways: the row limit, an injected `LIMIT`, and a ~30,000-character JSON budget. A truncated result without an `ORDER BY` is an arbitrary sample.
+- **There is no statement timeout.** `node-sqlite3-wasm` exposes no `interrupt()`, so an unconstrained join blocks the agent until it finishes. Always constrain by date or symbol.
+
+#### `nse_instrument_add` — register a missing instrument
+
+Registers a symbol that already exists on the price feed. Before this tool, adding one meant editing `data/instruments.json` and re-running `refresh-instruments`.
+
+| Argument | Default | Notes |
+|---|---|---|
+| `symbol` | — | Required. `RELIANCE.NS`, `TATASTEEL.BO`, or `^NSEBANK`. |
+| `name` | from feed | Required when `validate` is `false`. |
+| `exchange` | `NSE` | |
+| `sector`, `industry`, `isin`, `market_cap_band` | — | Optional labels. `sector` is what sector scans group on. |
+| `instrument_type` | `equity` | Or `index`. |
+| `index_category` | — | Indices only: `broad`, `sector`, `cap_segment`, `regime`, `thematic`. |
+| `members` | — | Indices only: `[{ "symbol": "TCS.NS", "weight": 8.2 }]`. Weights optional. |
+| `as_of_date` | today (IST) | `YYYY-MM-DD`, stamped on constituent rows. |
+| `validate` | `true` | Check the symbol against the price feed first. |
+| `update` | `false` | Overwrite an existing row instead of reporting it. |
+| `backfill` | `false` | Download price history immediately. |
+| `backfill_days` | `365` | Ignored when `backfill` is `false`. |
+
+```json
+{ "symbol": "ZOMATO.NS", "sector": "Consumer Services", "backfill": true, "backfill_days": 1825 }
+```
+
+Then run `nse_compute_indicators` — without indicators the symbol stays invisible to `nse_run_scan`, `nse_market_screen`, and `nse_market_indicators`.
+
+Behaviour worth knowing:
+
+- **Idempotent.** An existing symbol reports its current values and OHLCV coverage, writes nothing, and costs zero feed calls. Pass `update: true` to overwrite.
+- **Backfill runs before the write**, so a typo is caught before a row lands.
+- **Validation only blocks on a definitive miss.** A feed response that positively says the symbol does not exist refuses the registration; a timeout or 5xx registers the instrument with a caveat rather than failing.
+- **Indices use the same tool** — `instrument_type: "index"`. They live in `instruments`; there is no separate indices table. `members` writes to `index_constituents`, and members that are not themselves registered are attached but named back to you.
+
+```json
+{
+  "symbol": "^CNXPHARMA",
+  "instrument_type": "index",
+  "index_category": "sector",
+  "members": [{ "symbol": "SUNPHARMA.NS", "weight": 21.4 }, { "symbol": "CIPLA.NS", "weight": 8.1 }]
+}
+```
+
+#### Manually added instruments and the refresh sweep
+
+`refresh-instruments` and `init` reload `instruments` from the shipped seed JSON, then sweep every symbol that is not in that batch. A manually added symbol is never in the seed.
+
+That sweep used to be a hard `DELETE`, which destroyed the row and orphaned its price history. It now sets `is_active = 0`. So a manually added instrument **survives** the refresh — but it comes back **deactivated**, and the scan runner filters the universe to `is_active = 1`, so it will not appear in scan results until it is reactivated.
+
+If a symbol you added has quietly stopped showing up in scans, this is why. Re-run `nse_instrument_add` with `update: true` to set it active again.
 
 ---
 
