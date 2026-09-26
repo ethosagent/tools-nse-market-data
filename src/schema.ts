@@ -269,6 +269,18 @@ export const SQL_CREATE_BULK_BLOCK_DEALS = `
   ) STRICT;
 `;
 
+// One row per automatic price-source change (plan nse-index-history A4).
+export const SQL_CREATE_SOURCE_SWITCHES = `
+  CREATE TABLE IF NOT EXISTS source_switches (
+    symbol       TEXT NOT NULL,
+    switched_at  TEXT NOT NULL,
+    from_source  TEXT,
+    to_source    TEXT NOT NULL,
+    reason       TEXT NOT NULL,
+    PRIMARY KEY (symbol, switched_at)
+  ) STRICT;
+`;
+
 export const SQL_CREATE_BULK_BLOCK_DEALS_INDEXES = `
   CREATE INDEX IF NOT EXISTS idx_bbd_date   ON bulk_block_deals (date);
   CREATE INDEX IF NOT EXISTS idx_bbd_symbol ON bulk_block_deals (symbol);
@@ -504,6 +516,13 @@ export function migrate(db: Database): void {
   addColumnIfNotExists(db, 'instruments', 'index_category', 'TEXT');
   addColumnIfNotExists(db, 'instruments', 'is_active', 'INTEGER NOT NULL DEFAULT 1');
   addColumnIfNotExists(db, 'instruments', 'as_of_date', 'TEXT');
+  // Per-symbol price source (plan nse-index-history A1): 'yahoo' | 'bhavcopy' | 'nse_index'
+  addColumnIfNotExists(db, 'instruments', 'price_source', 'TEXT');
+  addColumnIfNotExists(db, 'instruments', 'source_key', 'TEXT');
+
+  // Consecutive trading days Yahoo missed but the bhavcopy had (A4)
+  addColumnIfNotExists(db, 'sync_meta', 'yahoo_miss_streak', 'INTEGER NOT NULL DEFAULT 0');
+  db.exec(SQL_CREATE_SOURCE_SWITCHES);
 
   // New columns on ohlcv_daily
   addColumnIfNotExists(db, 'ohlcv_daily', 'adj_factor', 'REAL');
@@ -523,7 +542,11 @@ export interface InstrumentSeedRow {
   index_category?: string | null;
   is_active?: number;
   as_of_date?: string | null;
+  price_source?: PriceSource | null;
+  source_key?: string | null;
 }
+
+export type PriceSource = 'yahoo' | 'bhavcopy' | 'nse_index';
 
 export interface IndexConstituentSeedRow {
   index_symbol: string;

@@ -225,6 +225,9 @@ async function importOne(
     industry: blank(row.industry),
     instrument_type: 'equity',
     is_active: 1,
+    // The backfill ran before the row existed; carry the source it resolved.
+    price_source: backfilled.priceSource ?? null,
+    source_key: backfilled.sourceKey ?? null,
   });
   const rows = store.getSymbolCoverage(yahoo).rows;
   if (result.status === 'exists') {

@@ -9,6 +9,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Tool } from '@ethosagent/types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { configureNseArchive } from '../nse-archive';
 import { MarketDataStore } from '../store';
 import { createNseMarketDataTools } from '../tools';
 
@@ -19,6 +20,17 @@ function instrumentAddTool(): Tool<Record<string, unknown>> {
 }
 
 const ctx = {} as Parameters<Tool<Record<string, unknown>>['execute']>[1];
+
+/** One timestamp per weekday of the last 365 days — a "real history" for source resolution. */
+function yearOfTimestamps(): number[] {
+  const out: number[] = [];
+  for (let d = 365; d >= 1; d--) {
+    const t = new Date(Date.now() - d * 86_400_000);
+    const day = t.getUTCDay();
+    if (day !== 0 && day !== 6) out.push(Math.floor(t.getTime() / 1000));
+  }
+  return out;
+}
 
 function jsonResponse(status: number, body: unknown): Response {
   return {
@@ -73,9 +85,11 @@ describe('nse_instrument_add validation', () => {
     dbPath = join(dir, 'market.db');
     process.env.NSE_MARKET_DATA_DB = dbPath;
     calls = [];
+    configureNseArchive({ minIntervalMs: 0, retryDelaysMs: [] });
   });
 
   afterEach(() => {
+    configureNseArchive();
     vi.unstubAllGlobals();
     delete process.env.NSE_MARKET_DATA_DB;
     rmSync(dir, { recursive: true, force: true });
@@ -214,8 +228,9 @@ describe('nse_instrument_add validation', () => {
       expect(calls[0]).toContain('range=1d');
     });
 
+    // A year of bars resolves the symbol to Yahoo, so no NSE bhavcopy request follows.
     it('backfill: true with name → only the windowed call', async () => {
-      stubFetch(() => jsonResponse(200, chartBody({ timestamps: [1_700_000_000] })));
+      stubFetch(() => jsonResponse(200, chartBody({ timestamps: yearOfTimestamps() })));
       await instrumentAddTool().execute(
         { symbol: 'ZOMATO.NS', name: 'Zomato Limited', backfill: true },
         ctx,
@@ -229,7 +244,7 @@ describe('nse_instrument_add validation', () => {
       stubFetch((url) =>
         jsonResponse(
           200,
-          url.includes('range=1d') ? chartBody() : chartBody({ timestamps: [1_700_000_000] }),
+          url.includes('range=1d') ? chartBody() : chartBody({ timestamps: yearOfTimestamps() }),
         ),
       );
       await instrumentAddTool().execute({ symbol: 'ZOMATO.NS', backfill: true }, ctx);
@@ -259,8 +274,13 @@ describe('nse_instrument_add validation', () => {
     ).toEqual({ instrument: null, ohlcv: 0, syncMeta: 0 });
   });
 
-  it('treats zero backfilled rows as success, not as a bad symbol', async () => {
-    stubFetch(() => jsonResponse(200, chartBody()));
+  // Source resolution (plan nse-index-history A2): Yahoo has no bars and the NSE bhavcopy
+  // does not list the symbol either, so no source is stored — but the feed did not reject
+  // the symbol, so it is still registered, with the refusal as the backfill failure.
+  it('registers but reports the refusal when neither Yahoo nor the bhavcopy has history', async () => {
+    stubFetch((url) =>
+      url.includes('nseindia.com') ? jsonResponse(404, {}) : jsonResponse(200, chartBody()),
+    );
 
     const result = await instrumentAddTool().execute(
       { symbol: 'FRESHIPO.NS', name: 'Fresh IPO Limited', backfill: true },
@@ -269,8 +289,23 @@ describe('nse_instrument_add validation', () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value).toContain('Backfilled 0 rows');
-    expect(withDb((s) => s.getInstrument('FRESHIPO.NS'))).not.toBeNull();
+    expect(result.value).toContain('The backfill failed');
+    expect(result.value).toContain('FRESHIPO:EQ is not in the NSE CM bhavcopy');
+    const row = withDb((s) => s.getInstrument('FRESHIPO.NS'));
+    expect(row).not.toBeNull();
+    expect(row?.price_source).toBeNull();
+  });
+
+  it('stores the source a backfill resolved', async () => {
+    stubFetch(() => jsonResponse(200, chartBody({ timestamps: yearOfTimestamps() })));
+    const result = await instrumentAddTool().execute(
+      { symbol: 'ZOMATO.NS', name: 'Zomato Limited', backfill: true },
+      ctx,
+    );
+    expect(result.ok).toBe(true);
+    const row = withDb((s) => s.getInstrument('ZOMATO.NS'));
+    expect(row?.price_source).toBe('yahoo');
+    expect(row?.source_key).toBe('ZOMATO.NS');
   });
 
   it('registers an index with constituents and names the unknown members', async () => {

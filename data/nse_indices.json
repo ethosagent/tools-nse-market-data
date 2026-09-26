@@ -1,0 +1,230 @@
+[
+  {
+    "symbol": "^NSEI",
+    "nse_name": "Nifty 50",
+    "category": "regime",
+    "constituents_slug": "nifty50"
+  },
+  {
+    "symbol": "^NSMIDCP",
+    "nse_name": "Nifty Next 50",
+    "category": "broad",
+    "constituents_slug": "niftynext50"
+  },
+  {
+    "symbol": "^CNX100",
+    "nse_name": "Nifty 100",
+    "category": "cap_segment",
+    "constituents_slug": "nifty100"
+  },
+  {
+    "symbol": "^CNX200",
+    "nse_name": "Nifty 200",
+    "category": "broad",
+    "constituents_slug": "nifty200"
+  },
+  {
+    "symbol": "^CRSLDX",
+    "nse_name": "Nifty 500",
+    "category": "broad",
+    "constituents_slug": "nifty500"
+  },
+  {
+    "symbol": "^NSEMDCP50",
+    "nse_name": "Nifty Midcap 50",
+    "category": "broad",
+    "constituents_slug": "niftymidcap50"
+  },
+  {
+    "symbol": "^CNXMC150",
+    "nse_name": "Nifty Midcap 150",
+    "category": "broad",
+    "constituents_slug": "niftymidcap150"
+  },
+  {
+    "symbol": "^CNXSC",
+    "nse_name": "NIFTY Smallcap 100",
+    "category": "broad",
+    "constituents_slug": "niftysmallcap100"
+  },
+  {
+    "symbol": "^CNXSC250",
+    "nse_name": "Nifty Smallcap 250",
+    "category": "broad",
+    "constituents_slug": "niftysmallcap250"
+  },
+  {
+    "symbol": "^CNXMC250",
+    "nse_name": "Nifty Microcap 250",
+    "category": "broad",
+    "constituents_slug": "niftymicrocap250_"
+  },
+  {
+    "symbol": "^NSEBANK",
+    "nse_name": "Nifty Bank",
+    "category": "sector",
+    "constituents_slug": "niftybank"
+  },
+  {
+    "symbol": "^CNXIT",
+    "nse_name": "Nifty IT",
+    "category": "sector",
+    "constituents_slug": "niftyit"
+  },
+  {
+    "symbol": "^CNXPHARMA",
+    "nse_name": "Nifty Pharma",
+    "category": "sector",
+    "constituents_slug": "niftypharma"
+  },
+  {
+    "symbol": "^CNXAUTO",
+    "nse_name": "Nifty Auto",
+    "category": "sector",
+    "constituents_slug": "niftyauto"
+  },
+  {
+    "symbol": "^CNXENERGY",
+    "nse_name": "Nifty Energy",
+    "category": "sector",
+    "constituents_slug": "niftyenergy"
+  },
+  {
+    "symbol": "^CNXFMCG",
+    "nse_name": "Nifty FMCG",
+    "category": "sector",
+    "constituents_slug": "niftyfmcg"
+  },
+  {
+    "symbol": "^CNXMETAL",
+    "nse_name": "Nifty Metal",
+    "category": "sector",
+    "constituents_slug": "niftymetal"
+  },
+  {
+    "symbol": "^CNXPSUBANK",
+    "nse_name": "Nifty PSU Bank",
+    "category": "sector",
+    "constituents_slug": "niftypsubank"
+  },
+  {
+    "symbol": "^CNXREALTY",
+    "nse_name": "Nifty Realty",
+    "category": "sector",
+    "constituents_slug": "niftyrealty"
+  },
+  {
+    "symbol": "^INDIAVIX",
+    "nse_name": "India VIX",
+    "category": "regime",
+    "constituents_slug": null
+  },
+  {
+    "symbol": "^NIFTYSMALLCAP50",
+    "nse_name": "Nifty Smallcap 50",
+    "category": "broad",
+    "constituents_slug": "niftysmallcap50"
+  },
+  {
+    "symbol": "^NIFTYMIDSMALLCAP400",
+    "nse_name": "Nifty MidSmallcap 400",
+    "category": "broad",
+    "constituents_slug": "niftymidsmallcap400"
+  },
+  {
+    "symbol": "^NSMIDCP100",
+    "nse_name": "NIFTY Midcap 100",
+    "category": "cap_segment",
+    "constituents_slug": "niftymidcap100"
+  },
+  {
+    "symbol": "^NIFTYFINANCIALSERVICES",
+    "nse_name": "Nifty Financial Services",
+    "category": "sector",
+    "constituents_slug": "niftyfinance"
+  },
+  {
+    "symbol": "^NIFTYMEDIA",
+    "nse_name": "Nifty Media",
+    "category": "sector",
+    "constituents_slug": "niftymedia"
+  },
+  {
+    "symbol": "^NIFTYPRIVATEBANK",
+    "nse_name": "Nifty Private Bank",
+    "category": "sector",
+    "constituents_slug": "nifty_privatebank"
+  },
+  {
+    "symbol": "^NIFTYHEALTHCAREINDEX",
+    "nse_name": "Nifty Healthcare Index",
+    "category": "sector",
+    "constituents_slug": "niftyhealthcare"
+  },
+  {
+    "symbol": "^NIFTYCONSUMERDURABLES",
+    "nse_name": "Nifty Consumer Durables",
+    "category": "sector",
+    "constituents_slug": "niftyconsumerdurables"
+  },
+  {
+    "symbol": "^NIFTYOILGAS",
+    "nse_name": "Nifty Oil & Gas",
+    "category": "sector",
+    "constituents_slug": "niftyoilgas"
+  },
+  {
+    "symbol": "^NIFTYCHEMICALS",
+    "nse_name": "Nifty Chemicals",
+    "category": "sector",
+    "constituents_slug": null
+  },
+  {
+    "symbol": "^NIFTYCEMENT",
+    "nse_name": "Nifty Cement",
+    "category": "sector",
+    "constituents_slug": null
+  },
+  {
+    "symbol": "^NIFTYFINANCIALSERVICES2550",
+    "nse_name": "Nifty Financial Services 25/50",
+    "category": "thematic",
+    "constituents_slug": "niftyfinancialservices25-50"
+  },
+  {
+    "symbol": "^NIFTYFINANCIALSERVICESEXBANK",
+    "nse_name": "Nifty Financial Services Ex-Bank",
+    "category": "thematic",
+    "constituents_slug": null
+  },
+  {
+    "symbol": "^NIFTYMIDSMALLHEALTHCARE",
+    "nse_name": "Nifty MidSmall Healthcare",
+    "category": "thematic",
+    "constituents_slug": "niftymidsmallhealthcare_"
+  },
+  {
+    "symbol": "^NIFTYMIDSMALLFINANCIALSERVICES",
+    "nse_name": "Nifty MidSmall Financial Services",
+    "category": "thematic",
+    "constituents_slug": null
+  },
+  {
+    "symbol": "^NIFTYMIDSMALLITTELECOM",
+    "nse_name": "Nifty MidSmall IT & Telecom",
+    "category": "thematic",
+    "constituents_slug": null
+  },
+  {
+    "symbol": "^NIFTY500HEALTHCARE",
+    "nse_name": "Nifty500 Healthcare",
+    "category": "thematic",
+    "constituents_slug": null
+  },
+  {
+    "symbol": "^NIFTYREITSREALTY",
+    "nse_name": "Nifty REITs & Realty",
+    "category": "thematic",
+    "constituents_slug": null
+  }
+]

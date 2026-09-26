@@ -6,7 +6,14 @@ import _pkg from 'node-sqlite3-wasm';
 
 const { Database } = _pkg;
 
-import { fetchBhavcopayRange } from './bhavcopy';
+import {
+  bhavKeyForYahoo,
+  type CmBhavDay,
+  fetchCmBhavcopyRange,
+  isBhavcopySuffixed,
+  lookupBhav,
+  parseBhavKey,
+} from './bhavcopy';
 import type {
   AdHistoryRow,
   BreadthSnapshot,
@@ -50,13 +57,40 @@ import {
   computeWilliamsR,
   detectCandlePatterns,
 } from './indicators';
+import type { ArchiveRange } from './nse-archive';
+import { weekdaysBetween } from './nse-archive';
+import {
+  catalogueByName,
+  catalogueBySymbol,
+  deriveIndexKey,
+  fetchConstituents,
+  fetchIndexCloseRange,
+  fetchLatestIndexClose,
+  guessConstituentsSlug,
+  INDEX_HISTORY_MIN_DATE,
+  type IndexCloseDay,
+  loadIndexCatalogue,
+  normalizeIndexName,
+  suggestIndexNames,
+} from './nse-indices';
 import { detectChartPattern } from './patterns';
+import {
+  emptySummary,
+  type SourceCounts,
+  type SourcePreference,
+  type SourceSwitch,
+  type SyncFailure,
+  type SyncProgress,
+  type SyncResult,
+  type SyncSummary,
+} from './progress';
 import type {
   BulkBlockDealDbRow,
   CorporateActionDbRow,
   FiiDiiDbRow,
   IndexConstituentSeedRow,
   InstrumentSeedRow,
+  PriceSource,
   SavedScanRow,
 } from './schema';
 import { migrate } from './schema';
@@ -92,6 +126,8 @@ export interface InstrumentRow {
   index_category: string | null;
   is_active: number;
   as_of_date: string | null;
+  price_source: PriceSource | null;
+  source_key: string | null;
 }
 
 export interface OhlcvRow {
@@ -105,12 +141,7 @@ export interface OhlcvRow {
   adjClose: number | null;
 }
 
-export interface SyncResult {
-  symbol: string;
-  rowsInserted: number;
-  fromDate: string;
-  toDate: string;
-}
+export type { SyncFailure, SyncProgress, SyncResult, SyncSummary } from './progress';
 
 export interface ScreenerRow {
   symbol: string;
@@ -341,12 +372,6 @@ function getPackageRoot(): string {
   return join(dirname(fileURLToPath(import.meta.url)), '..');
 }
 
-function addOneDayToDate(date: string): string {
-  const d = new Date(date);
-  d.setUTCDate(d.getUTCDate() + 1);
-  return d.toISOString().slice(0, 10);
-}
-
 function runTransaction<T>(db: DatabaseType, fn: () => T): T {
   db.exec('BEGIN');
   try {
@@ -359,19 +384,203 @@ function runTransaction<T>(db: DatabaseType, fn: () => T): T {
   }
 }
 
+/**
+ * node-sqlite3-wasm locks with a `<db>.lock` DIRECTORY. A killed writer leaves it behind and
+ * every later write fails with "database is locked" (plan nse-index-history R4/T9). Rethrow
+ * naming the directory; keep the original text so callers matching on it still work.
+ */
+export function explainLockError(err: unknown, dbPath: string): unknown {
+  if (!(err instanceof Error) || dbPath === ':memory:') return err;
+  if (!/database is locked|sqlite_busy/i.test(err.message)) return err;
+  const e = new Error(
+    `${err.message} — another process holds ${dbPath}.lock. Wait for it to finish. Remove that directory only if no nse-market-data or ethos process is running (check: ps aux | grep -E "nse-market-data|ethos").`,
+  );
+  e.cause = err;
+  return e;
+}
+
+/** Symbols whose price source a run resolves at most once (A2). */
+interface Assignment {
+  symbol: string;
+  source: PriceSource | null;
+  key: string | null;
+  type: string | null;
+  name: string | null;
+  registered: boolean;
+  lastDate: string | null;
+  streak: number;
+}
+
+/** A7 migration rule — also what update applies to a symbol that still has no source. */
+export function defaultPriceSource(
+  symbol: string,
+  instrumentType: string | null,
+  name: string | null,
+): { source: PriceSource; key: string } {
+  if (instrumentType === 'index' || symbol.startsWith('^')) {
+    return { source: 'nse_index', key: catalogueBySymbol(symbol)?.nse_name ?? name ?? symbol };
+  }
+  if (isBhavcopySuffixed(symbol)) {
+    return { source: 'bhavcopy', key: bhavKeyForYahoo(symbol) ?? symbol };
+  }
+  return { source: 'yahoo', key: symbol };
+}
+
+function todayUtc(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function addDays(date: string, days: number): string {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+async function runPool<T>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<void>,
+): Promise<void> {
+  const queue = [...items];
+  const worker = async () => {
+    while (queue.length > 0) {
+      const item = queue.shift() as T;
+      await fn(item);
+    }
+  };
+  const n = Math.max(1, Math.min(concurrency, items.length));
+  await Promise.all(Array.from({ length: n }, () => worker()));
+}
+
+/** Thrown by addIndexByName for a name that is not in the latest NSE file (D16). */
+export class IndexNotFoundError extends Error {
+  constructor(
+    readonly query: string,
+    readonly suggestions: string[],
+    readonly fileDate: string,
+  ) {
+    super(
+      `"${query}" is not in the NSE index file of ${fileDate}.${
+        suggestions.length > 0
+          ? ` Closest names: ${suggestions.map((n) => `"${n}"`).join(', ')}.`
+          : ''
+      }`,
+    );
+    this.name = 'IndexNotFoundError';
+  }
+}
+
+export interface ConstituentRefresh {
+  symbol: string;
+  status: 'replaced' | 'skipped' | 'failed';
+  members: number;
+  unknown: string[];
+  reason: string | null;
+}
+
+/** Yahoo rows per write transaction during the Yahoo pass (D9/A5). */
+const YAHOO_WRITE_BATCH = 100;
+const PRICE_SOURCE_SCHEMA_VERSION = 37;
+
 export class MarketDataStore {
   private readonly db: DatabaseType;
   private readonly dbPath: string;
+  private readonly cacheDir: string | null;
   private roDb: DatabaseType | null = null;
 
-  constructor(dbPath: string) {
+  /**
+   * @param opts.cacheDir where NSE archive files are cached (`nse-index-close/`,
+   *   `nse-bhavcopy/` below it). Defaults to the DB's directory; null (the default for
+   *   ':memory:') disables the cache.
+   */
+  constructor(dbPath: string, opts: { cacheDir?: string | null } = {}) {
     if (dbPath !== ':memory:') {
       mkdirSync(dirname(dbPath), { recursive: true });
     }
     this.dbPath = dbPath;
+    this.cacheDir =
+      opts.cacheDir !== undefined ? opts.cacheDir : dbPath === ':memory:' ? null : dirname(dbPath);
     this.db = new Database(dbPath);
-    migrate(this.db);
+    try {
+      migrate(this.db);
+      this.migratePriceSources();
+    } catch (err) {
+      this.db.close();
+      throw explainLockError(err, dbPath);
+    }
     this.seedBuiltinScans();
+  }
+
+  /** runTransaction with the lock error explained (T9). */
+  private tx<T>(fn: () => T): T {
+    try {
+      return runTransaction(this.db, fn);
+    } catch (err) {
+      throw explainLockError(err, this.dbPath);
+    }
+  }
+
+  private indexCacheDir(): string | null {
+    return this.cacheDir ? join(this.cacheDir, 'nse-index-close') : null;
+  }
+
+  private bhavCacheDir(): string | null {
+    return this.cacheDir ? join(this.cacheDir, 'nse-bhavcopy') : null;
+  }
+
+  /**
+   * A7 first-install migration, once per DB (schema_version 37): route every existing
+   * instrument, and register the catalogue indices a real install lacks.
+   */
+  private migratePriceSources(): void {
+    const done = this.db.prepare('SELECT 1 AS x FROM schema_version WHERE version = ?');
+    const applied = done.get([PRICE_SOURCE_SCHEMA_VERSION]) !== null;
+    done.finalize();
+    if (applied) return;
+
+    runTransaction(this.db, () => {
+      const sel = this.db.prepare(
+        'SELECT symbol, instrument_type, name FROM instruments WHERE price_source IS NULL',
+      );
+      const rows = sel.all() as Array<{ symbol: string; instrument_type: string; name: string }>;
+      sel.finalize();
+      const upd = this.db.prepare(
+        'UPDATE instruments SET price_source = ?, source_key = ? WHERE symbol = ?',
+      );
+      for (const r of rows) {
+        const d = defaultPriceSource(r.symbol, r.instrument_type, r.name);
+        upd.run([d.source, d.key, r.symbol]);
+      }
+      upd.finalize();
+
+      const cnt = this.db.prepare(
+        "SELECT COUNT(*) AS n FROM instruments WHERE instrument_type = 'index'",
+      );
+      const hasIndices = (cnt.get() as { n: number }).n > 0;
+      cnt.finalize();
+      if (hasIndices) {
+        const ins = this.db.prepare(
+          `INSERT OR IGNORE INTO instruments
+             (symbol, name, exchange, added_at, instrument_type, index_category, is_active,
+              as_of_date, price_source, source_key)
+           VALUES (?, ?, 'NSE', ?, 'index', ?, 1, ?, 'nse_index', ?)`,
+        );
+        for (const e of loadIndexCatalogue()) {
+          ins.run([e.symbol, e.nse_name, Date.now(), e.category, todayUtc(), e.nse_name]);
+        }
+        ins.finalize();
+      }
+
+      const mark = this.db.prepare(
+        'INSERT INTO schema_version (version, applied_at, description) VALUES (?, ?, ?)',
+      );
+      mark.run([
+        PRICE_SOURCE_SCHEMA_VERSION,
+        new Date().toISOString(),
+        'instruments.price_source/source_key filled; catalogue NSE indices registered',
+      ]);
+      mark.finalize();
+    });
   }
 
   close(): void {
@@ -433,7 +642,7 @@ export class MarketDataStore {
   }
 
   clean(): { rowsDeleted: { ohlcv: number; watchlist: number; syncMeta: number } } {
-    const result = runTransaction(this.db, () => {
+    const result = this.tx(() => {
       const stmtOhlcv = this.db.prepare('DELETE FROM ohlcv_daily');
       const ohlcv = stmtOhlcv.run().changes;
       stmtOhlcv.finalize();
@@ -452,118 +661,1289 @@ export class MarketDataStore {
   // Network methods
   // ---------------------------------------------------------------------------
 
-  async backfillSymbol(symbol: string, fromDate: string): Promise<SyncResult> {
-    const toDate = new Date().toISOString().slice(0, 10);
-    const rows = await fetchOhlcv(symbol, fromDate, toDate);
-    this.insertOhlcv(rows);
-    const lastDate = rows[rows.length - 1]?.date ?? toDate;
-    const s = this.db.prepare(
-      'INSERT OR REPLACE INTO sync_meta (symbol, last_sync, last_date) VALUES (?, ?, ?)',
+  // Every price read is routed by instruments.price_source (plan nse-index-history A1):
+  //   nse_index → one NSE all-indices file per day for every index symbol
+  //   bhavcopy  → one NSE CM bhavcopy per day for every bhavcopy symbol
+  //   yahoo     → Yahoo chart API, concurrency pool
+  // A symbol with no source is resolved once (backfill: A2) or given the A7 rule (update).
+
+  /** Current routing + sync state for `symbols` (registered or not). */
+  private loadAssignments(symbols: string[]): Assignment[] {
+    const inst = new Map<
+      string,
+      {
+        price_source: PriceSource | null;
+        source_key: string | null;
+        instrument_type: string;
+        name: string;
+      }
+    >();
+    const s1 = this.db.prepare(
+      'SELECT symbol, price_source, source_key, instrument_type, name FROM instruments',
     );
-    s.run([symbol, Date.now(), lastDate]);
-    s.finalize();
-    return { symbol, rowsInserted: rows.length, fromDate, toDate };
+    for (const r of s1.all() as Array<{
+      symbol: string;
+      price_source: PriceSource | null;
+      source_key: string | null;
+      instrument_type: string;
+      name: string;
+    }>) {
+      inst.set(r.symbol, r);
+    }
+    s1.finalize();
+    const meta = new Map<string, { last_date: string; yahoo_miss_streak: number }>();
+    const s2 = this.db.prepare('SELECT symbol, last_date, yahoo_miss_streak FROM sync_meta');
+    for (const r of s2.all() as Array<{
+      symbol: string;
+      last_date: string;
+      yahoo_miss_streak: number;
+    }>) {
+      meta.set(r.symbol, r);
+    }
+    s2.finalize();
+
+    return [...new Set(symbols)].map((symbol) => {
+      const i = inst.get(symbol);
+      const m = meta.get(symbol);
+      return {
+        symbol,
+        source: i?.price_source ?? null,
+        key: i?.source_key ?? null,
+        type: i?.instrument_type ?? null,
+        name: i?.name ?? null,
+        registered: i !== undefined,
+        lastDate: m?.last_date ?? null,
+        streak: m?.yahoo_miss_streak ?? 0,
+      };
+    });
   }
 
+  /** NSE trading days in [from, to]: ^NSEI's bars when that series is complete, else Mon–Fri. */
+  private tradingDayCount(fromDate: string, toDate: string): number {
+    const weekdays = weekdaysBetween(fromDate, toDate).length;
+    const s = this.db.prepare(
+      "SELECT COUNT(DISTINCT date) AS n FROM ohlcv_daily WHERE symbol = '^NSEI' AND date BETWEEN ? AND ?",
+    );
+    const n = (s.get([fromDate, toDate]) as { n: number }).n;
+    s.finalize();
+    return n >= 0.8 * weekdays && n > 0 ? n : Math.max(weekdays, 1);
+  }
+
+  /**
+   * One write transaction for a source batch (D9): OHLCV rows, sync_meta, resolved
+   * sources and recorded switches. `streak: null` keeps the stored Yahoo miss streak.
+   */
+  private writeSyncBatch(batch: {
+    rows: OhlcvRow[];
+    meta: Array<{ symbol: string; lastDate: string; streak: number | null }>;
+    sources?: Array<{ symbol: string; source: PriceSource; key: string }>;
+    switches?: SourceSwitch[];
+  }): void {
+    const sources = batch.sources ?? [];
+    const switches = batch.switches ?? [];
+    if (
+      batch.rows.length === 0 &&
+      batch.meta.length === 0 &&
+      sources.length === 0 &&
+      switches.length === 0
+    ) {
+      return;
+    }
+    const ohlcv = this.db.prepare(
+      `INSERT OR REPLACE INTO ohlcv_daily (symbol, date, open, high, low, close, volume, adj_close, adj_factor)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    );
+    const meta = this.db.prepare(
+      `INSERT INTO sync_meta (symbol, last_sync, last_date, yahoo_miss_streak)
+       VALUES (?, ?, ?, COALESCE(?, 0))
+       ON CONFLICT(symbol) DO UPDATE SET
+         last_sync = excluded.last_sync,
+         last_date = excluded.last_date,
+         yahoo_miss_streak = COALESCE(?, sync_meta.yahoo_miss_streak)`,
+    );
+    const src = this.db.prepare(
+      'UPDATE instruments SET price_source = ?, source_key = ? WHERE symbol = ?',
+    );
+    const sw = this.db.prepare(
+      `INSERT OR REPLACE INTO source_switches (symbol, switched_at, from_source, to_source, reason)
+       VALUES (?, ?, ?, ?, ?)`,
+    );
+    try {
+      this.tx(() => {
+        for (const r of batch.rows) {
+          ohlcv.run([
+            r.symbol,
+            r.date,
+            r.open,
+            r.high,
+            r.low,
+            r.close,
+            Math.round(r.volume),
+            r.adjClose ?? null,
+            r.adjClose !== null && r.close > 0 ? r.adjClose / r.close : null,
+          ]);
+        }
+        const now = Date.now();
+        for (const m of batch.meta) {
+          meta.run([m.symbol, now, m.lastDate, m.streak, m.streak]);
+        }
+        for (const x of sources) src.run([x.source, x.key, x.symbol]);
+        const at = new Date().toISOString();
+        for (const x of switches) sw.run([x.symbol, at, x.from, x.to, `${x.reason} [${x.key}]`]);
+      });
+    } finally {
+      ohlcv.finalize();
+      meta.finalize();
+      src.finalize();
+      sw.finalize();
+    }
+  }
+
+  /**
+   * Index pass rows (D5/D6/D7): for each symbol, rows from `windowFrom(a)` on; last_date
+   * advances only through days whose file had the name, and stops at the first file that
+   * lacks it (reported, not skipped).
+   */
+  private buildIndexWrites(
+    assigns: Assignment[],
+    range: ArchiveRange<IndexCloseDay>,
+    windowFrom: (a: Assignment) => string,
+  ): {
+    rows: OhlcvRow[];
+    meta: Array<{ symbol: string; lastDate: string; streak: number | null }>;
+    perSymbol: Map<string, { rows: number; lastDate: string | null; missingOn: string | null }>;
+  } {
+    const rows: OhlcvRow[] = [];
+    const meta: Array<{ symbol: string; lastDate: string; streak: number | null }> = [];
+    const perSymbol = new Map<
+      string,
+      { rows: number; lastDate: string | null; missingOn: string | null }
+    >();
+    for (const a of assigns) {
+      const name = normalizeIndexName(a.key ?? a.name ?? a.symbol);
+      const from = windowFrom(a);
+      let lastGood: string | null = null;
+      let missingOn: string | null = null;
+      let n = 0;
+      for (const day of range.days) {
+        if (day.date < from) continue;
+        const r = day.data.get(name);
+        if (r) {
+          rows.push({
+            symbol: a.symbol,
+            date: day.date,
+            open: r.open,
+            high: r.high,
+            low: r.low,
+            close: r.close,
+            volume: r.volume,
+            adjClose: r.close,
+          });
+          n++;
+          if (missingOn === null) lastGood = day.date;
+        } else if (missingOn === null) {
+          missingOn = day.date;
+        }
+      }
+      if (lastGood !== null) meta.push({ symbol: a.symbol, lastDate: lastGood, streak: null });
+      perSymbol.set(a.symbol, { rows: n, lastDate: lastGood, missingOn });
+    }
+    return { rows, meta, perSymbol };
+  }
+
+  /** Bhavcopy rows for `key` on the fetched days from `from` on. */
+  private bhavRowsFor(
+    symbol: string,
+    key: string,
+    range: ArchiveRange<CmBhavDay>,
+    from: string,
+  ): { rows: OhlcvRow[]; lastSeries: string | null } {
+    const rows: OhlcvRow[] = [];
+    let lastSeries: string | null = null;
+    for (const day of range.days) {
+      if (day.date < from) continue;
+      const b = lookupBhav(day.data, key);
+      if (!b) continue;
+      rows.push({
+        symbol,
+        date: day.date,
+        open: b.open,
+        high: b.high,
+        low: b.low,
+        close: b.close,
+        volume: b.volume,
+        adjClose: b.close, // A11: bhavcopy prices are raw
+      });
+      lastSeries = b.series;
+    }
+    return { rows, lastSeries };
+  }
+
+  /** Bare NSE symbols a bhavcopy pass must keep in memory. */
+  private bhavKeepSet(keys: Array<string | null>): Set<string> {
+    const keep = new Set<string>();
+    for (const k of keys) {
+      const p = k ? parseBhavKey(k) : null;
+      if (p) keep.add(p.symbol);
+    }
+    return keep;
+  }
+
+  private rangeNote(label: string, range: ArchiveRange<unknown>): string | null {
+    if (range.stoppedAt === null) return null;
+    return `${label}: stopped at ${range.stoppedAt} (${range.stopReason}) — days before it were written; the next run resumes there.`;
+  }
+
+  /**
+   * Download history for `symbols` from `fromDate` to today, each from its own source.
+   * Symbols with no stored source are resolved here, once (A2). Always re-fetches the whole
+   * range (the repair path), whatever sync_meta says.
+   */
   async backfillAll(
     symbols: string[],
     fromDate: string,
-    onProgress?: (done: number, total: number, symbol: string, failed: number) => void,
-    opts?: { concurrency?: number; skipSynced?: boolean; syncedThresholdDays?: number },
-  ): Promise<{ results: SyncResult[]; failed: string[] }> {
+    onProgress?: (e: SyncProgress) => void,
+    opts?: {
+      concurrency?: number;
+      skipSynced?: boolean;
+      syncedThresholdDays?: number;
+      /** A11 preference for non-index symbols. Default 'bhavcopy'. */
+      source?: SourcePreference;
+    },
+  ): Promise<SyncSummary> {
+    const started = Date.now();
     const concurrency = opts?.concurrency ?? 10;
-    const skipSynced = opts?.skipSynced ?? false;
-    const thresholdDays = opts?.syncedThresholdDays ?? 2;
-    const thresholdDate = new Date(Date.now() - thresholdDays * 86_400_000)
-      .toISOString()
-      .slice(0, 10);
-
-    // Filter symbols if skipSynced
-    const pending = skipSynced
-      ? symbols.filter((sym) => {
-          const s1 = this.db.prepare('SELECT last_date FROM sync_meta WHERE symbol = ?');
-          const row = s1.get([sym]) as { last_date: string } | null;
-          s1.finalize();
-          return !row || row.last_date < thresholdDate;
-        })
-      : [...symbols];
-
-    const results: SyncResult[] = [];
-    const failed: string[] = [];
-    let done = 0;
-    const queue = [...pending];
-
-    const worker = async () => {
-      while (queue.length > 0) {
-        const symbol = queue.shift();
-        if (!symbol) break;
-        try {
-          const result = await this.backfillSymbol(symbol, fromDate);
-          results.push(result);
-        } catch {
-          failed.push(symbol);
-          results.push({
-            symbol,
-            rowsInserted: 0,
-            fromDate,
-            toDate: new Date().toISOString().slice(0, 10),
-          });
-        }
-        done++;
-        onProgress?.(done, pending.length, symbol, failed.length);
-      }
-    };
-
-    await Promise.all(Array.from({ length: concurrency }, () => worker()));
-
-    // Bhavcopy batch fallback — one pass downloads all failed symbols at once
-    if (failed.length > 0) {
-      const failedSet = new Set(failed);
-      process.stdout.write(
-        `\nFalling back to NSE Bhavcopy for ${failed.length} failed symbol(s)...\n`,
-      );
-      try {
-        const toDate = new Date().toISOString().slice(0, 10);
-        const bhavMap = await fetchBhavcopayRange(
-          fromDate,
-          toDate,
-          failedSet,
-          (bhavDone, bhavTotal, date) => {
-            process.stdout.write(`  [bhavcopy ${bhavDone}/${bhavTotal}] ${date}\r`);
-          },
-        );
-        const recovered: string[] = [];
-        for (const symbol of [...failed]) {
-          const bhavRows = bhavMap.get(symbol);
-          if (!bhavRows || bhavRows.length === 0) continue;
-          this.insertOhlcv(bhavRows);
-          const lastDate =
-            bhavRows[bhavRows.length - 1]?.date ?? new Date().toISOString().slice(0, 10);
-          const s2 = this.db.prepare(
-            'INSERT OR REPLACE INTO sync_meta (symbol, last_sync, last_date) VALUES (?, ?, ?)',
-          );
-          s2.run([symbol, Date.now(), lastDate]);
-          s2.finalize();
-          results.push({ symbol, rowsInserted: bhavRows.length, fromDate, toDate: lastDate });
-          recovered.push(symbol);
-        }
-        for (const sym of recovered) {
-          const i = failed.indexOf(sym);
-          if (i !== -1) failed.splice(i, 1);
-        }
-        if (recovered.length > 0) {
-          process.stdout.write(
-            `\nBhavcopy recovered ${recovered.length}/${failedSet.size} symbol(s).\n`,
-          );
-        }
-      } catch (err) {
-        process.stdout.write(
-          `\nBhavcopy fallback error: ${err instanceof Error ? err.message : String(err)}\n`,
-        );
-      }
+    const mode: SourcePreference = opts?.source ?? 'bhavcopy';
+    const today = todayUtc();
+    let pending = [...new Set(symbols)];
+    if (opts?.skipSynced) {
+      const threshold = addDays(today, -(opts.syncedThresholdDays ?? 2));
+      const synced = new Map(this.loadAssignments(pending).map((a) => [a.symbol, a.lastDate]));
+      pending = pending.filter((sym) => {
+        const last = synced.get(sym);
+        return !last || last < threshold;
+      });
     }
 
-    return { results, failed };
+    const assigns = this.loadAssignments(pending);
+    const summary = emptySummary('backfill', assigns.length, mode);
+    const isIndex = (a: Assignment) =>
+      a.source === 'nse_index' ||
+      (a.source === null && (a.type === 'index' || a.symbol.startsWith('^')));
+    const idx = assigns.filter(isIndex);
+    const nonIdx = assigns.filter((a) => !isIndex(a));
+    const keyOf = (a: Assignment) => (a.source === 'bhavcopy' ? a.key : bhavKeyForYahoo(a.symbol));
+    // A11 default: every non-index symbol with a bhavcopy key tries the bhavcopy first.
+    const bhavFirst = mode === 'bhavcopy' ? nonIdx.filter((a) => keyOf(a) !== null) : [];
+    const bhav = mode === 'bhavcopy' ? [] : nonIdx.filter((a) => a.source === 'bhavcopy');
+    let yahoo = nonIdx.filter((a) => a.source === 'yahoo' && !bhavFirst.includes(a));
+    let resolve = nonIdx.filter((a) => a.source === null && !bhavFirst.includes(a));
+    const counts: SourceCounts = {
+      nse_index: idx.length,
+      bhavcopy: bhavFirst.length + bhav.length,
+      yahoo: yahoo.length,
+      resolve: resolve.length,
+    };
+    onProgress?.({
+      kind: 'start',
+      op: 'backfill',
+      total: assigns.length,
+      bySource: counts,
+      fromDate,
+      preference: mode,
+    });
+
+    // One bhavcopy walk per run, shared by every stage that needs it.
+    const keepAll = this.bhavKeepSet(nonIdx.flatMap((a) => [keyOf(a), bhavKeyForYahoo(a.symbol)]));
+    let bhavMemo: ArchiveRange<CmBhavDay> | null = null;
+    const getBhav = async (): Promise<ArchiveRange<CmBhavDay>> => {
+      if (bhavMemo === null) {
+        bhavMemo = await fetchCmBhavcopyRange(
+          fromDate,
+          today,
+          this.bhavCacheDir(),
+          (k, n, date) => onProgress?.({ kind: 'day', source: 'bhavcopy', day: k, days: n, date }),
+          keepAll,
+        );
+        const note = this.rangeNote('NSE bhavcopy', bhavMemo);
+        if (note) summary.notes.push(note);
+      }
+      return bhavMemo;
+    };
+
+    let done = 0;
+    const doneSymbols = (syms: string[]) => {
+      done += syms.length;
+      onProgress?.({
+        kind: 'symbols',
+        done,
+        total: assigns.length,
+        symbols: syms,
+        failed: summary.failed.length,
+      });
+    };
+    const record = (
+      a: Assignment,
+      source: PriceSource,
+      key: string,
+      rows: number,
+      from: string,
+      to: string,
+    ) => {
+      summary.bySource[source].symbols++;
+      summary.bySource[source].rows += rows;
+      summary.results.push({
+        symbol: a.symbol,
+        rowsInserted: rows,
+        fromDate: from,
+        toDate: to,
+        priceSource: source,
+        sourceKey: key,
+      });
+    };
+    const fail = (a: Assignment, source: SyncFailure['source'], reason: string) => {
+      summary.failed.push({ symbol: a.symbol, source, reason });
+    };
+
+    // 1. NSE index file pass
+    if (idx.length > 0) {
+      const idxFrom = fromDate < INDEX_HISTORY_MIN_DATE ? INDEX_HISTORY_MIN_DATE : fromDate;
+      if (idxFrom !== fromDate) {
+        summary.notes.push(
+          `Index history starts at ${INDEX_HISTORY_MIN_DATE} (older NSE files use the CNX names); indices were backfilled from there.`,
+        );
+      }
+      for (const a of idx) {
+        if (a.key === null) a.key = defaultPriceSource(a.symbol, 'index', a.name).key;
+      }
+      const range = await fetchIndexCloseRange(idxFrom, today, this.indexCacheDir(), (k, n, date) =>
+        onProgress?.({ kind: 'day', source: 'nse_index', day: k, days: n, date }),
+      );
+      const note = this.rangeNote('NSE index file', range);
+      if (note) summary.notes.push(note);
+      const latest = range.days[range.days.length - 1];
+      // A2: an unresolved index resolves only when its name is in the latest file fetched.
+      const accepted = idx.filter((a) => {
+        if (a.source !== null) return true;
+        const inFile = latest?.data.has(normalizeIndexName(a.key ?? '')) ?? false;
+        if (!inFile) {
+          fail(
+            a,
+            'unresolved',
+            latest
+              ? `"${a.key}" is not in the NSE index file of ${latest.date}`
+              : `no NSE index file could be fetched (${range.stopReason ?? 'all days missing'})`,
+          );
+        }
+        return inFile;
+      });
+      const w = this.buildIndexWrites(accepted, range, () => idxFrom);
+      const sources = accepted
+        .filter((a) => a.source === null && a.registered)
+        .map((a) => ({ symbol: a.symbol, source: 'nse_index' as const, key: a.key ?? a.symbol }));
+      this.writeSyncBatch({ rows: w.rows, meta: w.meta, sources });
+      for (const a of accepted) {
+        const p = w.perSymbol.get(a.symbol);
+        if (a.source === null) {
+          summary.resolved.push({
+            symbol: a.symbol,
+            source: 'nse_index',
+            key: a.key ?? a.symbol,
+            partial: false,
+          });
+        }
+        if (p?.missingOn) {
+          fail(a, 'nse_index', `"${a.key}" missing from the NSE index file of ${p.missingOn}`);
+        } else if (range.days.length === 0 && range.stoppedAt !== null) {
+          fail(a, 'nse_index', `NSE index file unavailable: ${range.stopReason}`);
+        }
+        record(a, 'nse_index', a.key ?? a.symbol, p?.rows ?? 0, idxFrom, p?.lastDate ?? today);
+      }
+      doneSymbols(idx.map((a) => a.symbol));
+    }
+
+    // 2a. A11 bhavcopy-first stage: whatever the bhavcopy lists is served from it.
+    if (bhavFirst.length > 0) {
+      const range = await getBhav();
+      const through = range.days[range.days.length - 1]?.date ?? null;
+      const complete = range.stoppedAt === null;
+      const rows: OhlcvRow[] = [];
+      const meta: Array<{ symbol: string; lastDate: string; streak: number | null }> = [];
+      const sources: Array<{ symbol: string; source: PriceSource; key: string }> = [];
+      const served: string[] = [];
+      const toYahoo: Assignment[] = [];
+      for (const a of bhavFirst) {
+        const key = keyOf(a) as string;
+        const got = this.bhavRowsFor(a.symbol, key, range, fromDate);
+        if (got.rows.length > 0) {
+          rows.push(...got.rows);
+          meta.push({ symbol: a.symbol, lastDate: through ?? today, streak: null });
+          if (a.source === null) {
+            // Listed by NSE: store the A7 rule, no Yahoo probe (A11).
+            const d = defaultPriceSource(a.symbol, a.type, a.name);
+            if (a.registered) sources.push({ symbol: a.symbol, ...d });
+            summary.resolved.push({ symbol: a.symbol, ...d, partial: false });
+          }
+          record(a, 'bhavcopy', key, got.rows.length, fromDate, through ?? today);
+          served.push(a.symbol);
+        } else if (a.source === 'bhavcopy') {
+          fail(
+            a,
+            'bhavcopy',
+            complete
+              ? `${key} is not in the NSE CM bhavcopy ${fromDate}…${through ?? today}`
+              : `NSE bhavcopy unavailable: ${range.stopReason}`,
+          );
+          served.push(a.symbol);
+        } else {
+          toYahoo.push(a);
+        }
+      }
+      this.writeSyncBatch({ rows, meta, sources });
+      if (served.length > 0) doneSymbols(served);
+      const fallback = toYahoo.filter((a) => a.source === 'yahoo');
+      if (fallback.length > 0) {
+        summary.fallbacks.push({
+          to: 'yahoo',
+          reason: complete ? 'not in the bhavcopy' : `bhavcopy unavailable (${range.stopReason})`,
+          symbols: fallback.map((a) => a.symbol),
+        });
+      }
+      yahoo = [...yahoo, ...fallback];
+      resolve = [...resolve, ...toYahoo.filter((a) => a.source === null)];
+    }
+    const noKeyYahoo = yahoo.filter((a) => bhavKeyForYahoo(a.symbol) === null);
+    if (mode === 'bhavcopy' && noKeyYahoo.length > 0) {
+      summary.fallbacks.push({
+        to: 'yahoo',
+        reason: 'no NSE bhavcopy key (BSE symbol)',
+        symbols: noKeyYahoo.map((a) => a.symbol),
+      });
+    }
+
+    // 2. Yahoo pass — resolved yahoo symbols are written in batches; candidates are held.
+    const held = new Map<string, { rows: OhlcvRow[]; error: string | null }>();
+    const yahooFailed: Assignment[] = [];
+    let buffer: {
+      rows: OhlcvRow[];
+      meta: Array<{ symbol: string; lastDate: string; streak: number | null }>;
+    } = {
+      rows: [],
+      meta: [],
+    };
+    let buffered = 0;
+    const flush = () => {
+      this.writeSyncBatch(buffer);
+      buffer = { rows: [], meta: [] };
+      buffered = 0;
+    };
+    const tradingDays = this.tradingDayCount(fromDate, today);
+    const yahooResolved: Assignment[] = [];
+    await runPool([...yahoo, ...resolve], concurrency, async (a) => {
+      let rows: OhlcvRow[] = [];
+      let error: string | null = null;
+      try {
+        rows = (await fetchOhlcv(a.key ?? a.symbol, fromDate, today)).map((r) => ({
+          ...r,
+          symbol: a.symbol,
+        }));
+      } catch (err) {
+        error = err instanceof Error ? err.message : String(err);
+      }
+      if (a.source === 'yahoo') {
+        if (error !== null) {
+          held.set(a.symbol, { rows: [], error });
+          yahooFailed.push(a); // fill from the bhavcopy below, else fail
+          return;
+        }
+        buffer.rows.push(...rows);
+        buffer.meta.push({
+          symbol: a.symbol,
+          lastDate: rows[rows.length - 1]?.date ?? today,
+          streak: 0,
+        });
+        record(
+          a,
+          'yahoo',
+          a.key ?? a.symbol,
+          rows.length,
+          fromDate,
+          rows[rows.length - 1]?.date ?? today,
+        );
+        if (++buffered >= YAHOO_WRITE_BATCH) flush();
+        doneSymbols([a.symbol]);
+        return;
+      }
+      const inRange = rows.filter((r) => r.date >= fromDate).length;
+      if (error === null && inRange >= 0.5 * tradingDays) {
+        buffer.rows.push(...rows);
+        buffer.meta.push({
+          symbol: a.symbol,
+          lastDate: rows[rows.length - 1]?.date ?? today,
+          streak: 0,
+        });
+        yahooResolved.push(a);
+        record(a, 'yahoo', a.symbol, rows.length, fromDate, rows[rows.length - 1]?.date ?? today);
+        summary.resolved.push({ symbol: a.symbol, source: 'yahoo', key: a.symbol, partial: false });
+        if (++buffered >= YAHOO_WRITE_BATCH) flush();
+        doneSymbols([a.symbol]);
+        return;
+      }
+      held.set(a.symbol, { rows, error });
+    });
+    flush();
+    this.writeSyncBatch({
+      rows: [],
+      meta: [],
+      sources: yahooResolved
+        .filter((a) => a.registered)
+        .map((a) => ({ symbol: a.symbol, source: 'yahoo' as const, key: a.symbol })),
+    });
+
+    // 3. Bhavcopy pass — bhavcopy symbols, resolution candidates, failed Yahoo symbols.
+    const candidates = resolve.filter((a) => held.has(a.symbol));
+    if (mode === 'yahoo' && bhav.length > 0) {
+      summary.fallbacks.push({
+        to: 'bhavcopy',
+        reason: 'no Yahoo data (bhavcopy-sourced)',
+        symbols: bhav.map((a) => a.symbol),
+      });
+    }
+    if (bhav.length + candidates.length + yahooFailed.length > 0) {
+      const candKey = new Map(candidates.map((a) => [a.symbol, bhavKeyForYahoo(a.symbol)]));
+      const range =
+        keepAll.size > 0
+          ? await getBhav()
+          : { days: [], missingDates: [], stoppedAt: null, stopReason: null, cachedDays: 0 };
+      const through = range.days[range.days.length - 1]?.date ?? null;
+      const complete = range.stoppedAt === null;
+
+      const rows: OhlcvRow[] = [];
+      const meta: Array<{ symbol: string; lastDate: string; streak: number | null }> = [];
+      const sources: Array<{ symbol: string; source: PriceSource; key: string }> = [];
+      const doneNow: string[] = [];
+
+      for (const a of bhav) {
+        const got = this.bhavRowsFor(a.symbol, a.key ?? '', range, fromDate);
+        rows.push(...got.rows);
+        if (through !== null) meta.push({ symbol: a.symbol, lastDate: through, streak: null });
+        else fail(a, 'bhavcopy', `NSE bhavcopy unavailable: ${range.stopReason ?? 'no file'}`);
+        record(a, 'bhavcopy', a.key ?? '', got.rows.length, fromDate, through ?? today);
+        doneNow.push(a.symbol);
+      }
+
+      for (const a of candidates) {
+        const heldA = held.get(a.symbol) ?? { rows: [], error: null };
+        const key = candKey.get(a.symbol) ?? null;
+        const got = key ? this.bhavRowsFor(a.symbol, key, range, fromDate) : null;
+        const inRange = heldA.rows.filter((r) => r.date >= fromDate).length;
+        if (got && got.rows.length > 0 && key) {
+          const bare = parseBhavKey(key)?.symbol ?? key;
+          const finalKey = `${bare}:${got.lastSeries ?? parseBhavKey(key)?.series ?? 'EQ'}`;
+          rows.push(...got.rows);
+          meta.push({ symbol: a.symbol, lastDate: through ?? today, streak: 0 });
+          if (a.registered) sources.push({ symbol: a.symbol, source: 'bhavcopy', key: finalKey });
+          summary.resolved.push({
+            symbol: a.symbol,
+            source: 'bhavcopy',
+            key: finalKey,
+            partial: false,
+          });
+          record(a, 'bhavcopy', finalKey, got.rows.length, fromDate, through ?? today);
+        } else if (!complete) {
+          fail(
+            a,
+            'unresolved',
+            `Yahoo had ${inRange}/${tradingDays} trading days${heldA.error ? ` (${heldA.error})` : ''} and the NSE bhavcopy could not be checked: ${range.stopReason}`,
+          );
+        } else if (heldA.rows.length > 0) {
+          rows.push(...heldA.rows);
+          meta.push({
+            symbol: a.symbol,
+            lastDate: heldA.rows[heldA.rows.length - 1]?.date ?? today,
+            streak: 0,
+          });
+          if (a.registered) sources.push({ symbol: a.symbol, source: 'yahoo', key: a.symbol });
+          summary.resolved.push({
+            symbol: a.symbol,
+            source: 'yahoo',
+            key: a.symbol,
+            partial: true,
+          });
+          record(
+            a,
+            'yahoo',
+            a.symbol,
+            heldA.rows.length,
+            fromDate,
+            heldA.rows[heldA.rows.length - 1]?.date ?? today,
+          );
+        } else {
+          const why = heldA.error ?? `Yahoo returned 0/${tradingDays} trading days`;
+          fail(
+            a,
+            'unresolved',
+            key
+              ? `${why}; ${key} is not in the NSE CM bhavcopy ${fromDate}…${through ?? today}`
+              : `${why}; no NSE bhavcopy key for ${a.symbol}`,
+          );
+        }
+        doneNow.push(a.symbol);
+      }
+
+      for (const a of yahooFailed) {
+        const key = bhavKeyForYahoo(a.symbol);
+        const got = key ? this.bhavRowsFor(a.symbol, key, range, fromDate) : null;
+        if (got && got.rows.length > 0) {
+          rows.push(...got.rows);
+          meta.push({
+            symbol: a.symbol,
+            lastDate: got.rows[got.rows.length - 1]?.date ?? today,
+            streak: null,
+          });
+          summary.filledDays += got.rows.length;
+          record(a, 'yahoo', a.key ?? a.symbol, got.rows.length, fromDate, through ?? today);
+        } else {
+          fail(a, 'yahoo', held.get(a.symbol)?.error ?? 'Yahoo fetch failed');
+        }
+        doneNow.push(a.symbol);
+      }
+
+      this.writeSyncBatch({ rows, meta, sources });
+      if (doneNow.length > 0) doneSymbols(doneNow);
+    }
+
+    summary.durationMs = Date.now() - started;
+    return summary;
+  }
+
+  /**
+   * Backfill one symbol through its source (resolving it first if needed). Throws with the
+   * failure reason — for a Yahoo definitive miss that is Yahoo's own message, which
+   * isDefinitiveMiss() recognises.
+   */
+  async backfillSymbol(symbol: string, fromDate: string): Promise<SyncResult> {
+    // Yahoo preference: nse_instrument_add / import validate the symbol through this (A8/A11).
+    const s = await this.backfillAll([symbol], fromDate, undefined, {
+      concurrency: 1,
+      source: 'yahoo',
+    });
+    const failure = s.failed.find((f) => f.symbol === symbol);
+    const result = s.results.find((r) => r.symbol === symbol);
+    if (failure && !result) throw new Error(failure.reason);
+    return result ?? { symbol, rowsInserted: 0, fromDate, toDate: todayUtc() };
+  }
+
+  /**
+   * Fill the days since each symbol's last sync (A5/A11). The NSE index file serves the
+   * indices; the CM bhavcopy — one file per day — serves every non-index symbol it lists
+   * (source 'bhavcopy', the default) or only the bhavcopy-sourced ones (source 'yahoo');
+   * Yahoo serves the rest. The bhavcopy days double as the session probe: a symbol with no
+   * session after its last_date gets no Yahoo call. With source 'yahoo', Yahoo misses the
+   * bhavcopy has are filled from it and 3+ consecutive ones switch the symbol (A4).
+   */
+  private async syncUpdate(
+    symbols: string[],
+    onProgress?: (e: SyncProgress) => void,
+    opts: { refreshConstituents?: boolean; source?: SourcePreference } = {},
+  ): Promise<SyncSummary> {
+    const started = Date.now();
+    const today = todayUtc();
+    const mode: SourcePreference = opts.source ?? 'bhavcopy';
+    const assigns = this.loadAssignments(symbols);
+
+    // A5: a symbol with no source gets the A7 rule here — updates never probe.
+    const defaults: Array<{ symbol: string; source: PriceSource; key: string }> = [];
+    for (const a of assigns) {
+      if (a.source !== null) continue;
+      const d = defaultPriceSource(a.symbol, a.type, a.name);
+      a.source = d.source;
+      a.key = d.key;
+      if (a.registered) defaults.push({ symbol: a.symbol, source: d.source, key: d.key });
+    }
+    this.writeSyncBatch({ rows: [], meta: [], sources: defaults });
+
+    const summary = emptySummary('update', assigns.length, mode);
+    const idx = assigns.filter((a) => a.source === 'nse_index');
+    const nonIdx = assigns.filter((a) => a.source !== 'nse_index');
+    const keyOf = (a: Assignment) => (a.source === 'bhavcopy' ? a.key : bhavKeyForYahoo(a.symbol));
+    const bhavTry =
+      mode === 'bhavcopy'
+        ? nonIdx.filter((a) => keyOf(a) !== null)
+        : nonIdx.filter((a) => a.source === 'bhavcopy');
+    const bhavTrySet = new Set(bhavTry);
+    const yahooPlanned = nonIdx.filter((a) => !bhavTrySet.has(a));
+    onProgress?.({
+      kind: 'start',
+      op: 'update',
+      total: assigns.length,
+      bySource: {
+        nse_index: idx.length,
+        bhavcopy: bhavTry.length,
+        yahoo: yahooPlanned.length,
+        resolve: 0,
+      },
+      preference: mode,
+    });
+
+    const next = (a: Assignment) => addDays(a.lastDate ?? addDays(today, -365), 1);
+    let done = 0;
+    const doneSymbols = (syms: string[]) => {
+      if (syms.length === 0) return;
+      done += syms.length;
+      onProgress?.({
+        kind: 'symbols',
+        done,
+        total: assigns.length,
+        symbols: syms,
+        failed: summary.failed.length,
+      });
+    };
+    const record = (a: Assignment, source: PriceSource, rows: number, to: string) => {
+      summary.bySource[source].symbols++;
+      summary.bySource[source].rows += rows;
+      summary.results.push({
+        symbol: a.symbol,
+        rowsInserted: rows,
+        fromDate: next(a),
+        toDate: to,
+        priceSource: source,
+        sourceKey: a.key ?? a.symbol,
+      });
+    };
+    const minNext = (list: Assignment[]) =>
+      list.reduce((m, a) => (next(a) < m ? next(a) : m), '9999-12-31');
+
+    // 1. NSE index file pass
+    if (idx.length > 0) {
+      const from = minNext(idx);
+      if (from <= today) {
+        const range = await fetchIndexCloseRange(from, today, this.indexCacheDir(), (k, n, date) =>
+          onProgress?.({ kind: 'day', source: 'nse_index', day: k, days: n, date }),
+        );
+        const note = this.rangeNote('NSE index file', range);
+        if (note) summary.notes.push(note);
+        const w = this.buildIndexWrites(idx, range, next);
+        this.writeSyncBatch({ rows: w.rows, meta: w.meta });
+        for (const a of idx) {
+          const p = w.perSymbol.get(a.symbol);
+          if (p?.missingOn) {
+            summary.failed.push({
+              symbol: a.symbol,
+              source: 'nse_index',
+              reason: `"${a.key}" missing from the NSE index file of ${p.missingOn}`,
+            });
+          }
+          record(a, 'nse_index', p?.rows ?? 0, p?.lastDate ?? a.lastDate ?? today);
+        }
+      } else {
+        for (const a of idx) record(a, 'nse_index', 0, today);
+      }
+      doneSymbols(idx.map((a) => a.symbol));
+    }
+
+    // 2. Bhavcopy pass — serves bhavTry, fills Yahoo misses (source 'yahoo') and is the
+    //    session probe for every non-index symbol.
+    let bhavRange: ArchiveRange<CmBhavDay> | null = null;
+    let probeComplete = true;
+    if (nonIdx.length > 0) {
+      let from = minNext(nonIdx);
+      if (mode === 'yahoo' && yahooPlanned.length > 0) {
+        const fillFrom = addDays(today, -10); // A4 fill lookback
+        const yahooFrom = minNext(yahooPlanned);
+        const f = yahooFrom > fillFrom ? yahooFrom : fillFrom;
+        from = bhavTry.length > 0 && minNext(bhavTry) < f ? minNext(bhavTry) : f;
+      }
+      if (from <= today) {
+        bhavRange = await fetchCmBhavcopyRange(
+          from,
+          today,
+          this.bhavCacheDir(),
+          (k, n, date) => onProgress?.({ kind: 'day', source: 'bhavcopy', day: k, days: n, date }),
+          this.bhavKeepSet(nonIdx.map((a) => keyOf(a))),
+        );
+        probeComplete = bhavRange.stoppedAt === null;
+        const note = this.rangeNote('NSE bhavcopy', bhavRange);
+        if (note) summary.notes.push(note);
+      }
+    }
+    const sessions = bhavRange?.days.map((d) => d.date) ?? [];
+    const through = sessions[sessions.length - 1] ?? null;
+    const hasNewSession = (a: Assignment) => !probeComplete || sessions.some((d) => d >= next(a));
+
+    const fallbackYahoo: Assignment[] = [];
+    if (bhavTry.length > 0) {
+      const rows: OhlcvRow[] = [];
+      const meta: Array<{ symbol: string; lastDate: string; streak: number | null }> = [];
+      const served: string[] = [];
+      for (const a of bhavTry) {
+        const got = bhavRange
+          ? this.bhavRowsFor(a.symbol, keyOf(a) ?? '', bhavRange, next(a))
+          : { rows: [], lastSeries: null };
+        if (got.rows.length === 0 && a.source !== 'bhavcopy' && hasNewSession(a)) {
+          fallbackYahoo.push(a); // not listed on a new session: its stored source serves it
+          continue;
+        }
+        rows.push(...got.rows);
+        if (through !== null && through >= next(a)) {
+          meta.push({ symbol: a.symbol, lastDate: through, streak: null });
+        }
+        record(a, 'bhavcopy', got.rows.length, through ?? a.lastDate ?? today);
+        served.push(a.symbol);
+      }
+      this.writeSyncBatch({ rows, meta });
+      doneSymbols(served);
+    }
+
+    if (mode === 'bhavcopy') {
+      if (fallbackYahoo.length > 0) {
+        summary.fallbacks.push({
+          to: 'yahoo',
+          reason: probeComplete
+            ? 'not in the bhavcopy'
+            : `bhavcopy unavailable (${bhavRange?.stopReason})`,
+          symbols: fallbackYahoo.map((a) => a.symbol),
+        });
+      }
+      if (yahooPlanned.length > 0) {
+        summary.fallbacks.push({
+          to: 'yahoo',
+          reason: 'no NSE bhavcopy key (BSE symbol)',
+          symbols: yahooPlanned.map((a) => a.symbol),
+        });
+      }
+    } else if (bhavTry.length > 0) {
+      summary.fallbacks.push({
+        to: 'bhavcopy',
+        reason: 'no Yahoo data (bhavcopy-sourced)',
+        symbols: bhavTry.map((a) => a.symbol),
+      });
+    }
+
+    // 3. Yahoo pass (the fetcher's process-wide 400 ms spacing applies), written every
+    //    YAHOO_WRITE_BATCH symbols.
+    let buffer: {
+      rows: OhlcvRow[];
+      meta: Array<{ symbol: string; lastDate: string; streak: number | null }>;
+      sources: Array<{ symbol: string; source: PriceSource; key: string }>;
+      switches: SourceSwitch[];
+    } = { rows: [], meta: [], sources: [], switches: [] };
+    let buffered = 0;
+    const flush = () => {
+      this.writeSyncBatch(buffer);
+      buffer = { rows: [], meta: [], sources: [], switches: [] };
+      buffered = 0;
+    };
+    const noSession: Assignment[] = [];
+    await runPool([...yahooPlanned, ...fallbackYahoo], 5, async (a) => {
+      const from = next(a);
+      if (from > today || !hasNewSession(a)) {
+        if (from <= today) noSession.push(a);
+        record(a, 'yahoo', 0, a.lastDate ?? today);
+        doneSymbols([a.symbol]);
+        return;
+      }
+      let yRows: OhlcvRow[] = [];
+      let error: string | null = null;
+      try {
+        yRows = (await fetchOhlcv(a.key ?? a.symbol, from, today)).map((r) => ({
+          ...r,
+          symbol: a.symbol,
+        }));
+      } catch (err) {
+        error = err instanceof Error ? err.message : String(err);
+      }
+
+      // A4 (source 'yahoo'): per-day fill + consecutive-miss streak against the bhavcopy.
+      const yDates = new Set(yRows.map((r) => r.date));
+      const bkey = mode === 'yahoo' ? bhavKeyForYahoo(a.symbol) : null;
+      const fills: OhlcvRow[] = [];
+      const misses: string[] = [];
+      let streak = a.streak;
+      let lastSeries: string | null = null;
+      if (bkey && bhavRange) {
+        for (const day of bhavRange.days) {
+          if (day.date < from) continue;
+          const b = lookupBhav(day.data, bkey);
+          if (!b) continue;
+          lastSeries = b.series;
+          if (yDates.has(day.date)) {
+            streak = 0;
+            misses.length = 0;
+            continue;
+          }
+          streak++;
+          misses.push(day.date);
+          fills.push({
+            symbol: a.symbol,
+            date: day.date,
+            open: b.open,
+            high: b.high,
+            low: b.low,
+            close: b.close,
+            volume: b.volume,
+            adjClose: b.close,
+          });
+        }
+      }
+
+      if (error !== null && fills.length === 0) {
+        summary.failed.push({ symbol: a.symbol, source: 'yahoo', reason: error });
+        doneSymbols([a.symbol]);
+        return;
+      }
+      const all = [...yRows, ...fills].sort((x, y) => (x.date < y.date ? -1 : 1));
+      summary.filledDays += fills.length;
+      buffer.rows.push(...all);
+      if (bkey && streak >= 3) {
+        const bare = parseBhavKey(bkey)?.symbol ?? bkey;
+        const key = `${bare}:${lastSeries ?? parseBhavKey(bkey)?.series ?? 'EQ'}`;
+        const reason = `Yahoo had no bar for ${streak} consecutive trading days the NSE bhavcopy has${
+          misses.length > 0 ? ` (${misses[0]}…${misses[misses.length - 1]})` : ''
+        }`;
+        buffer.sources.push({ symbol: a.symbol, source: 'bhavcopy', key });
+        buffer.switches.push({ symbol: a.symbol, from: 'yahoo', to: 'bhavcopy', key, reason });
+        summary.switches.push({ symbol: a.symbol, from: 'yahoo', to: 'bhavcopy', key, reason });
+        streak = 0;
+      }
+      buffer.meta.push({
+        symbol: a.symbol,
+        lastDate: all[all.length - 1]?.date ?? a.lastDate ?? today,
+        streak: mode === 'yahoo' ? streak : null,
+      });
+      record(a, 'yahoo', all.length, all[all.length - 1]?.date ?? today);
+      if (++buffered >= YAHOO_WRITE_BATCH) flush();
+      doneSymbols([a.symbol]);
+    });
+    flush();
+
+    if (noSession.length > 0) {
+      const since = noSession.reduce(
+        (m, a) => ((a.lastDate ?? '') > m ? (a.lastDate ?? '') : m),
+        '',
+      );
+      summary.notes.push(
+        `No new trading day since ${since}: ${noSession.length} Yahoo symbol(s) skipped without a request.`,
+      );
+    }
+
+    if (opts.refreshConstituents && idx.length > 0) {
+      const refreshed = await this.refreshIndexConstituents(
+        idx.map((a) => a.symbol),
+        { staleDays: 30 },
+      );
+      const replaced = refreshed.filter((r) => r.status === 'replaced').length;
+      if (replaced > 0) summary.notes.push(`Constituents refreshed for ${replaced} index(es).`);
+    }
+
+    summary.durationMs = Date.now() - started;
+    return summary;
+  }
+
+  async updateSymbol(
+    symbol: string,
+    opts: { source?: SourcePreference } = {},
+  ): Promise<SyncResult> {
+    const s = await this.syncUpdate([symbol], undefined, opts);
+    const failure = s.failed.find((f) => f.symbol === symbol);
+    const result = s.results.find((r) => r.symbol === symbol);
+    if (failure && !result) throw new Error(failure.reason);
+    return result ?? { symbol, rowsInserted: 0, fromDate: todayUtc(), toDate: todayUtc() };
+  }
+
+  async updateWatchlist(
+    onProgress?: (e: SyncProgress) => void,
+    opts: { source?: SourcePreference } = {},
+  ): Promise<SyncSummary> {
+    const s = this.db.prepare('SELECT DISTINCT symbol FROM watchlist');
+    const rows = s.all() as Array<{ symbol: string }>;
+    s.finalize();
+    return this.syncUpdate(
+      rows.map((r) => r.symbol),
+      onProgress,
+      opts,
+    );
+  }
+
+  /** Every synced symbol; also refreshes index constituents older than 30 days (D14). */
+  async updateAll(
+    onProgress?: (e: SyncProgress) => void,
+    opts: { source?: SourcePreference } = {},
+  ): Promise<SyncSummary> {
+    const s = this.db.prepare('SELECT symbol FROM sync_meta');
+    const rows = s.all() as Array<{ symbol: string }>;
+    s.finalize();
+    return this.syncUpdate(
+      rows.map((r) => r.symbol),
+      onProgress,
+      { ...opts, refreshConstituents: true },
+    );
+  }
+
+  /** Symbols whose stored source is `source` (active instruments only). */
+  listSymbolsBySource(source: PriceSource): string[] {
+    const s = this.db.prepare(
+      'SELECT symbol FROM instruments WHERE price_source = ? AND is_active = 1 ORDER BY symbol',
+    );
+    const rows = s.all([source]) as Array<{ symbol: string }>;
+    s.finalize();
+    return rows.map((r) => r.symbol);
+  }
+
+  /** Counts per price source and the most recent automatic switches. */
+  sourceReport(limit = 20): {
+    counts: Array<{ source: string; instruments: number; active: number }>;
+    switches: Array<{
+      symbol: string;
+      switched_at: string;
+      from_source: string | null;
+      to_source: string;
+      reason: string;
+    }>;
+  } {
+    const s1 = this.db.prepare(
+      `SELECT COALESCE(price_source, '(none)') AS source, COUNT(*) AS instruments,
+              SUM(is_active) AS active
+         FROM instruments GROUP BY 1 ORDER BY 1`,
+    );
+    const counts = s1.all() as Array<{ source: string; instruments: number; active: number }>;
+    s1.finalize();
+    const s2 = this.db.prepare(
+      'SELECT symbol, switched_at, from_source, to_source, reason FROM source_switches ORDER BY switched_at DESC LIMIT ?',
+    );
+    const switches = s2.all([limit]) as Array<{
+      symbol: string;
+      switched_at: string;
+      from_source: string | null;
+      to_source: string;
+      reason: string;
+    }>;
+    s2.finalize();
+    return { counts, switches };
+  }
+
+  // ---------------------------------------------------------------------------
+  // NSE indices (plan nse-index-history D14–D16)
+  // ---------------------------------------------------------------------------
+
+  /** Registered NSE-file indices with their coverage. */
+  listNseIndices(): Array<{
+    symbol: string;
+    name: string;
+    nse_name: string | null;
+    category: string | null;
+    bars: number;
+    first_date: string | null;
+    last_date: string | null;
+    bars_with_volume: number;
+    constituents: number;
+  }> {
+    const s = this.db.prepare(
+      `SELECT i.symbol, i.name, i.source_key AS nse_name, i.index_category AS category,
+              (SELECT COUNT(*) FROM ohlcv_daily o WHERE o.symbol = i.symbol) AS bars,
+              (SELECT MIN(date) FROM ohlcv_daily o WHERE o.symbol = i.symbol) AS first_date,
+              (SELECT MAX(date) FROM ohlcv_daily o WHERE o.symbol = i.symbol) AS last_date,
+              (SELECT COUNT(*) FROM ohlcv_daily o WHERE o.symbol = i.symbol AND o.volume > 0)
+                AS bars_with_volume,
+              (SELECT COUNT(*) FROM index_constituents c WHERE c.index_symbol = i.symbol)
+                AS constituents
+         FROM instruments i
+        WHERE i.price_source = 'nse_index' AND i.is_active = 1
+        ORDER BY i.symbol`,
+    );
+    const rows = s.all() as Array<{
+      symbol: string;
+      name: string;
+      nse_name: string | null;
+      category: string | null;
+      bars: number;
+      first_date: string | null;
+      last_date: string | null;
+      bars_with_volume: number;
+      constituents: number;
+    }>;
+    s.finalize();
+    return rows;
+  }
+
+  /** Names in the latest NSE index file that no registered instrument maps to. */
+  async availableNseIndexNames(): Promise<{ date: string; names: string[] }> {
+    const latest = await fetchLatestIndexClose(todayUtc(), this.indexCacheDir());
+    if (latest === null) throw new Error('No NSE index file found in the last 10 weekdays.');
+    const mapped = new Set(
+      this.listNseIndices().map((r) => normalizeIndexName(r.nse_name ?? r.name)),
+    );
+    const names = [...latest.data.values()]
+      .map((r) => r.name)
+      .filter((n) => !mapped.has(normalizeIndexName(n)));
+    return { date: latest.date, names };
+  }
+
+  /** Delete + insert one index's members in one transaction (D14). */
+  replaceIndexConstituents(indexSymbol: string, rows: IndexConstituentSeedRow[]): number {
+    const del = this.db.prepare('DELETE FROM index_constituents WHERE index_symbol = ?');
+    const ins = this.db.prepare(
+      `INSERT OR REPLACE INTO index_constituents (index_symbol, member_symbol, weight, as_of_date)
+       VALUES (?, ?, ?, ?)`,
+    );
+    try {
+      this.tx(() => {
+        del.run([indexSymbol]);
+        for (const r of rows) {
+          ins.run([indexSymbol, r.member_symbol, r.weight ?? null, r.as_of_date]);
+        }
+      });
+    } finally {
+      del.finalize();
+      ins.finalize();
+    }
+    return rows.length;
+  }
+
+  /**
+   * Fetch and replace constituents for NSE-file indices (all when `symbols` is omitted).
+   * Skips an index whose list is younger than `staleDays` unless `force`. The catalogue's
+   * slug is used when the index is catalogued (null = no file); otherwise a slug is
+   * guessed from the name. Members are `<Symbol>.NS`; unknown ones are reported, never
+   * registered.
+   */
+  async refreshIndexConstituents(
+    symbols?: string[],
+    opts: { staleDays?: number; force?: boolean } = {},
+  ): Promise<ConstituentRefresh[]> {
+    const all = this.listNseIndices();
+    const targets = symbols ? all.filter((r) => symbols.includes(r.symbol)) : all;
+    const known = new Set(this.listInstrumentSymbols());
+    const today = todayUtc();
+    const cutoff = addDays(today, -(opts.staleDays ?? 30));
+    const out: ConstituentRefresh[] = [];
+    for (const t of targets) {
+      const base = { symbol: t.symbol, members: 0, unknown: [] as string[] };
+      if (!opts.force) {
+        const s = this.db.prepare(
+          'SELECT MAX(as_of_date) AS d FROM index_constituents WHERE index_symbol = ?',
+        );
+        const d = (s.get([t.symbol]) as { d: string | null }).d;
+        s.finalize();
+        if (d !== null && d > cutoff) {
+          out.push({ ...base, status: 'skipped', reason: `fresh (as of ${d})` });
+          continue;
+        }
+      }
+      const cat = catalogueBySymbol(t.symbol) ?? catalogueByName(t.nse_name ?? t.name);
+      const slug = cat ? cat.constituents_slug : guessConstituentsSlug(t.nse_name ?? t.name);
+      if (!slug) {
+        out.push({ ...base, status: 'skipped', reason: 'no constituent file' });
+        continue;
+      }
+      try {
+        const members = await fetchConstituents(slug);
+        if (members === null) {
+          out.push({
+            ...base,
+            status: 'skipped',
+            reason: `no constituent file (ind_${slug}list.csv)`,
+          });
+          continue;
+        }
+        this.replaceIndexConstituents(
+          t.symbol,
+          members.map((m) => ({
+            index_symbol: t.symbol,
+            member_symbol: m.symbol,
+            weight: null,
+            as_of_date: today,
+          })),
+        );
+        out.push({
+          symbol: t.symbol,
+          status: 'replaced',
+          members: members.length,
+          unknown: members.map((m) => m.symbol).filter((sym) => !known.has(sym)),
+          reason: null,
+        });
+      } catch (err) {
+        out.push({
+          ...base,
+          status: 'failed',
+          reason: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Register an index by its NSE name (D3, D15, D16): validate against the latest NSE
+   * file, derive the key, refuse a key collision, backfill from the NSE file, attach
+   * constituents.
+   */
+  async addIndexByName(
+    name: string,
+    opts: { category?: string; from?: string; onProgress?: (e: SyncProgress) => void } = {},
+  ): Promise<{
+    symbol: string;
+    nseName: string;
+    status: 'created' | 'exists';
+    backfill: SyncSummary;
+    constituents: ConstituentRefresh | null;
+  }> {
+    const today = todayUtc();
+    const from = opts.from ?? addDays(today, -365);
+    if (from < INDEX_HISTORY_MIN_DATE) {
+      throw new Error(
+        `from ${from} is before ${INDEX_HISTORY_MIN_DATE}; older NSE files use the CNX index names.`,
+      );
+    }
+    const latest = await fetchLatestIndexClose(today, this.indexCacheDir());
+    if (latest === null) throw new Error('No NSE index file found in the last 10 weekdays.');
+    const entry = latest.data.get(normalizeIndexName(name));
+    if (!entry) {
+      const names = [...latest.data.values()].map((r) => r.name);
+      throw new IndexNotFoundError(name, suggestIndexNames(name, names), latest.date);
+    }
+    const cat = catalogueByName(entry.name);
+    const symbol = cat?.symbol ?? deriveIndexKey(entry.name);
+    const existing = this.getInstrument(symbol);
+    if (existing !== null) {
+      const mappedTo = existing.source_key ?? existing.name;
+      if (
+        (existing.price_source !== null && existing.price_source !== 'nse_index') ||
+        normalizeIndexName(mappedTo) !== normalizeIndexName(entry.name)
+      ) {
+        throw new Error(
+          `${symbol} is already registered for "${mappedTo}" (${existing.price_source ?? 'no source'}), not "${entry.name}". Refusing to overwrite it.`,
+        );
+      }
+      const s = this.db.prepare(
+        `UPDATE instruments SET price_source = 'nse_index', source_key = ?,
+                index_category = COALESCE(?, index_category), is_active = 1
+          WHERE symbol = ?`,
+      );
+      s.run([entry.name, opts.category ?? null, symbol]);
+      s.finalize();
+    } else {
+      this.addInstrument({
+        symbol,
+        name: entry.name,
+        exchange: 'NSE',
+        instrument_type: 'index',
+        index_category: opts.category ?? cat?.category ?? 'thematic',
+        is_active: 1,
+        as_of_date: today,
+        price_source: 'nse_index',
+        source_key: entry.name,
+      });
+    }
+    const backfill = await this.backfillAll([symbol], from, opts.onProgress);
+    const [constituents] = await this.refreshIndexConstituents([symbol], { force: true });
+    return {
+      symbol,
+      nseName: entry.name,
+      status: existing === null ? 'created' : 'exists',
+      backfill,
+      constituents: constituents ?? null,
+    };
   }
 
   backfillStatus(): {
@@ -618,66 +1998,6 @@ export class MarketDataStore {
     const rows = s.all([indexSymbol]) as Array<{ member_symbol: string }>;
     s.finalize();
     return rows.map((r) => r.member_symbol);
-  }
-
-  async updateSymbol(symbol: string): Promise<SyncResult> {
-    const s = this.db.prepare('SELECT last_date FROM sync_meta WHERE symbol = ?');
-    const row = s.get([symbol]) as { last_date: string } | null;
-    s.finalize();
-
-    const lastDate =
-      row?.last_date ?? new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-
-    const fromDate = addOneDayToDate(lastDate);
-    const today = new Date().toISOString().slice(0, 10);
-
-    if (fromDate > today) {
-      return { symbol, rowsInserted: 0, fromDate, toDate: today };
-    }
-
-    return this.backfillSymbol(symbol, fromDate);
-  }
-
-  async updateWatchlist(): Promise<SyncResult[]> {
-    const s = this.db.prepare('SELECT DISTINCT symbol FROM watchlist');
-    const rows = s.all() as Array<{ symbol: string }>;
-    s.finalize();
-    const results: SyncResult[] = [];
-    for (const row of rows) {
-      try {
-        results.push(await this.updateSymbol(row.symbol));
-      } catch (err) {
-        console.error(`updateWatchlist: failed for ${row.symbol}:`, err);
-        results.push({
-          symbol: row.symbol,
-          rowsInserted: 0,
-          fromDate: '',
-          toDate: new Date().toISOString().slice(0, 10),
-        });
-      }
-    }
-    return results;
-  }
-
-  async updateAll(): Promise<SyncResult[]> {
-    const s = this.db.prepare('SELECT symbol FROM sync_meta');
-    const rows = s.all() as Array<{ symbol: string }>;
-    s.finalize();
-    const results: SyncResult[] = [];
-    for (const row of rows) {
-      try {
-        results.push(await this.updateSymbol(row.symbol));
-      } catch (err) {
-        console.error(`updateAll: failed for ${row.symbol}:`, err);
-        results.push({
-          symbol: row.symbol,
-          rowsInserted: 0,
-          fromDate: '',
-          toDate: new Date().toISOString().slice(0, 10),
-        });
-      }
-    }
-    return results;
   }
 
   // ---------------------------------------------------------------------------
@@ -811,7 +2131,7 @@ export class MarketDataStore {
       `INSERT OR REPLACE INTO ohlcv_daily (symbol, date, open, high, low, close, volume, adj_close, adj_factor)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
-    runTransaction(this.db, () => {
+    this.tx(() => {
       for (const r of rows) {
         stmt.run([
           r.symbol,
@@ -846,13 +2166,30 @@ export class MarketDataStore {
   }
 
   upsertInstruments(rows: InstrumentSeedRow[]): { upserted: number; removed: number } {
+    // Upsert, not INSERT OR REPLACE: a seed row without a price source must not null the
+    // one the DB already holds (plan nse-index-history A1).
     const stmt = this.db.prepare(
-      `INSERT OR REPLACE INTO instruments
+      `INSERT INTO instruments
          (symbol, name, exchange, sector, isin, added_at,
-          industry, market_cap_band, instrument_type, index_category, is_active, as_of_date)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          industry, market_cap_band, instrument_type, index_category, is_active, as_of_date,
+          price_source, source_key)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(symbol) DO UPDATE SET
+         name            = excluded.name,
+         exchange        = excluded.exchange,
+         sector          = excluded.sector,
+         isin            = excluded.isin,
+         added_at        = excluded.added_at,
+         industry        = excluded.industry,
+         market_cap_band = excluded.market_cap_band,
+         instrument_type = excluded.instrument_type,
+         index_category  = excluded.index_category,
+         is_active       = excluded.is_active,
+         as_of_date      = excluded.as_of_date,
+         price_source    = COALESCE(excluded.price_source, instruments.price_source),
+         source_key      = COALESCE(excluded.source_key, instruments.source_key)`,
     );
-    runTransaction(this.db, () => {
+    this.tx(() => {
       for (const r of rows) {
         stmt.run([
           r.symbol,
@@ -867,6 +2204,8 @@ export class MarketDataStore {
           r.index_category ?? null,
           r.is_active ?? 1,
           r.as_of_date ?? null,
+          r.price_source ?? null,
+          r.source_key ?? null,
         ]);
       }
     });
@@ -899,7 +2238,7 @@ export class MarketDataStore {
          (index_symbol, member_symbol, weight, as_of_date)
        VALUES (?, ?, ?, ?)`,
     );
-    runTransaction(this.db, () => {
+    this.tx(() => {
       for (const r of rows) {
         stmt.run([r.index_symbol, r.member_symbol, r.weight ?? null, r.as_of_date]);
       }
@@ -915,7 +2254,7 @@ export class MarketDataStore {
          (scan_id, name, category, description, sql_template, tags, is_builtin)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
     );
-    runTransaction(this.db, () => {
+    this.tx(() => {
       for (const s of scans) {
         stmt.run([
           s.scan_id,
@@ -1088,8 +2427,9 @@ export class MarketDataStore {
     const stmt = this.db.prepare(
       `INSERT INTO instruments
          (symbol, name, exchange, sector, isin, added_at,
-          industry, market_cap_band, instrument_type, index_category, is_active, as_of_date)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          industry, market_cap_band, instrument_type, index_category, is_active, as_of_date,
+          price_source, source_key)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(symbol) DO UPDATE SET
          name            = excluded.name,
          exchange        = excluded.exchange,
@@ -1100,7 +2440,9 @@ export class MarketDataStore {
          instrument_type = excluded.instrument_type,
          index_category  = excluded.index_category,
          is_active       = excluded.is_active,
-         as_of_date      = excluded.as_of_date`,
+         as_of_date      = excluded.as_of_date,
+         price_source    = COALESCE(excluded.price_source, instruments.price_source),
+         source_key      = COALESCE(excluded.source_key, instruments.source_key)`,
     );
     stmt.run([
       row.symbol,
@@ -1115,6 +2457,8 @@ export class MarketDataStore {
       row.index_category ?? null,
       row.is_active ?? 1,
       row.as_of_date ?? null,
+      row.price_source ?? null,
+      row.source_key ?? null,
     ]);
     stmt.finalize();
 
@@ -2495,7 +3839,7 @@ export class MarketDataStore {
       }
 
       // Batch upsert in a transaction
-      runTransaction(this.db, () => {
+      this.tx(() => {
         for (const r of rows) {
           upsertStmt.run([
             r.symbol,
@@ -2661,7 +4005,7 @@ export class MarketDataStore {
              setup_type=?, setup_quality=?
          WHERE symbol=? AND date=?`,
       );
-      runTransaction(this.db, () => {
+      this.tx(() => {
         for (const r of crossRows) {
           const band = r.market_cap_band ?? 'unknown';
           const sec = r.sector ?? 'unknown';
@@ -3728,7 +5072,7 @@ export class MarketDataStore {
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
     );
     let count = 0;
-    runTransaction(this.db, () => {
+    this.tx(() => {
       for (const r of rows) {
         stmt.run([r.date, r.fii_buy, r.fii_sell, r.fii_net, r.dii_buy, r.dii_sell, r.dii_net]);
         count++;
@@ -3774,7 +5118,7 @@ export class MarketDataStore {
        VALUES (?, ?, ?, ?)`,
     );
     let count = 0;
-    runTransaction(this.db, () => {
+    this.tx(() => {
       for (const r of rows) {
         stmt.run([r.symbol, r.ex_date, r.purpose, r.value ?? null]);
         count++;
@@ -3822,7 +5166,7 @@ export class MarketDataStore {
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
     );
     let count = 0;
-    runTransaction(this.db, () => {
+    this.tx(() => {
       for (const r of rows) {
         stmt.run([r.date, r.symbol, r.client_name, r.deal_type, r.trade_type, r.quantity, r.price]);
         count++;

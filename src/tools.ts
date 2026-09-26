@@ -4,7 +4,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 
 import type { EthosPlugin, EthosPluginApi } from '@ethosagent/plugin-sdk';
-import type { Tool, ToolResult } from '@ethosagent/types';
+import type { Tool, ToolContext, ToolResult } from '@ethosagent/types';
 
 // ---------------------------------------------------------------------------
 // Singleton store
@@ -23,10 +23,12 @@ import {
   writeImportReport,
 } from './instrument-import';
 import { fetchFiiDii, fetchGiftNifty } from './nse-fetcher';
+import { INDEX_HISTORY_MIN_DATE } from './nse-indices';
+import { createProgressReporter, formatSyncSummary, type SyncProgress } from './progress';
 import type { IndexConstituentSeedRow, InstrumentSeedRow, SavedScanRow } from './schema';
 import { SqlGuardError } from './sql-guard';
 import type { InstrumentRow, SyncResult } from './store';
-import { MarketDataStore } from './store';
+import { IndexNotFoundError, MarketDataStore } from './store';
 
 function getPackageRoot(): string {
   const __filename = fileURLToPath(import.meta.url);
@@ -55,6 +57,23 @@ async function withStoreAsync<T>(fn: (store: MarketDataStore) => Promise<T>): Pr
   }
 }
 
+/** Hosts the price-source passes reach: Yahoo plus both NSE archive hosts (A5). */
+const SYNC_HOSTS = [
+  'query1.finance.yahoo.com',
+  'nsearchives.nseindia.com',
+  'archives.nseindia.com',
+];
+
+/**
+ * Progress lines for the user (plan nse-index-history A6): a start line with totals by
+ * source, then at most one line per 25 symbols or 2 s.
+ */
+function progressEmitter(ctx: ToolContext, toolName: string): (e: SyncProgress) => void {
+  return createProgressReporter((message, percent) =>
+    ctx.emit?.({ type: 'progress', toolName, message, audience: 'user', percent }),
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Per-tool arg interfaces
 // ---------------------------------------------------------------------------
@@ -66,10 +85,12 @@ interface BackfillArgs {
   limit?: number;
   skip_synced?: boolean;
   concurrency?: number;
+  source?: 'bhavcopy' | 'yahoo';
 }
 
 interface UpdateArgs {
   mode?: 'watchlist' | 'all';
+  source?: 'bhavcopy' | 'yahoo';
 }
 
 interface WatchlistAddArgs {
@@ -140,12 +161,12 @@ const nseMarketCleanTool: Tool = {
 const nseMarketBackfillTool: Tool<BackfillArgs> = {
   name: 'nse_market_backfill',
   description:
-    'Download daily OHLCV history for NSE stocks and store locally. Supports batched execution via limit + skip_synced params — call repeatedly to process all ~2,900 symbols without a single long-running call. Pass days: 1825 for 5 years of history.',
+    'Download daily OHLCV history for NSE stocks and indices and store locally. Each symbol is fetched from its stored price source — Yahoo, the NSE CM bhavcopy (SME/InvIT/REIT series) or the NSE all-indices file; a symbol with no source yet is resolved once (Yahoo if it has at least half the trading days, else the bhavcopy, else refused with the reason). Supports batched execution via limit + skip_synced params — call repeatedly to process all ~3,000 symbols without a single long-running call. Pass days: 1825 for 5 years of history.',
   toolset: 'market',
   maxResultChars: 5000,
   requiresApproval: true,
   capabilities: {
-    network: { allowedHosts: ['query1.finance.yahoo.com'] },
+    network: { allowedHosts: SYNC_HOSTS },
   },
   schema: {
     type: 'object',
@@ -173,10 +194,16 @@ const nseMarketBackfillTool: Tool<BackfillArgs> = {
         description:
           'Skip symbols already in sync_meta (already synced). Use with limit to batch-process: call repeatedly until backfill-status shows complete.',
       },
+      source: {
+        type: 'string',
+        enum: ['bhavcopy', 'yahoo'],
+        description:
+          "Preferred source for stocks and trusts. 'bhavcopy' (default): one NSE bhavcopy per trading day serves every symbol NSE lists; the rest (BSE symbols, tickers NSE does not list) fall back to Yahoo. Bhavcopy prices are raw (not split/bonus-adjusted). 'yahoo': Yahoo serves every Yahoo-sourced symbol and overwrites those days with its adjusted prices — use it periodically to refresh adjustments; bhavcopy-sourced SME/InvIT/REIT symbols stay on the bhavcopy. Indices always come from the NSE index file. A preference, never a failure: fallbacks are listed in the summary.",
+      },
       concurrency: {
         type: 'number',
         description:
-          'Number of symbols to fetch in parallel (default: 5). Increase for faster backfills on fast connections.',
+          'Number of Yahoo workers (default: 5). All Yahoo calls share one process-wide 400 ms spacing, so raising this does not make a backfill faster.',
       },
     },
   },
@@ -218,45 +245,18 @@ const nseMarketBackfillTool: Tool<BackfillArgs> = {
         symbols = symbols.slice(0, args.limit);
       }
 
-      ctx.emit?.({
-        type: 'progress',
-        toolName: 'nse_market_backfill',
-        message: `Starting backfill for ${symbols.length} symbols from ${fromDate}...`,
-        audience: 'user',
-        percent: 0,
-      });
-
-      const { results, failed } = await store.backfillAll(
+      const summary = await store.backfillAll(
         symbols,
         fromDate,
-        (done, total, _sym, errorCount) => {
-          if (done % 10 === 0 || done === total) {
-            ctx.emit?.({
-              type: 'progress',
-              toolName: 'nse_market_backfill',
-              message: `${done}/${total} symbols synced${errorCount > 0 ? `, ${errorCount} errors` : ''}`,
-              audience: 'user',
-              percent: Math.round((done / total) * 100),
-            });
-          }
-        },
+        progressEmitter(ctx, 'nse_market_backfill'),
         {
-          concurrency: args.concurrency,
+          concurrency: args.concurrency ?? 5,
           skipSynced: args.skip_synced,
+          source: args.source === 'yahoo' ? 'yahoo' : 'bhavcopy',
         },
       );
 
-      const totalRows = results.reduce((sum, r) => sum + r.rowsInserted, 0);
-
-      return {
-        ok: true,
-        value: [
-          `Backfill complete: ${results.length} symbols processed, ${totalRows} rows inserted.`,
-          failed.length > 0
-            ? `${failed.length} failed: ${failed.slice(0, 5).join(', ')}${failed.length > 5 ? ` (+${failed.length - 5} more)` : ''}.`
-            : 'No failures.',
-        ].join('\n'),
-      };
+      return { ok: true, value: formatSyncSummary(summary) };
     });
   },
 };
@@ -264,10 +264,11 @@ const nseMarketBackfillTool: Tool<BackfillArgs> = {
 const nseMarketUpdateTool: Tool<UpdateArgs> = {
   name: 'nse_market_update',
   description:
-    'Fetch missing trading days for tracked symbols. Checks last sync date and fills the gap to today.',
+    "Fetch missing trading days for tracked symbols. Checks last sync date and fills the gap to today: one NSE index file per day for all indices, one NSE bhavcopy per day for every stock NSE lists (default source 'bhavcopy'), Yahoo only for what NSE does not list — or source 'yahoo' to take Yahoo's adjusted prices. Days with no new session are skipped without a request. Streams progress; returns a short summary with fallbacks, failed symbols and reasons.",
   toolset: 'market',
+  maxResultChars: 5000,
   capabilities: {
-    network: { allowedHosts: ['query1.finance.yahoo.com'] },
+    network: { allowedHosts: SYNC_HOSTS },
   },
   schema: {
     type: 'object',
@@ -277,27 +278,23 @@ const nseMarketUpdateTool: Tool<UpdateArgs> = {
         enum: ['watchlist', 'all'],
         description: 'Update watchlist symbols only (default) or all instruments.',
       },
+      source: {
+        type: 'string',
+        enum: ['bhavcopy', 'yahoo'],
+        description:
+          "Preferred source for stocks and trusts. 'bhavcopy' (default): one NSE bhavcopy per trading day serves every symbol NSE lists; the rest (BSE symbols, tickers NSE does not list) fall back to Yahoo. Bhavcopy prices are raw (not split/bonus-adjusted). 'yahoo': Yahoo serves every Yahoo-sourced symbol and overwrites those days with its adjusted prices — use it periodically to refresh adjustments; bhavcopy-sourced SME/InvIT/REIT symbols stay on the bhavcopy. Indices always come from the NSE index file. A preference, never a failure: fallbacks are listed in the summary.",
+      },
     },
   },
   async execute(args, ctx): Promise<ToolResult> {
     return withStoreAsync(async (store) => {
-      const mode = args.mode ?? 'watchlist';
-
-      ctx.emit?.({
-        type: 'progress',
-        toolName: 'nse_market_update',
-        message: `Updating ${mode === 'all' ? 'all' : 'watchlist'} symbols...`,
-        audience: 'user',
-      });
-
-      const results = mode === 'all' ? await store.updateAll() : await store.updateWatchlist();
-      const totalRows = results.reduce((sum, r) => sum + r.rowsInserted, 0);
-      const summary = results.map((r) => `${r.symbol}: +${r.rowsInserted} rows`).join('\n');
-
-      return {
-        ok: true,
-        value: `${summary}\n\nTotal: ${results.length} symbols updated, ${totalRows} new rows.`,
-      };
+      const onProgress = progressEmitter(ctx, 'nse_market_update');
+      const source = args.source === 'yahoo' ? 'yahoo' : 'bhavcopy';
+      const summary =
+        args.mode === 'all'
+          ? await store.updateAll(onProgress, { source })
+          : await store.updateWatchlist(onProgress, { source });
+      return { ok: true, value: formatSyncSummary(summary) };
     });
   },
 };
@@ -1528,9 +1525,10 @@ JOIN KEYS
 - Latest date idiom: WHERE date = (SELECT MAX(date) FROM indicators_daily).
 
 TABLES
-instruments: symbol, name, exchange, sector, isin, added_at, industry, market_cap_band, instrument_type ('equity' or 'index'), index_category, is_active, as_of_date
+instruments: symbol, name, exchange, sector, isin, added_at, industry, market_cap_band, instrument_type ('equity' or 'index'), index_category, is_active, as_of_date, price_source ('yahoo', 'bhavcopy' or 'nse_index' — where this symbol's prices come from), source_key (Yahoo symbol, '<NSE symbol>:<series>', or NSE index name)
 ohlcv_daily: symbol, date, open, high, low, close, volume, adj_close, adj_factor, delivery_qty, delivery_pct
-sync_meta: symbol, last_sync, last_date
+sync_meta: symbol, last_sync, last_date, yahoo_miss_streak
+source_switches: symbol, switched_at, from_source, to_source, reason (automatic price-source changes)
 watchlist: symbol, list_name, notes, added_at
 watchlist_alerts: symbol, condition_hash, last_alerted, alert_count
 index_constituents: index_symbol, member_symbol, weight, as_of_date
@@ -1763,7 +1761,7 @@ const nseInstrumentAddTool: Tool<InstrumentAddArgs> = {
     'change it). For an index, pass instrument_type: "index" and optionally members to attach ' +
     'constituents — members are attached even when the index is already registered.',
   toolset: 'market',
-  capabilities: { network: { allowedHosts: ['query1.finance.yahoo.com'] } },
+  capabilities: { network: { allowedHosts: SYNC_HOSTS } },
   maxResultChars: 4000,
   requiresApproval: false,
   schema: {
@@ -1959,6 +1957,9 @@ const nseInstrumentAddTool: Tool<InstrumentAddArgs> = {
           index_category: args.index_category ?? null,
           is_active: 1,
           as_of_date: args.as_of_date ?? null,
+          // The backfill ran before the row existed; carry the source it resolved (A8).
+          price_source: backfilled?.priceSource ?? null,
+          source_key: backfilled?.sourceKey ?? null,
         },
         { update: args.update === true },
       );
@@ -1994,6 +1995,102 @@ const nseInstrumentAddTool: Tool<InstrumentAddArgs> = {
       }
 
       return { ok: true, value: lines.join('\n\n') };
+    });
+  },
+};
+
+// ---------------------------------------------------------------------------
+// nse_index_add — register an index by its NSE name (plan nse-index-history D15)
+// ---------------------------------------------------------------------------
+
+interface IndexAddArgs {
+  name?: string;
+  category?: string;
+  backfill_days?: number;
+}
+
+const nseIndexAddTool: Tool<IndexAddArgs> = {
+  name: 'nse_index_add',
+  description:
+    'Register an NSE index by its official name (as printed in NSE\'s daily all-indices file, e.g. "Nifty Smallcap 50", "Nifty Chemicals"), download its daily OHLCV + volume history from that NSE file, and attach its constituents from NSE\'s constituent list when one exists. Validates the name against the latest NSE file; an unknown name is refused with the three closest names. The symbol is derived from the name (e.g. ^NIFTYSMALLCAP50). Idempotent: an index already registered under that name is re-backfilled, not duplicated. Use this — not nse_instrument_add — for indices Yahoo does not carry.',
+  toolset: 'market',
+  maxResultChars: 4000,
+  requiresApproval: false,
+  capabilities: {
+    network: { allowedHosts: ['nsearchives.nseindia.com', 'archives.nseindia.com'] },
+  },
+  schema: {
+    type: 'object',
+    properties: {
+      name: {
+        type: 'string',
+        description: 'NSE index name, e.g. "Nifty MidSmallcap 400". Case-insensitive.',
+      },
+      category: {
+        type: 'string',
+        enum: ['broad', 'sector', 'cap_segment', 'regime', 'thematic'],
+        description:
+          'index_category. Default: the catalogue value for known indices, else thematic. Only one index per sector should be "sector" — sector rotation ranks every sector index.',
+      },
+      backfill_days: {
+        type: 'number',
+        description: `Days of history to download. Default 365; history starts no earlier than ${INDEX_HISTORY_MIN_DATE}.`,
+      },
+    },
+    required: ['name'],
+  },
+  async execute(args, ctx): Promise<ToolResult> {
+    const name = args.name?.trim() ?? '';
+    if (name.length === 0) {
+      return { ok: false, error: 'name is required.', code: 'input_invalid' };
+    }
+    const days = args.backfill_days ?? 365;
+    if (!Number.isFinite(days) || days < 1) {
+      return {
+        ok: false,
+        error: 'backfill_days must be a positive number.',
+        code: 'input_invalid',
+      };
+    }
+    let from = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+    if (from < INDEX_HISTORY_MIN_DATE) from = INDEX_HISTORY_MIN_DATE;
+    const category = args.category?.trim() || undefined;
+
+    return withStoreAsync(async (store) => {
+      try {
+        const r = await store.addIndexByName(name, {
+          category,
+          from,
+          onProgress: progressEmitter(ctx, 'nse_index_add'),
+        });
+        const lines = [
+          `${r.status === 'created' ? 'Registered' : 'Already registered — re-backfilled'} ${r.symbol} ("${r.nseName}").`,
+          formatSyncSummary(r.backfill),
+        ];
+        const c = r.constituents;
+        if (c?.status === 'replaced') {
+          lines.push(
+            `Constituents: ${c.members} attached.${
+              c.unknown.length > 0
+                ? ` ${c.unknown.length} are not registered and will not appear in scans: ${c.unknown.slice(0, 10).join(', ')}${c.unknown.length > 10 ? `, +${c.unknown.length - 10} more` : ''}.`
+                : ''
+            }`,
+          );
+        } else if (c) {
+          lines.push(`Constituents: ${c.status} — ${c.reason}.`);
+        }
+        lines.push('Run nse_compute_indicators to compute its indicators.');
+        return { ok: true, value: lines.join('\n') };
+      } catch (err) {
+        if (err instanceof IndexNotFoundError) {
+          return { ok: false, error: err.message, code: 'not_available' };
+        }
+        return {
+          ok: false,
+          error: err instanceof Error ? err.message : String(err),
+          code: 'execution_failed',
+        };
+      }
     });
   },
 };
@@ -2174,6 +2271,7 @@ export function createNseMarketDataTools(): Tool[] {
     nseMarketQueryTool as Tool,
     nseInstrumentAddTool as Tool,
     nseInstrumentImportTool as Tool,
+    nseIndexAddTool as Tool,
   ];
   return tools;
 }

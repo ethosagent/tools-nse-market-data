@@ -12,7 +12,14 @@ import {
   writeImportReport,
 } from './instrument-import';
 import { fetchBulkBlockDeals, fetchCorporateActions, fetchFiiDii } from './nse-fetcher';
-import type { IndexConstituentSeedRow, InstrumentSeedRow, SavedScanRow } from './schema';
+import { INDEX_HISTORY_MIN_DATE } from './nse-indices';
+import { createProgressReporter, formatSyncSummary, type SourcePreference } from './progress';
+import type {
+  IndexConstituentSeedRow,
+  InstrumentSeedRow,
+  PriceSource,
+  SavedScanRow,
+} from './schema';
 import {
   downloadSeed,
   fetchRemoteManifest,
@@ -22,7 +29,7 @@ import {
   type SeedManifest,
   writeLocalManifest,
 } from './seed';
-import { MarketDataStore } from './store';
+import { type ConstituentRefresh, IndexNotFoundError, MarketDataStore } from './store';
 
 function getPackageRoot(): string {
   // dist/cli.js is one level below package root
@@ -68,6 +75,47 @@ function hasFlag(args: string[], flag: string): boolean {
   return args.includes(flag);
 }
 
+/** The same progress lines the tools emit (plan nse-index-history A6), one per console line. */
+function progressPrinter() {
+  return createProgressReporter((message) => console.log(`  ${message}`));
+}
+
+function splitSymbols(value: string | undefined): string[] | undefined {
+  if (value === undefined) return undefined;
+  return value
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+const PRICE_SOURCES: PriceSource[] = ['yahoo', 'bhavcopy', 'nse_index'];
+
+/** `--source bhavcopy|yahoo` (A11): the preferred source for stocks; default bhavcopy. */
+function readPreference(args: string[]): SourcePreference {
+  const v = getFlag(args, '--source') ?? 'bhavcopy';
+  if (v !== 'bhavcopy' && v !== 'yahoo') {
+    console.error('--source must be bhavcopy or yahoo');
+    process.exit(1);
+  }
+  return v;
+}
+
+function printConstituents(results: ConstituentRefresh[]): void {
+  for (const r of results) {
+    if (r.status === 'replaced') {
+      console.log(
+        `  ${r.symbol}: ${r.members} members${
+          r.unknown.length > 0
+            ? `, ${r.unknown.length} not registered (${r.unknown.slice(0, 5).join(', ')}${r.unknown.length > 5 ? ', …' : ''})`
+            : ''
+        }`,
+      );
+    } else {
+      console.log(`  ${r.symbol}: ${r.status} — ${r.reason}`);
+    }
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
@@ -89,15 +137,38 @@ async function main(): Promise<void> {
 Commands:
   clean                     Delete all local market data
   backfill [--symbols A,B] [--from YYYY-MM-DD] [--all] [--index SYM]
+           [--source bhavcopy|yahoo] [--stored-source yahoo|bhavcopy|nse_index]
            [--skip-synced] [--resume] [--concurrency N] [--mark-failed-inactive]
-                            Fetch OHLCV history. --all = all active equity instruments.
+                            Fetch OHLCV history. Indices come from the NSE index file.
+                            --source bhavcopy (default): one NSE bhavcopy per day serves every
+                            stock NSE lists; the rest fall back to their stored source.
+                            --source yahoo: Yahoo for Yahoo-sourced symbols (adjusted prices);
+                            bhavcopy-sourced SME/InvIT/REIT stay on the bhavcopy.
+                            A symbol with no stored source yet is resolved once.
+                            --all = all active instruments.
+                            --stored-source = only symbols whose stored source is that one.
                             --index = backfill that index's members first (tiered).
                             --skip-synced / --resume = skip already-synced symbols.
-                            --concurrency N = parallel fetches (default 10).
+                            --concurrency N = Yahoo workers (default 10). Yahoo calls share
+                            one process-wide 400 ms spacing, so this does not raise the rate.
                             --mark-failed-inactive = mark failed symbols as inactive.
   backfill-status           Show how many symbols are synced vs pending.
-  update [--mode watchlist|all]
-                            Fill missing days since last sync
+  update [--mode watchlist|all] [--source bhavcopy|yahoo]
+                            Fill missing days since last sync: one NSE index file and one
+                            bhavcopy per day; Yahoo (400 ms apart) only for what the bhavcopy
+                            does not list, or for Yahoo-sourced symbols with --source yahoo.
+                            Days with no new session are skipped without a request.
+                            --mode all also refreshes index constituents older than 30 days.
+  sources                   Instruments per price source and recent automatic switches.
+  index list [--available]  NSE-file indices with bar counts; --available lists names in the
+                            latest NSE file that are not registered.
+  index add "<NSE name>" [--category C] [--from YYYY-MM-DD]
+                            Register an index by its NSE name, backfill it (default 365 days,
+                            not before ${INDEX_HISTORY_MIN_DATE}) and attach its constituents.
+  index backfill [--symbols A,B] [--from YYYY-MM-DD]
+                            Re-fetch index history from the NSE file (default: all, 365 days).
+  index constituents [--symbols A,B]
+                            Re-download constituent lists from NSE (replaces the members).
   watchlist add SYMBOL [--list NAME] [--notes TEXT]
   watchlist remove SYMBOL [--list NAME]
   watchlist show [--list NAME]
@@ -180,28 +251,37 @@ Options:
       // -----------------------------------------------------------------------
       case 'backfill': {
         let symbols: string[];
+        const sourceFlag = getFlag(args, '--stored-source');
+        if (sourceFlag !== undefined && !PRICE_SOURCES.includes(sourceFlag as PriceSource)) {
+          console.error(`--stored-source must be one of ${PRICE_SOURCES.join(', ')}`);
+          process.exit(1);
+        }
+        const preference = readPreference(args);
 
         if (hasFlag(args, '--all')) {
           const equities = store.getActiveInstrumentsByType('equity').map((i) => i.symbol);
           const indices = store.getActiveInstrumentsByType('index').map((i) => i.symbol);
           symbols = [...equities, ...indices];
         } else {
-          const symbolsFlag = getFlag(args, '--symbols');
+          const symbolsFlag = splitSymbols(getFlag(args, '--symbols'));
           if (symbolsFlag) {
-            symbols = symbolsFlag
-              .split(',')
-              .map((s) => s.trim())
-              .filter(Boolean);
+            symbols = symbolsFlag;
+          } else if (sourceFlag !== undefined) {
+            symbols = store.listSymbolsBySource(sourceFlag as PriceSource);
           } else {
             const watchlistEntries = store.watchlistList();
             if (watchlistEntries.length === 0) {
               console.error(
-                'No symbols specified. Use --symbols A,B,C or --all, or add symbols to your watchlist first.',
+                'No symbols specified. Use --symbols A,B,C, --all or --source S, or add symbols to your watchlist first.',
               );
               process.exit(1);
             }
             symbols = watchlistEntries.map((e) => e.symbol);
           }
+        }
+        if (sourceFlag !== undefined) {
+          const ofSource = new Set(store.listSymbolsBySource(sourceFlag as PriceSource));
+          symbols = symbols.filter((s) => ofSource.has(s));
         }
 
         const fromDate =
@@ -218,20 +298,13 @@ Options:
           if (members.length === 0) {
             console.warn(`No constituents found for index ${indexFlag}. Skipping tier.`);
           } else {
-            console.log(`Tier 1: Backfilling ${members.length} ${indexFlag} constituents first...`);
-            const tier1 = await store.backfillAll(
-              members,
-              fromDate,
-              (done, total, sym, failed) => {
-                process.stdout.write(
-                  `  [${done}/${total}] ${sym}${failed ? ` (${failed} failed)` : ''}\r`,
-                );
-              },
-              { concurrency, skipSynced },
-            );
-            console.log(
-              `\nTier 1 done: ${tier1.results.length} symbols, ${tier1.failed.length} failed.`,
-            );
+            console.log(`Tier 1: ${indexFlag} constituents first...`);
+            const tier1 = await store.backfillAll(members, fromDate, progressPrinter(), {
+              concurrency,
+              skipSynced,
+              source: preference,
+            });
+            console.log(formatSyncSummary(tier1));
             // Remove tier1 symbols from main list
             const tier1Set = new Set(members);
             symbols = symbols.filter((s) => !tier1Set.has(s));
@@ -242,34 +315,18 @@ Options:
           console.log('Skipping already-synced symbols (--skip-synced)...');
         }
 
-        console.log(
-          `Backfilling ${symbols.length} symbols from ${fromDate} (concurrency=${concurrency})...`,
-        );
-
-        const { results, failed } = await store.backfillAll(
-          symbols,
-          fromDate,
-          (done, total, sym, failedCount) => {
-            process.stdout.write(
-              `  [${done}/${total}] ${sym}${failedCount ? ` | ${failedCount} failed` : ''}\r`,
-            );
-          },
-          { concurrency, skipSynced },
-        );
-
-        const totalRows = results.reduce((s, r) => s + r.rowsInserted, 0);
-        console.log(
-          `\nDone. ${results.length} symbols, ${totalRows} rows inserted, ${failed.length} failed.`,
-        );
-        if (failed.length > 0) {
-          console.log(
-            `Failed symbols: ${failed.slice(0, 10).join(', ')}${failed.length > 10 ? `... (+${failed.length - 10} more)` : ''}`,
-          );
+        const summary = await store.backfillAll(symbols, fromDate, progressPrinter(), {
+          concurrency,
+          skipSynced,
+          source: preference,
+        });
+        console.log(formatSyncSummary(summary));
+        if (summary.failed.length > 0) {
           console.log('Re-run with --skip-synced to retry only failed symbols.');
         }
         const markInactive = args.includes('--mark-failed-inactive');
-        if (markInactive && failed.length > 0) {
-          const marked = store.markInactive(failed);
+        if (markInactive && summary.failed.length > 0) {
+          const marked = store.markInactive(summary.failed.map((f) => f.symbol));
           console.log(`Marked ${marked} symbol(s) as inactive.`);
         }
         break;
@@ -278,30 +335,109 @@ Options:
       // -----------------------------------------------------------------------
       case 'update': {
         const mode = getFlag(args, '--mode') ?? 'watchlist';
+        const source = readPreference(args);
+        const summary =
+          mode === 'all'
+            ? await store.updateAll(progressPrinter(), { source })
+            : await store.updateWatchlist(progressPrinter(), { source });
+        console.log(formatSyncSummary(summary));
+        break;
+      }
 
-        if (mode === 'watchlist') {
-          const watchlistEntries = store.watchlistList();
-          console.log(`Updating ${watchlistEntries.length} watchlist symbols...`);
+      // -----------------------------------------------------------------------
+      case 'sources': {
+        const report = store.sourceReport();
+        console.log('Price source      Instruments  Active');
+        for (const c of report.counts) {
+          console.log(
+            `${c.source.padEnd(17)} ${String(c.instruments).padStart(11)}  ${String(c.active).padStart(6)}`,
+          );
         }
-
-        const results = mode === 'all' ? await store.updateAll() : await store.updateWatchlist();
-
-        if (mode === 'all') {
-          console.log(`Updating ${results.length} all symbols...`);
-        }
-
-        let totalRows = 0;
-        for (const r of results) {
-          if (r.rowsInserted > 0) {
-            console.log(`  ${r.symbol}: +${r.rowsInserted} rows (up to ${r.toDate})`);
-            totalRows += r.rowsInserted;
-          } else {
-            console.log(`  ${r.symbol}: already up to date`);
+        if (report.switches.length > 0) {
+          console.log('\nRecent automatic switches:');
+          for (const sw of report.switches) {
+            console.log(
+              `  ${sw.switched_at.slice(0, 10)} ${sw.symbol}: ${sw.from_source ?? 'none'} → ${sw.to_source} — ${sw.reason}`,
+            );
           }
         }
+        break;
+      }
 
-        const updated = results.filter((r) => r.rowsInserted > 0).length;
-        console.log(`Done. ${updated} symbols updated, ${totalRows} new rows total.`);
+      // -----------------------------------------------------------------------
+      case 'index': {
+        const sub = args[1];
+        const symbolsFlag = splitSymbols(getFlag(args, '--symbols'));
+        const fromFlag = getFlag(args, '--from');
+        if (fromFlag !== undefined && fromFlag < INDEX_HISTORY_MIN_DATE) {
+          console.error(
+            `--from ${fromFlag} is before ${INDEX_HISTORY_MIN_DATE}; older NSE files use the CNX index names.`,
+          );
+          process.exit(1);
+        }
+
+        if (sub === 'list') {
+          const rows = store.listNseIndices();
+          console.log(
+            `${'Symbol'.padEnd(34)} ${'NSE name'.padEnd(36)} ${'Category'.padEnd(12)} Bars  Last date   Members`,
+          );
+          for (const r of rows) {
+            console.log(
+              `${r.symbol.padEnd(34)} ${(r.nse_name ?? r.name).padEnd(36)} ${(r.category ?? '-').padEnd(12)} ${String(r.bars).padStart(4)}  ${(r.last_date ?? '-').padEnd(10)} ${String(r.constituents).padStart(7)}`,
+            );
+          }
+          console.log(`\n${rows.length} indices from the NSE index file.`);
+          if (hasFlag(args, '--available')) {
+            const avail = await store.availableNseIndexNames();
+            console.log(
+              `\nNot registered, in the NSE file of ${avail.date} (${avail.names.length}):`,
+            );
+            for (const n of avail.names) console.log(`  ${n}`);
+            console.log('\nAdd one with: nse-market-data index add "<name>"');
+          }
+        } else if (sub === 'add') {
+          const name = args[2];
+          if (!name || name.startsWith('--')) {
+            console.error('Usage: index add "<NSE index name>" [--category C] [--from YYYY-MM-DD]');
+            process.exit(1);
+          }
+          try {
+            const r = await store.addIndexByName(name, {
+              category: getFlag(args, '--category'),
+              from: fromFlag,
+              onProgress: progressPrinter(),
+            });
+            console.log(
+              `${r.status === 'created' ? 'Registered' : 'Already registered'} ${r.symbol} ("${r.nseName}").`,
+            );
+            console.log(formatSyncSummary(r.backfill));
+            if (r.constituents) printConstituents([r.constituents]);
+          } catch (err) {
+            if (err instanceof IndexNotFoundError) {
+              console.error(err.message);
+              process.exit(1);
+            }
+            throw err;
+          }
+        } else if (sub === 'backfill') {
+          const all = store.listSymbolsBySource('nse_index');
+          const symbols = symbolsFlag ?? all;
+          const from =
+            fromFlag ?? new Date(Date.now() - 365 * 86_400_000).toISOString().slice(0, 10);
+          const summary = await store.backfillAll(symbols, from, progressPrinter());
+          console.log(formatSyncSummary(summary));
+        } else if (sub === 'constituents') {
+          console.log('Refreshing index constituents from NSE...');
+          const results = await store.refreshIndexConstituents(symbolsFlag, { force: true });
+          printConstituents(results);
+          const replaced = results.filter((r) => r.status === 'replaced').length;
+          console.log(`Done. ${replaced}/${results.length} indices replaced.`);
+        } else {
+          console.error(
+            `Unknown index subcommand: ${sub ?? '(none)'}. Use list, add, backfill or constituents.`,
+          );
+          process.exit(1);
+        }
         break;
       }
 
@@ -621,10 +757,8 @@ Options:
         console.log(
           `Backfilling ${symbolsToBackfill.length} symbols from ${fromDate} (${years} years)...`,
         );
-        await store.backfillAll(symbolsToBackfill, fromDate, (done, total, symbol) => {
-          process.stdout.write(`  [${done}/${total}] ${symbol}\r`);
-        });
-        console.log(`\nBackfill complete: ${symbolsToBackfill.length} symbols.`);
+        const backfill = await store.backfillAll(symbolsToBackfill, fromDate, progressPrinter());
+        console.log(formatSyncSummary(backfill));
 
         // Step 4: Compute indicators
         console.log('Computing indicators...');

@@ -6,9 +6,9 @@ import { createNseMarketDataTools, MARKET_QUERY_DESCRIPTION } from '../tools';
 const { Database } = _pkg;
 
 describe('createNseMarketDataTools()', () => {
-  it('returns 26 tools', () => {
+  it('returns 28 tools', () => {
     const tools = createNseMarketDataTools();
-    expect(tools).toHaveLength(27);
+    expect(tools).toHaveLength(28);
   });
 
   it('all tools have required fields', () => {
@@ -51,6 +51,7 @@ describe('createNseMarketDataTools()', () => {
     expect(names).toContain('nse_market_query');
     expect(names).toContain('nse_instrument_add');
     expect(names).toContain('nse_instrument_import');
+    expect(names).toContain('nse_index_add');
   });
 });
 

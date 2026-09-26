@@ -15,6 +15,7 @@ import {
   readImportReport,
   writeImportReport,
 } from '../instrument-import';
+import { configureNseArchive } from '../nse-archive';
 import { MarketDataStore } from '../store';
 import { createNseMarketDataTools } from '../tools';
 
@@ -222,8 +223,10 @@ describe('nse_instrument_import tool', () => {
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), 'nse-import-tool-'));
     process.env.NSE_MARKET_DATA_DB = join(dir, 'market.db');
+    configureNseArchive({ minIntervalMs: 0, retryDelaysMs: [] });
   });
   afterEach(() => {
+    configureNseArchive();
     vi.unstubAllGlobals();
     delete process.env.NSE_MARKET_DATA_DB;
     rmSync(dir, { recursive: true, force: true });
