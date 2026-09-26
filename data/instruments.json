@@ -10,7 +10,9 @@
     "instrument_type": "index",
     "index_category": "cap_segment",
     "is_active": 1,
-    "as_of_date": "2026-06-05"
+    "as_of_date": "2026-06-05",
+    "price_source": "nse_index",
+    "source_key": "Nifty 100"
   },
   {
     "symbol": "^CNX200",
@@ -23,7 +25,9 @@
     "instrument_type": "index",
     "index_category": "broad",
     "is_active": 1,
-    "as_of_date": "2026-06-05"
+    "as_of_date": "2026-06-05",
+    "price_source": "nse_index",
+    "source_key": "Nifty 200"
   },
   {
     "symbol": "^CNXAUTO",
@@ -36,7 +40,9 @@
     "instrument_type": "index",
     "index_category": "sector",
     "is_active": 1,
-    "as_of_date": "2026-06-05"
+    "as_of_date": "2026-06-05",
+    "price_source": "nse_index",
+    "source_key": "Nifty Auto"
   },
   {
     "symbol": "^CNXENERGY",
@@ -49,7 +55,9 @@
     "instrument_type": "index",
     "index_category": "sector",
     "is_active": 1,
-    "as_of_date": "2026-06-05"
+    "as_of_date": "2026-06-05",
+    "price_source": "nse_index",
+    "source_key": "Nifty Energy"
   },
   {
     "symbol": "^CNXFMCG",
@@ -62,7 +70,9 @@
     "instrument_type": "index",
     "index_category": "sector",
     "is_active": 1,
-    "as_of_date": "2026-06-05"
+    "as_of_date": "2026-06-05",
+    "price_source": "nse_index",
+    "source_key": "Nifty FMCG"
   },
   {
     "symbol": "^CNXIT",
@@ -75,7 +85,9 @@
     "instrument_type": "index",
     "index_category": "sector",
     "is_active": 1,
-    "as_of_date": "2026-06-05"
+    "as_of_date": "2026-06-05",
+    "price_source": "nse_index",
+    "source_key": "Nifty IT"
   },
   {
     "symbol": "^CNXMC150",
@@ -88,7 +100,9 @@
     "instrument_type": "index",
     "index_category": "broad",
     "is_active": 1,
-    "as_of_date": "2026-06-05"
+    "as_of_date": "2026-06-05",
+    "price_source": "nse_index",
+    "source_key": "Nifty Midcap 150"
   },
   {
     "symbol": "^CNXMC250",
@@ -101,7 +115,9 @@
     "instrument_type": "index",
     "index_category": "broad",
     "is_active": 1,
-    "as_of_date": "2026-06-05"
+    "as_of_date": "2026-06-05",
+    "price_source": "nse_index",
+    "source_key": "Nifty Microcap 250"
   },
   {
     "symbol": "^CNXMETAL",
@@ -114,7 +130,9 @@
     "instrument_type": "index",
     "index_category": "sector",
     "is_active": 1,
-    "as_of_date": "2026-06-05"
+    "as_of_date": "2026-06-05",
+    "price_source": "nse_index",
+    "source_key": "Nifty Metal"
   },
   {
     "symbol": "^CNXPHARMA",
@@ -127,7 +145,9 @@
     "instrument_type": "index",
     "index_category": "sector",
     "is_active": 1,
-    "as_of_date": "2026-06-05"
+    "as_of_date": "2026-06-05",
+    "price_source": "nse_index",
+    "source_key": "Nifty Pharma"
   },
   {
     "symbol": "^CNXPSUBANK",
@@ -140,7 +160,9 @@
     "instrument_type": "index",
     "index_category": "sector",
     "is_active": 1,
-    "as_of_date": "2026-06-05"
+    "as_of_date": "2026-06-05",
+    "price_source": "nse_index",
+    "source_key": "Nifty PSU Bank"
   },
   {
     "symbol": "^CNXREALTY",
@@ -153,7 +175,9 @@
     "instrument_type": "index",
     "index_category": "sector",
     "is_active": 1,
-    "as_of_date": "2026-06-05"
+    "as_of_date": "2026-06-05",
+    "price_source": "nse_index",
+    "source_key": "Nifty Realty"
   },
   {
     "symbol": "^CNXSC",
@@ -166,7 +190,9 @@
     "instrument_type": "index",
     "index_category": "broad",
     "is_active": 1,
-    "as_of_date": "2026-06-05"
+    "as_of_date": "2026-06-05",
+    "price_source": "nse_index",
+    "source_key": "NIFTY Smallcap 100"
   },
   {
     "symbol": "^CNXSC250",
@@ -179,7 +205,9 @@
     "instrument_type": "index",
     "index_category": "broad",
     "is_active": 1,
-    "as_of_date": "2026-06-05"
+    "as_of_date": "2026-06-05",
+    "price_source": "nse_index",
+    "source_key": "Nifty Smallcap 250"
   },
   {
     "symbol": "^CRSLDX",
@@ -192,7 +220,9 @@
     "instrument_type": "index",
     "index_category": "broad",
     "is_active": 1,
-    "as_of_date": "2026-06-05"
+    "as_of_date": "2026-06-05",
+    "price_source": "nse_index",
+    "source_key": "Nifty 500"
   },
   {
     "symbol": "^INDIAVIX",
@@ -205,7 +235,9 @@
     "instrument_type": "index",
     "index_category": "regime",
     "is_active": 1,
-    "as_of_date": "2026-06-05"
+    "as_of_date": "2026-06-05",
+    "price_source": "nse_index",
+    "source_key": "India VIX"
   },
   {
     "symbol": "^NSEBANK",
@@ -218,7 +250,9 @@
     "instrument_type": "index",
     "index_category": "sector",
     "is_active": 1,
-    "as_of_date": "2026-06-05"
+    "as_of_date": "2026-06-05",
+    "price_source": "nse_index",
+    "source_key": "Nifty Bank"
   },
   {
     "symbol": "^NSEI",
@@ -231,7 +265,9 @@
     "instrument_type": "index",
     "index_category": "regime",
     "is_active": 1,
-    "as_of_date": "2026-06-05"
+    "as_of_date": "2026-06-05",
+    "price_source": "nse_index",
+    "source_key": "Nifty 50"
   },
   {
     "symbol": "^NSEMDCP50",
@@ -244,7 +280,9 @@
     "instrument_type": "index",
     "index_category": "broad",
     "is_active": 1,
-    "as_of_date": "2026-06-05"
+    "as_of_date": "2026-06-05",
+    "price_source": "nse_index",
+    "source_key": "Nifty Midcap 50"
   },
   {
     "symbol": "^NSMIDCP",
@@ -257,7 +295,279 @@
     "instrument_type": "index",
     "index_category": "broad",
     "is_active": 1,
-    "as_of_date": "2026-06-05"
+    "as_of_date": "2026-06-05",
+    "price_source": "nse_index",
+    "source_key": "Nifty Next 50"
+  },
+  {
+    "symbol": "^NIFTYSMALLCAP50",
+    "name": "Nifty Smallcap 50",
+    "exchange": "NSE",
+    "sector": null,
+    "industry": null,
+    "isin": null,
+    "market_cap_band": null,
+    "instrument_type": "index",
+    "index_category": "broad",
+    "is_active": 1,
+    "as_of_date": "2026-09-26",
+    "price_source": "nse_index",
+    "source_key": "Nifty Smallcap 50"
+  },
+  {
+    "symbol": "^NIFTYMIDSMALLCAP400",
+    "name": "Nifty MidSmallcap 400",
+    "exchange": "NSE",
+    "sector": null,
+    "industry": null,
+    "isin": null,
+    "market_cap_band": null,
+    "instrument_type": "index",
+    "index_category": "broad",
+    "is_active": 1,
+    "as_of_date": "2026-09-26",
+    "price_source": "nse_index",
+    "source_key": "Nifty MidSmallcap 400"
+  },
+  {
+    "symbol": "^NSMIDCP100",
+    "name": "NIFTY Midcap 100",
+    "exchange": "NSE",
+    "sector": null,
+    "industry": null,
+    "isin": null,
+    "market_cap_band": null,
+    "instrument_type": "index",
+    "index_category": "cap_segment",
+    "is_active": 1,
+    "as_of_date": "2026-09-26",
+    "price_source": "nse_index",
+    "source_key": "NIFTY Midcap 100"
+  },
+  {
+    "symbol": "^NIFTYFINANCIALSERVICES",
+    "name": "Nifty Financial Services",
+    "exchange": "NSE",
+    "sector": null,
+    "industry": null,
+    "isin": null,
+    "market_cap_band": null,
+    "instrument_type": "index",
+    "index_category": "sector",
+    "is_active": 1,
+    "as_of_date": "2026-09-26",
+    "price_source": "nse_index",
+    "source_key": "Nifty Financial Services"
+  },
+  {
+    "symbol": "^NIFTYMEDIA",
+    "name": "Nifty Media",
+    "exchange": "NSE",
+    "sector": null,
+    "industry": null,
+    "isin": null,
+    "market_cap_band": null,
+    "instrument_type": "index",
+    "index_category": "sector",
+    "is_active": 1,
+    "as_of_date": "2026-09-26",
+    "price_source": "nse_index",
+    "source_key": "Nifty Media"
+  },
+  {
+    "symbol": "^NIFTYPRIVATEBANK",
+    "name": "Nifty Private Bank",
+    "exchange": "NSE",
+    "sector": null,
+    "industry": null,
+    "isin": null,
+    "market_cap_band": null,
+    "instrument_type": "index",
+    "index_category": "sector",
+    "is_active": 1,
+    "as_of_date": "2026-09-26",
+    "price_source": "nse_index",
+    "source_key": "Nifty Private Bank"
+  },
+  {
+    "symbol": "^NIFTYHEALTHCAREINDEX",
+    "name": "Nifty Healthcare Index",
+    "exchange": "NSE",
+    "sector": null,
+    "industry": null,
+    "isin": null,
+    "market_cap_band": null,
+    "instrument_type": "index",
+    "index_category": "sector",
+    "is_active": 1,
+    "as_of_date": "2026-09-26",
+    "price_source": "nse_index",
+    "source_key": "Nifty Healthcare Index"
+  },
+  {
+    "symbol": "^NIFTYCONSUMERDURABLES",
+    "name": "Nifty Consumer Durables",
+    "exchange": "NSE",
+    "sector": null,
+    "industry": null,
+    "isin": null,
+    "market_cap_band": null,
+    "instrument_type": "index",
+    "index_category": "sector",
+    "is_active": 1,
+    "as_of_date": "2026-09-26",
+    "price_source": "nse_index",
+    "source_key": "Nifty Consumer Durables"
+  },
+  {
+    "symbol": "^NIFTYOILGAS",
+    "name": "Nifty Oil & Gas",
+    "exchange": "NSE",
+    "sector": null,
+    "industry": null,
+    "isin": null,
+    "market_cap_band": null,
+    "instrument_type": "index",
+    "index_category": "sector",
+    "is_active": 1,
+    "as_of_date": "2026-09-26",
+    "price_source": "nse_index",
+    "source_key": "Nifty Oil & Gas"
+  },
+  {
+    "symbol": "^NIFTYCHEMICALS",
+    "name": "Nifty Chemicals",
+    "exchange": "NSE",
+    "sector": null,
+    "industry": null,
+    "isin": null,
+    "market_cap_band": null,
+    "instrument_type": "index",
+    "index_category": "sector",
+    "is_active": 1,
+    "as_of_date": "2026-09-26",
+    "price_source": "nse_index",
+    "source_key": "Nifty Chemicals"
+  },
+  {
+    "symbol": "^NIFTYCEMENT",
+    "name": "Nifty Cement",
+    "exchange": "NSE",
+    "sector": null,
+    "industry": null,
+    "isin": null,
+    "market_cap_band": null,
+    "instrument_type": "index",
+    "index_category": "sector",
+    "is_active": 1,
+    "as_of_date": "2026-09-26",
+    "price_source": "nse_index",
+    "source_key": "Nifty Cement"
+  },
+  {
+    "symbol": "^NIFTYFINANCIALSERVICES2550",
+    "name": "Nifty Financial Services 25/50",
+    "exchange": "NSE",
+    "sector": null,
+    "industry": null,
+    "isin": null,
+    "market_cap_band": null,
+    "instrument_type": "index",
+    "index_category": "thematic",
+    "is_active": 1,
+    "as_of_date": "2026-09-26",
+    "price_source": "nse_index",
+    "source_key": "Nifty Financial Services 25/50"
+  },
+  {
+    "symbol": "^NIFTYFINANCIALSERVICESEXBANK",
+    "name": "Nifty Financial Services Ex-Bank",
+    "exchange": "NSE",
+    "sector": null,
+    "industry": null,
+    "isin": null,
+    "market_cap_band": null,
+    "instrument_type": "index",
+    "index_category": "thematic",
+    "is_active": 1,
+    "as_of_date": "2026-09-26",
+    "price_source": "nse_index",
+    "source_key": "Nifty Financial Services Ex-Bank"
+  },
+  {
+    "symbol": "^NIFTYMIDSMALLHEALTHCARE",
+    "name": "Nifty MidSmall Healthcare",
+    "exchange": "NSE",
+    "sector": null,
+    "industry": null,
+    "isin": null,
+    "market_cap_band": null,
+    "instrument_type": "index",
+    "index_category": "thematic",
+    "is_active": 1,
+    "as_of_date": "2026-09-26",
+    "price_source": "nse_index",
+    "source_key": "Nifty MidSmall Healthcare"
+  },
+  {
+    "symbol": "^NIFTYMIDSMALLFINANCIALSERVICES",
+    "name": "Nifty MidSmall Financial Services",
+    "exchange": "NSE",
+    "sector": null,
+    "industry": null,
+    "isin": null,
+    "market_cap_band": null,
+    "instrument_type": "index",
+    "index_category": "thematic",
+    "is_active": 1,
+    "as_of_date": "2026-09-26",
+    "price_source": "nse_index",
+    "source_key": "Nifty MidSmall Financial Services"
+  },
+  {
+    "symbol": "^NIFTYMIDSMALLITTELECOM",
+    "name": "Nifty MidSmall IT & Telecom",
+    "exchange": "NSE",
+    "sector": null,
+    "industry": null,
+    "isin": null,
+    "market_cap_band": null,
+    "instrument_type": "index",
+    "index_category": "thematic",
+    "is_active": 1,
+    "as_of_date": "2026-09-26",
+    "price_source": "nse_index",
+    "source_key": "Nifty MidSmall IT & Telecom"
+  },
+  {
+    "symbol": "^NIFTY500HEALTHCARE",
+    "name": "Nifty500 Healthcare",
+    "exchange": "NSE",
+    "sector": null,
+    "industry": null,
+    "isin": null,
+    "market_cap_band": null,
+    "instrument_type": "index",
+    "index_category": "thematic",
+    "is_active": 1,
+    "as_of_date": "2026-09-26",
+    "price_source": "nse_index",
+    "source_key": "Nifty500 Healthcare"
+  },
+  {
+    "symbol": "^NIFTYREITSREALTY",
+    "name": "Nifty REITs & Realty",
+    "exchange": "NSE",
+    "sector": null,
+    "industry": null,
+    "isin": null,
+    "market_cap_band": null,
+    "instrument_type": "index",
+    "index_category": "thematic",
+    "is_active": 1,
+    "as_of_date": "2026-09-26",
+    "price_source": "nse_index",
+    "source_key": "Nifty REITs & Realty"
   },
   {
     "symbol": "20MICRONS.NS",
