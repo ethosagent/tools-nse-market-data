@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.37] - 2026-09-26
+
+### Added
+- **NSE index history from NSE's daily all-indices file.** Every index now comes from `ind_close_all_DDMMYYYY.csv` — one request per day for all indices, with real volume — instead of Yahoo, which had history for only a handful. 18 new indices ship in the seed (`Nifty Smallcap 50`, `Nifty MidSmallcap 400`, `NIFTY Midcap 100` as `^NSMIDCP100` — which switches on the mid-cap RS the indicators already read — and 15 sector/thematic indices).
+- `index list [--available]`, `index add "<NSE name>"`, `index backfill`, `index constituents` CLI commands and the `nse_index_add` tool: add any NSE index by its official name (validated against the latest NSE file, with suggestions for a misspelling), backfill it, and attach its NSE constituent list. Constituents are replaced, not merged, and `update --mode all` refreshes lists older than 30 days.
+- Per-symbol price source: `instruments.price_source` / `source_key`. A symbol without one is resolved once at backfill (Yahoo with at least half the trading days, else the NSE CM bhavcopy, else refused with the reason). A first-open migration routes existing rows: indices → NSE file, `-SM/-IV/-RR/-E1.NS` symbols → bhavcopy, the rest → Yahoo.
+- `--source bhavcopy|yahoo` on `update` and `backfill` (tool param `source`), default `bhavcopy`: one CM bhavcopy per trading day serves every stock NSE lists; Yahoo only for what it does not (e.g. `.BO`). `yahoo` refreshes Yahoo's adjusted prices; bhavcopy-sourced SME/InvIT/REIT stay on the bhavcopy. Fallbacks are listed in the summary. Days with no new session are skipped with no Yahoo request.
+- Progress: `update`, `backfill` and the index commands (CLI and tools) report a start line with totals per source, then a line at most every 25 symbols or 2 s, and `day k/n` lines for the file passes. Tool results are a short summary with rows per source, fallbacks, source switches and the failed list with reasons.
+- `sources` CLI command; `source_switches` table recording automatic Yahoo → bhavcopy switches (after 3+ consecutive missed trading days during a `--source yahoo` run).
+- NSE archive files are cached next to the database; old 404s are remembered as holidays.
+
+### Changed
+- `backfillAll`, `updateAll` and `updateWatchlist` return a `SyncSummary` (per-symbol results are in `.results`; `failed` is `{symbol, source, reason}[]`), and their progress callback receives `SyncProgress` events.
+- Bhavcopy rows are stored with `adj_close = close` (raw prices). Split/bonus adjustment comes from `detect-splits`/corporate actions or a `--source yahoo` run.
+- `upsertInstruments` no longer nulls a stored price source when the seed row has none.
+
+### Fixed
+- The CM bhavcopy reader failed on every real file ("unexpected end of file"); the old EQ-only fallback swallowed the error, so it never recovered a symbol.
+- A write that fails with `database is locked` now names the `<db>.lock` directory to check.
+
 ## [0.1.36] - 2026-09-26
 
 ### Added

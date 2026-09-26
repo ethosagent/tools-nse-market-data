@@ -208,9 +208,19 @@ node dist/cli.js fetch-corporate-actions --symbol RELIANCE.NS
 
 | Command | Description |
 |---|---|
-| `backfill [--symbols A,B] [--from DATE] [--all] [--skip-synced] [--concurrency N] [--mark-failed-inactive]` | Download OHLCV history |
+| `backfill [--symbols A,B] [--from DATE] [--all] [--source bhavcopy\|yahoo] [--stored-source S] [--skip-synced] [--concurrency N] [--mark-failed-inactive]` | Download OHLCV history, per [price sources](#price-sources) |
 | `backfill-status` | Show synced vs pending symbols |
-| `update [--mode watchlist\|all]` | Sync from last stored date to today |
+| `update [--mode watchlist\|all] [--source bhavcopy\|yahoo]` | Sync from last stored date to today; prints progress lines and a short summary |
+| `sources` | Instruments per price source and recent automatic source switches |
+
+### NSE indices
+
+| Command | Description |
+|---|---|
+| `index list [--available]` | Registered NSE-file indices with bar counts; `--available` lists names in the latest NSE file that are not registered |
+| `index add "<NSE name>" [--category C] [--from DATE]` | Register an index by its NSE name (e.g. `"Nifty Chemicals"`), backfill it from the NSE file (default 365 days, not before 2016-01-01), attach constituents |
+| `index backfill [--symbols A,B] [--from DATE]` | Re-fetch index history from the NSE file (default: every NSE-file index, 365 days) |
+| `index constituents [--symbols A,B]` | Re-download NSE constituent lists and replace the members |
 
 ### Analysis
 
@@ -321,8 +331,9 @@ IMPORTANT: Do NOT run scans or analysis until indicators are computed.
 | Tool | Description |
 |---|---|
 | `nse_market_clean` | Wipe all stored data |
-| `nse_market_backfill` | Backfill historical OHLCV (supports batched execution) |
-| `nse_market_update` | Incremental sync to today |
+| `nse_market_backfill` | Backfill historical OHLCV (supports batched execution; `source` as for update) |
+| `nse_market_update` | Incremental sync to today (`source`: `bhavcopy` default, or `yahoo`); streams progress |
+| `nse_index_add` | Register an NSE index by its official name and backfill it from the NSE file |
 | `nse_instrument_add` | Register an equity or index the seed data missed |
 | `nse_instrument_import` | Add-only bulk registration + backfill from a Symbol,Description,Sector,Industry CSV |
 | `nse_watchlist_add` | Add symbol to watchlist |
@@ -408,6 +419,14 @@ Behaviour worth knowing:
 }
 ```
 
+#### `nse_index_add` — add an NSE index by name
+
+```json
+{ "name": "Nifty MidSmallcap 400", "category": "broad", "backfill_days": 365 }
+```
+
+The name is checked against NSE's latest daily all-indices file; an unknown name is refused with the three closest names. The symbol comes from the name (`^NIFTYMIDSMALLCAP400`; the 38 catalogued indices keep their established keys, e.g. `NIFTY Midcap 100` → `^NSMIDCP100`). History and volume come from the NSE file, and constituents from NSE's list when one is published. Indices added this way live only in the database — they are not in the shipped `data/instruments.json`, so a fresh `refresh-instruments` deactivates them like any other manually added instrument (see below).
+
 #### Manually added instruments and the refresh sweep
 
 `refresh-instruments` and `init` reload `instruments` from the shipped seed JSON, then sweep every symbol that is not in that batch. A manually added symbol is never in the seed.
@@ -491,6 +510,22 @@ The seed is also uploaded to GitHub releases on `make release`, enabling `nse-ma
 
 ---
 
+## Price sources
+
+Every instrument stores where its prices come from: `instruments.price_source` (`yahoo`, `bhavcopy` or `nse_index`) and `instruments.source_key` (the Yahoo symbol, `<NSE symbol>:<series>` such as `AAKAAR:SM`, or the NSE index name).
+
+- **Indices** always come from NSE's daily all-indices file (`ind_close_all_DDMMYYYY.csv`): one request per day covers every index, with real volume. History goes back to 2016-01-01.
+- **Stocks and trusts** — `update` and `backfill` take a preference, `--source` / `source`:
+  - `bhavcopy` (default): one NSE CM bhavcopy per trading day serves every symbol NSE lists, whatever its stored source (a plain `.NS` symbol maps to `SYM:EQ` and also matches `BE`/`BZ` and other equity series; `-SM.NS` matches `SM` and `ST`). What the bhavcopy does not list — `.BO` symbols, renamed tickers, a stock that did not trade — falls back to its stored source, usually Yahoo.
+  - `yahoo`: Yahoo serves every Yahoo-sourced symbol and overwrites those days. SME/InvIT/REIT symbols stored as `bhavcopy` stay on the bhavcopy.
+- **Bhavcopy prices are raw** (`adj_close = close`), not split/bonus-adjusted. Adjustments come from `detect-splits` / corporate actions, or from a periodic `--source yahoo` run.
+- **Days with no new session are skipped.** The day's NSE file doubles as the session probe (404 = holiday, weekend or not yet published); when there is no new session, no Yahoo request is made.
+- A symbol with no stored source is resolved once, when it is backfilled: Yahoo if Yahoo has at least half the trading days of the range, else the bhavcopy if NSE lists it, else refused with the reason. Updates never probe.
+- A Yahoo-sourced symbol that misses 3+ consecutive trading days the bhavcopy has (during a `--source yahoo` run) is switched to the bhavcopy; the switch is recorded in `source_switches` and listed in the summary.
+- Yahoo calls are spaced 400 ms apart for the whole process, so `--concurrency` does not raise the Yahoo request rate.
+- NSE files are cached next to the database (`nse-index-close/`, `nse-bhavcopy/`); re-reading a cached range makes no request.
+- If a write fails with `database is locked`, the error names the `<db>.lock` directory. Remove it only when no `nse-market-data` or `ethos` process is running.
+
 ## Database
 
 SQLite (via `node-sqlite3-wasm` — pure WASM, no native compilation) at `~/.ethos/market-data/market.db` (STRICT tables):
@@ -499,9 +534,10 @@ SQLite (via `node-sqlite3-wasm` — pure WASM, no native compilation) at `~/.eth
 |---|---|
 | `instruments` | Master list of ~1,400 NSE symbols |
 | `ohlcv_daily` | Daily OHLCV rows, PK `(symbol, date)` |
-| `sync_meta` | Last successful sync date per symbol |
+| `sync_meta` | Last successful sync date per symbol (+ Yahoo miss streak) |
+| `source_switches` | Automatic price-source changes |
 | `watchlist` | User's tracked symbols |
-| `index_constituents` | Nifty 50/500 membership |
+| `index_constituents` | Index membership (replaced from NSE's lists; refreshed by `update --mode all` when older than 30 days) |
 | `indicators_daily` | 60+ computed indicators per symbol per date |
 | `market_state_daily` | Market breadth and mood score |
 | `sector_state_daily` | Per-sector breadth metrics |
