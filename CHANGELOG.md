@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.36] - 2026-09-26
+
+### Added
+- `import-instruments --csv PATH [--report PATH] [--backfill-days N] [--batch N] [--delay-ms N] [--limit N]` CLI command and matching `nse_instrument_import` tool — add-only bulk registration from a `Symbol,Description,Sector,Industry` CSV. Each symbol is registered as `<Symbol>.NS` and backfilled (default 365 days). An already-registered symbol is skipped (`exists`) and no existing row is ever changed or deactivated; a symbol the feed rejects is not registered (`rejected`); a transient feed error is retryable (`error`). Runs in batches with a pause between them, writes a per-symbol report CSV after each batch, and resumes from that report on the next run.
+
+### Fixed
+- `nse_instrument_add` treats an empty array or an empty/whitespace string in any optional field as absent. Models fill optional fields with placeholders (`members: []`, `isin: ""`), which made every equity registration fail with "members is only valid with instrument_type: index". A non-empty `members` on an equity is still refused.
+
 ## [Unreleased]
 
 ### Added
