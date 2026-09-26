@@ -15,6 +15,13 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generateDashboardHtml } from './dashboard';
 import { fetchQuote, searchSymbol } from './fetcher';
+import {
+  importInstruments,
+  isDefinitiveMiss,
+  readImportCsv,
+  readImportReport,
+  writeImportReport,
+} from './instrument-import';
 import { fetchFiiDii, fetchGiftNifty } from './nse-fetcher';
 import type { IndexConstituentSeedRow, InstrumentSeedRow, SavedScanRow } from './schema';
 import { SqlGuardError } from './sql-guard';
@@ -1656,16 +1663,18 @@ const SYMBOL_PATTERN = /^\^?[A-Z0-9&-]+(\.[A-Z]{2})?$/;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
- * True only when the feed positively established that the symbol does not exist.
- * Everything else — timeouts, 429s, 5xx, unrecognised errors — is "could not
- * validate" and must proceed. The else branch defaults to proceed on purpose: a
- * new failure mode added to fetcher.ts must not silently start blocking
- * registrations.
+ * Models fill optional fields with empty placeholders (`members: []`, `isin: ""`).
+ * Treat an empty array or an empty/whitespace string as absent, so a placeholder
+ * never trips a validation rule meant for a real value.
  */
-function isDefinitiveMiss(err: unknown): boolean {
-  if (!(err instanceof Error)) return false;
-  const msg = err.message.toLowerCase();
-  return msg.includes('symbol not found:') || msg.includes('no data found, symbol may be delisted');
+function normalizeInstrumentAddArgs(args: InstrumentAddArgs): InstrumentAddArgs {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(args)) {
+    if (typeof value === 'string' && value.trim().length === 0) continue;
+    if (Array.isArray(value) && value.length === 0) continue;
+    out[key] = value;
+  }
+  return out as InstrumentAddArgs;
 }
 
 function todayIst(): string {
@@ -1825,7 +1834,8 @@ const nseInstrumentAddTool: Tool<InstrumentAddArgs> = {
     },
     required: ['symbol'],
   },
-  async execute(args, _ctx): Promise<ToolResult> {
+  async execute(rawArgs, _ctx): Promise<ToolResult> {
+    const args = normalizeInstrumentAddArgs(rawArgs ?? {});
     const symbol = (args.symbol ?? '').trim().toUpperCase();
     if (symbol.length === 0) {
       return { ok: false, error: 'symbol is required.', code: 'input_invalid' };
@@ -1840,21 +1850,12 @@ const nseInstrumentAddTool: Tool<InstrumentAddArgs> = {
 
     const instrumentType = args.instrument_type ?? 'equity';
     const members = args.members;
-    if (members !== undefined) {
-      if (instrumentType !== 'index') {
-        return {
-          ok: false,
-          error: 'members is only valid with instrument_type: "index".',
-          code: 'input_invalid',
-        };
-      }
-      if (members.length === 0) {
-        return {
-          ok: false,
-          error: 'Pass members with at least one entry, or omit it.',
-          code: 'input_invalid',
-        };
-      }
+    if (members !== undefined && instrumentType !== 'index') {
+      return {
+        ok: false,
+        error: 'members is only valid with instrument_type: "index".',
+        code: 'input_invalid',
+      };
     }
 
     const asOfDate = args.as_of_date ?? todayIst();
@@ -1997,6 +1998,106 @@ const nseInstrumentAddTool: Tool<InstrumentAddArgs> = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// nse_instrument_import — add-only bulk registration from a CSV
+// ---------------------------------------------------------------------------
+
+interface InstrumentImportArgs {
+  csv_path?: string;
+  report_path?: string;
+  backfill_days?: number;
+  batch_size?: number;
+  delay_ms?: number;
+  limit?: number;
+}
+
+const nseInstrumentImportTool: Tool<InstrumentImportArgs> = {
+  name: 'nse_instrument_import',
+  description:
+    'Bulk-register NSE equities from a CSV with header Symbol,Description,Sector,Industry. ' +
+    'Each Symbol is registered as <Symbol>.NS with Description as its name, and its price ' +
+    'history is backfilled. Add-only: a symbol already registered is skipped (status exists) and ' +
+    'no existing row is ever changed or deactivated. A symbol the feed rejects is not registered ' +
+    '(status rejected); a transient feed error is retryable (status error). Processes at most ' +
+    'limit new symbols per call — call again to continue; with report_path set, the report ' +
+    'is merged across calls.',
+  toolset: 'market',
+  capabilities: { network: { allowedHosts: ['query1.finance.yahoo.com'] } },
+  maxResultChars: 4000,
+  requiresApproval: false,
+  schema: {
+    type: 'object',
+    properties: {
+      csv_path: { type: 'string', description: 'Absolute path to the CSV file.' },
+      report_path: {
+        type: 'string',
+        description:
+          'Where to write the per-symbol report CSV (csv_symbol,yahoo_symbol,status,ohlcv_rows,note). Re-used on the next call to carry forward results.',
+      },
+      backfill_days: { type: 'number', description: 'Days of history per symbol. Default 365.' },
+      batch_size: { type: 'number', description: 'Symbols per batch. Default 10.' },
+      delay_ms: { type: 'number', description: 'Pause between batches in ms. Default 5000.' },
+      limit: {
+        type: 'number',
+        description: 'Maximum new symbols to process in this call. Default 50.',
+      },
+    },
+    required: ['csv_path'],
+  },
+  async execute(args, _ctx): Promise<ToolResult> {
+    const csvPath = args.csv_path?.trim() ?? '';
+    if (csvPath.length === 0) {
+      return { ok: false, error: 'csv_path is required.', code: 'input_invalid' };
+    }
+    let rows: ReturnType<typeof readImportCsv>;
+    try {
+      rows = readImportCsv(csvPath);
+    } catch (err) {
+      return {
+        ok: false,
+        error: `Could not read ${csvPath}: ${err instanceof Error ? err.message : String(err)}`,
+        code: 'input_invalid',
+      };
+    }
+    const reportPath = args.report_path?.trim() || undefined;
+
+    return withStoreAsync(async (store) => {
+      const summary = await importInstruments(store, rows, {
+        backfillDays: args.backfill_days ?? 365,
+        batchSize: args.batch_size ?? 10,
+        delayMs: args.delay_ms ?? 5000,
+        limit: args.limit ?? 50,
+        previous: reportPath ? readImportReport(reportPath) : [],
+        onBatch: reportPath ? (report) => writeImportReport(reportPath, report) : undefined,
+      });
+      if (reportPath) writeImportReport(reportPath, summary.report);
+
+      const { counts } = summary;
+      const lines = [
+        `Imported ${rows.length} CSV symbols: ${counts.exists} already registered, ${counts.added} added, ${counts.rejected} rejected by the feed, ${counts.error} errors.`,
+      ];
+      const rejected = summary.report
+        .filter((r) => r.status === 'rejected')
+        .map((r) => r.yahoo_symbol);
+      if (rejected.length > 0) {
+        lines.push(
+          `Rejected (not registered): ${rejected.slice(0, 20).join(', ')}${rejected.length > 20 ? `, +${rejected.length - 20} more` : ''}`,
+        );
+      }
+      if (counts.error > 0) lines.push('Errors are transient — call again to retry them.');
+      if (summary.remaining > 0) {
+        lines.push(
+          `${summary.remaining} symbols not attempted yet (limit reached) — call again to continue.`,
+        );
+      }
+      if (reportPath) lines.push(`Report: ${reportPath}`);
+      if (counts.added > 0)
+        lines.push('Run nse_compute_indicators to make the new symbols scannable.');
+      return { ok: true, value: lines.join('\n') };
+    });
+  },
+};
+
 function describeMembers(summary: ReturnType<typeof attachMembers>, asOfDate: string): string {
   const parts = [
     `Attached ${summary.attached} constituents as of ${asOfDate}${
@@ -2072,6 +2173,7 @@ export function createNseMarketDataTools(): Tool[] {
     nseMarketDashboardTool as Tool,
     nseMarketQueryTool as Tool,
     nseInstrumentAddTool as Tool,
+    nseInstrumentImportTool as Tool,
   ];
   return tools;
 }

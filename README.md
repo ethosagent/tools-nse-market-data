@@ -251,6 +251,7 @@ node dist/cli.js fetch-corporate-actions --symbol RELIANCE.NS
 
 | Command | Description |
 |---|---|
+| `import-instruments --csv PATH [--report PATH] [--backfill-days N] [--batch N] [--delay-ms N]` | Add-only bulk import of a Symbol,Description,Sector,Industry CSV (registers missing `<Symbol>.NS`, backfills; resumable) |
 | `mark-inactive SYMBOL1,SYMBOL2,...` | Mark symbols as inactive |
 | `detect-splits [--gap N]` | Detect potential stock splits |
 | `clean` | Delete all stored data |
@@ -323,6 +324,7 @@ IMPORTANT: Do NOT run scans or analysis until indicators are computed.
 | `nse_market_backfill` | Backfill historical OHLCV (supports batched execution) |
 | `nse_market_update` | Incremental sync to today |
 | `nse_instrument_add` | Register an equity or index the seed data missed |
+| `nse_instrument_import` | Add-only bulk registration + backfill from a Symbol,Description,Sector,Industry CSV |
 | `nse_watchlist_add` | Add symbol to watchlist |
 | `nse_watchlist_remove` | Remove from watchlist |
 | `nse_watchlist_show` | Show watchlist with prices |

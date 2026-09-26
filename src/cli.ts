@@ -5,6 +5,12 @@ import { homedir } from 'node:os';
 import { dirname, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fetchQuote } from './fetcher';
+import {
+  importInstruments,
+  readImportCsv,
+  readImportReport,
+  writeImportReport,
+} from './instrument-import';
 import { fetchBulkBlockDeals, fetchCorporateActions, fetchFiiDii } from './nse-fetcher';
 import type { IndexConstituentSeedRow, InstrumentSeedRow, SavedScanRow } from './schema';
 import {
@@ -122,6 +128,13 @@ Commands:
                             Fetch corporate actions (dividends, splits, bonus)
   fetch-bulk-block [--date YYYY-MM-DD]
                             Fetch bulk and block deals from NSE
+  import-instruments --csv PATH [--report PATH] [--backfill-days N] [--batch N]
+           [--delay-ms N] [--limit N]
+                            Add-only import of a Symbol,Description,Sector,Industry CSV:
+                            registers each missing <Symbol>.NS and backfills N days
+                            (default 365). Never changes or deactivates existing rows.
+                            Batches of --batch (default 10), --delay-ms between batches
+                            (default 5000). Re-run to resume; --report is merged.
   mark-inactive SYMBOL1,SYMBOL2,...
                             Mark the given symbols as inactive in the instruments table
   seed-update               Import new symbols from GitHub seed (additive — never changes existing data)
@@ -796,6 +809,56 @@ Options:
 
         writeLocalManifest(localManifestPath, remoteManifest);
         console.log(`Seed manifest updated to ${remoteManifest.generatedAt}.`);
+        break;
+      }
+
+      // -----------------------------------------------------------------------
+      case 'import-instruments': {
+        const csvPath = getFlag(args, '--csv');
+        if (!csvPath) {
+          console.error('Usage: nse-market-data import-instruments --csv PATH [--report PATH]');
+          process.exit(1);
+        }
+        const reportPath = getFlag(args, '--report');
+        const num = (flag: string, fallback: number): number => {
+          const v = getFlag(args, flag);
+          const n = v === undefined ? fallback : Number(v);
+          if (!Number.isFinite(n) || n < 0) {
+            console.error(`${flag} must be a non-negative number`);
+            process.exit(1);
+          }
+          return n;
+        };
+        const limitFlag = getFlag(args, '--limit');
+        const rows = readImportCsv(csvPath);
+        const started = Date.now();
+        console.log(`Importing ${rows.length} CSV symbols into ${dbPath}`);
+        const summary = await importInstruments(store, rows, {
+          backfillDays: num('--backfill-days', 365),
+          batchSize: num('--batch', 10),
+          delayMs: num('--delay-ms', 5000),
+          limit: limitFlag === undefined ? undefined : num('--limit', 0),
+          previous: reportPath ? readImportReport(reportPath) : [],
+          onBatch: (report, done, total) => {
+            if (reportPath) writeImportReport(reportPath, report);
+            const last = report.slice(-1)[0];
+            const secs = Math.round((Date.now() - started) / 1000);
+            console.log(
+              `  [${done}/${total}] ${secs}s — last: ${last?.yahoo_symbol ?? '-'} ${last?.status ?? ''}`,
+            );
+          },
+        });
+        if (reportPath) writeImportReport(reportPath, summary.report);
+        const { counts } = summary;
+        console.log(
+          `\nDone: exists=${counts.exists} added=${counts.added} rejected=${counts.rejected} error=${counts.error}` +
+            (summary.remaining > 0 ? ` not-attempted=${summary.remaining}` : ''),
+        );
+        const rejected = summary.report.filter((r) => r.status === 'rejected');
+        if (rejected.length > 0) {
+          console.log(`Rejected: ${rejected.map((r) => r.yahoo_symbol).join(', ')}`);
+        }
+        if (reportPath) console.log(`Report: ${reportPath}`);
         break;
       }
 

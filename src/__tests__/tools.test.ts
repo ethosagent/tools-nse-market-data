@@ -8,7 +8,7 @@ const { Database } = _pkg;
 describe('createNseMarketDataTools()', () => {
   it('returns 26 tools', () => {
     const tools = createNseMarketDataTools();
-    expect(tools).toHaveLength(26);
+    expect(tools).toHaveLength(27);
   });
 
   it('all tools have required fields', () => {
@@ -50,6 +50,7 @@ describe('createNseMarketDataTools()', () => {
     expect(names).toContain('nse_get_gift_nifty');
     expect(names).toContain('nse_market_query');
     expect(names).toContain('nse_instrument_add');
+    expect(names).toContain('nse_instrument_import');
   });
 });
 

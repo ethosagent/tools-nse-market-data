@@ -309,6 +309,59 @@ describe('nse_instrument_add validation', () => {
     expect(calls).toHaveLength(0);
   });
 
+  describe('empty placeholders for optional fields are treated as absent', () => {
+    it('registers an equity when members is an empty array', async () => {
+      stubFetch(() => jsonResponse(200, chartBody()));
+      const result = await instrumentAddTool().execute(
+        { symbol: 'ZOMATO.NS', name: 'Zomato Limited', members: [] },
+        ctx,
+      );
+      expect(result.ok).toBe(true);
+      expect(withDb((s) => s.getInstrument('ZOMATO.NS'))?.instrument_type).toBe('equity');
+    });
+
+    it('stores an empty isin (and other blank strings) as null', async () => {
+      stubFetch(() => jsonResponse(200, chartBody()));
+      const result = await instrumentAddTool().execute(
+        {
+          symbol: 'ZOMATO.NS',
+          name: 'Zomato Limited',
+          isin: '',
+          sector: '   ',
+          industry: '',
+          market_cap_band: '',
+          index_category: '',
+          as_of_date: '',
+        },
+        ctx,
+      );
+      expect(result.ok).toBe(true);
+      const row = withDb((s) => s.getInstrument('ZOMATO.NS'));
+      expect(row?.isin).toBeNull();
+      expect(row?.sector).toBeNull();
+      expect(row?.industry).toBeNull();
+      expect(row?.exchange).toBe('NSE');
+    });
+
+    it('fills a blank name from the feed', async () => {
+      stubFetch(() => jsonResponse(200, chartBody()));
+      const result = await instrumentAddTool().execute({ symbol: 'ZOMATO.NS', name: '' }, ctx);
+      expect(result.ok).toBe(true);
+      expect(withDb((s) => s.getInstrument('ZOMATO.NS'))?.name).toBe('Zomato Limited');
+    });
+
+    it('still refuses a non-empty members list on an equity', async () => {
+      const result = await instrumentAddTool().execute(
+        { symbol: 'ZOMATO.NS', name: 'Zomato Limited', isin: '', members: [{ symbol: 'TCS.NS' }] },
+        ctx,
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.code).toBe('input_invalid');
+      expect(withDb((s) => s.getInstrument('ZOMATO.NS'))).toBeNull();
+    });
+  });
+
   it('requires a name when validation is skipped', async () => {
     const result = await instrumentAddTool().execute({ symbol: 'ZOMATO.NS', validate: false }, ctx);
     expect(result.ok).toBe(false);

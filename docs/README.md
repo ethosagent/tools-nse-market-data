@@ -53,6 +53,7 @@ Other distinguishing features:
 | `nse_market_backfill` | Fetch OHLCV history via Yahoo Finance |
 | `nse_market_update` | Incremental sync from last stored date to today |
 | `nse_instrument_add` | Register an equity or index the seed data missed |
+| `nse_instrument_import` | Add-only bulk registration + backfill from a Symbol,Description,Sector,Industry CSV |
 | `nse_invoke_skill` | Execute an analytical playbook from the skills/ folder |
 | `nse_watchdog` | Evaluate a condition on latest indicators and fire alert if matched |
 | `nse_backtest` | Replay a screen historically with P&L and benchmark comparison |
