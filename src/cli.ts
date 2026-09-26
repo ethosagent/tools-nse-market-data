@@ -149,13 +149,13 @@ Commands:
                             --stored-source = only symbols whose stored source is that one.
                             --index = backfill that index's members first (tiered).
                             --skip-synced / --resume = skip already-synced symbols.
-                            --concurrency N = Yahoo workers (default 10). Yahoo calls share
-                            one process-wide 400 ms spacing, so this does not raise the rate.
+                            --concurrency N = Yahoo workers (default 10). Workers share one
+                            400 ms spacing check, which concurrent calls can pass together.
                             --mark-failed-inactive = mark failed symbols as inactive.
   backfill-status           Show how many symbols are synced vs pending.
   update [--mode watchlist|all] [--source bhavcopy|yahoo]
                             Fill missing days since last sync: one NSE index file and one
-                            bhavcopy per day; Yahoo (400 ms apart) only for what the bhavcopy
+                            bhavcopy per day; Yahoo (5 workers) only for what the bhavcopy
                             does not list, or for Yahoo-sourced symbols with --source yahoo.
                             Days with no new session are skipped without a request.
                             --mode all also refreshes index constituents older than 30 days.

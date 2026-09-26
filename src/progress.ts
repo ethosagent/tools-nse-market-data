@@ -134,9 +134,12 @@ export function formatStart(e: Extract<SyncProgress, { kind: 'start' }>): string
     parts.push(`${fmt(e.bySource.resolve)} to resolve (Yahoo, then bhavcopy)`);
   }
   const from = e.fromDate ? ` from ${e.fromDate}` : '';
-  const pref = e.preference
-    ? ` (prefer ${e.preference === 'bhavcopy' ? 'NSE bhavcopy' : 'Yahoo'})`
-    : '';
+  // Indices ignore the preference, so an index-only run does not mention it.
+  const stocks = e.bySource.bhavcopy + e.bySource.yahoo + e.bySource.resolve;
+  const pref =
+    e.preference && stocks > 0
+      ? ` (prefer ${e.preference === 'bhavcopy' ? 'NSE bhavcopy' : 'Yahoo'})`
+      : '';
   return `${verb} ${fmt(e.total)} symbols${from}${pref}: ${parts.length > 0 ? parts.join(', ') : 'nothing to do'}`;
 }
 

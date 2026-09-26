@@ -203,7 +203,7 @@ const nseMarketBackfillTool: Tool<BackfillArgs> = {
       concurrency: {
         type: 'number',
         description:
-          'Number of Yahoo workers (default: 5). All Yahoo calls share one process-wide 400 ms spacing, so raising this does not make a backfill faster.',
+          'Number of Yahoo workers (default: 5). They share one 400 ms spacing check; keep it low to stay clear of Yahoo rate limits.',
       },
     },
   },

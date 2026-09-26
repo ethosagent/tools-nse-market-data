@@ -522,7 +522,7 @@ Every instrument stores where its prices come from: `instruments.price_source` (
 - **Days with no new session are skipped.** The day's NSE file doubles as the session probe (404 = holiday, weekend or not yet published); when there is no new session, no Yahoo request is made.
 - A symbol with no stored source is resolved once, when it is backfilled: Yahoo if Yahoo has at least half the trading days of the range, else the bhavcopy if NSE lists it, else refused with the reason. Updates never probe.
 - A Yahoo-sourced symbol that misses 3+ consecutive trading days the bhavcopy has (during a `--source yahoo` run) is switched to the bhavcopy; the switch is recorded in `source_switches` and listed in the summary.
-- Yahoo calls are spaced 400 ms apart for the whole process, so `--concurrency` does not raise the Yahoo request rate.
+- Yahoo calls pass a process-wide 400 ms spacing check. The check is not atomic, so concurrent workers (`--concurrency`, 5 in `update`) can pass it together: measured about 12 requests/s with 5 workers, not 2.5. Unchanged in 0.1.37.
 - NSE files are cached next to the database (`nse-index-close/`, `nse-bhavcopy/`); re-reading a cached range makes no request.
 - If a write fails with `database is locked`, the error names the `<db>.lock` directory. Remove it only when no `nse-market-data` or `ethos` process is running.
 
